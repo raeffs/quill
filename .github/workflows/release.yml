@@ -1,0 +1,221 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  # cancel-in-progress: false because a cancelled run mid-push is one of the few
+  # remaining routes into a partial state. It serialises rather than protects:
+  # two runs on the same version are harmless under --skip-duplicate.
+  group: release-cli
+  cancel-in-progress: false
+
+# The mirror repo's default GITHUB_TOKEN is read-only, so every elevated
+# permission is declared per job.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assert tag, props and changelog agree
+        id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(dotnet msbuild src/Quill.Cli/Quill.Cli.csproj -getProperty:Version | tr -d '[:space:]')
+          HEADING=$(sed -n 's/^## \[\([0-9]\+\.[0-9]\+\.[0-9]\+\)\].*/\1/p' CHANGELOG.md | head -1)
+
+          echo "props <Version>: ${VERSION}"
+          echo "first changelog heading: ${HEADING}"
+
+          if [ "${VERSION}" != "${HEADING}" ]; then
+            echo "::error::props <Version> (${VERSION}) does not match the first CHANGELOG.md heading (${HEADING})"
+            exit 1
+          fi
+
+          # The tag leg only exists on a real release; the dry run has no tag.
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            echo "tag: ${GITHUB_REF_NAME} -> ${TAG_VERSION}"
+            case "${TAG_VERSION}" in
+              *-*) echo "::error::pre-release tags are not supported: ${GITHUB_REF_NAME}"; exit 1 ;;
+            esac
+            if [ "${TAG_VERSION}" != "${VERSION}" ]; then
+              echo "::error::tag ${GITHUB_REF_NAME} does not match props <Version> (${VERSION})"
+              exit 1
+            fi
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+  pack-rid:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: win-x64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # No toolchain install step on either runner: the Linux images carry gcc,
+      # ld.bfd and objcopy, and the Windows images carry VC.Tools.x86.x64 plus the
+      # Windows SDK. The commonly cited `apt-get install clang zlib1g-dev` is not
+      # needed — ILC links against the runtime pack's own libz.a.
+      - name: Pack ${{ matrix.rid }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release \
+            -r ${{ matrix.rid }} -p:RuntimeIdentifier=${{ matrix.rid }} \
+            -p:DebugType=none -p:DebugSymbols=false -o artifacts
+          # The `ls -l` above is the symbol-leak check for this job. A stale native
+          # symbol file only reaches a package when a meta or `any` pack precedes a
+          # RID pack in the same tree, because dotnet clean removes neither native/
+          # nor publish/. This job packs one RID from a fresh checkout, so there is
+          # nothing to inherit. pr-validation.yml runs the three packs in sequence
+          # and asserts on it explicitly.
+          ls -l artifacts
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: pkg-${{ matrix.rid }}
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
+  pack-portable:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Pack the meta pointer and the any fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.verify.outputs.version }}"
+
+          dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -o artifacts
+
+          # rm -rf bin obj, NOT dotnet clean. The meta pack above leaves a 40 MB
+          # bin/Release/net10.0/linux-x64/native/Quill.Cli.dbg behind, and dotnet
+          # clean removes neither native/ nor publish/, so a later RID pack in the
+          # same tree would copy that stale symbol file into its package. This job
+          # only packs `any`, but the rule is the same one pr-validation.yml relies
+          # on and is kept identical on purpose.
+          rm -rf src/Quill.Cli/bin src/Quill.Cli/obj
+          dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -r any -o artifacts
+
+          SETTINGS=$(unzip -p "artifacts/Raeffs.Quill.${VERSION}.nupkg" '*DotnetToolSettings.xml')
+          echo "$SETTINGS"
+          for rid in linux-x64 win-x64 any; do
+            echo "$SETTINGS" | grep -q "$rid" \
+              || { echo "::error::meta pointer does not reference ${rid}"; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: pkg-portable
+          path: artifacts/*.nupkg
+          if-no-files-found: error
+
+  push:
+    needs: [verify, pack-rid, pack-portable]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # mints the short-lived nuget.org key via Trusted Publishing
+      contents: read
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # Three non-obvious things about the block below, none of them reversible
+      # once a version is pushed:
+      #
+      # 1. The meta pointer goes LAST. It is what makes the version installable,
+      #    and a live pointer with a missing child is a hard install failure, not
+      #    a fallback to `any`.
+      # 2. --skip-duplicate on every push IS the recovery mechanism. dotnet nuget
+      #    push is sequential with no transaction, and nuget.org answers a re-push
+      #    with 409. Without the flag a re-run dies on the package that already
+      #    succeeded, and the version is burned.
+      # 3. Orphaned children — a version whose pointer never landed — are left on
+      #    nuget.org deliberately. They are DotnetToolRidPackage, invisible to
+      #    search, and without a pointer the version is not installable at all.
+      #    Cleaning them up would need a manual UI act to tidy something no
+      #    consumer can see.
+      - name: Assert all four packages are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.verify.outputs.version }}"
+          ls -l artifacts
+          for f in \
+            "Raeffs.Quill.${VERSION}.nupkg" \
+            "Raeffs.Quill.linux-x64.${VERSION}.nupkg" \
+            "Raeffs.Quill.win-x64.${VERSION}.nupkg" \
+            "Raeffs.Quill.any.${VERSION}.nupkg"
+          do
+            test -f "artifacts/${f}" \
+              || { echo "::error::missing package ${f}"; exit 1; }
+          done
+
+      - uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        id: login
+        with:
+          # The profile name, not the email. Literal rather than a secret: the
+          # package owner is public on the package page.
+          user: raeffs
+
+      - name: Push to nuget.org
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.verify.outputs.version }}"
+          FEED=https://api.nuget.org/v3/index.json
+
+          for rid in linux-x64 win-x64 any; do
+            dotnet nuget push "artifacts/Raeffs.Quill.${rid}.${VERSION}.nupkg" \
+              --source "${FEED}" --api-key "${NUGET_API_KEY}" --skip-duplicate
+          done
+
+          dotnet nuget push "artifacts/Raeffs.Quill.${VERSION}.nupkg" \
+            --source "${FEED}" --api-key "${NUGET_API_KEY}" --skip-duplicate
+
+  release:
+    needs: [verify, push]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Created after the push, so the public repo never announces a version that
+      # is not on nuget.org. No assets: nuget.org is the only distribution channel.
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.verify.outputs.version }}"
+          gh api "repos/${GITHUB_REPOSITORY}/releases" \
+            -f tag_name="${GITHUB_REF_NAME}" \
+            -f name="${GITHUB_REF_NAME}" \
+            -f body="Install with \`dotnet tool install -g Raeffs.Quill --version ${VERSION}\` — see [Raeffs.Quill on nuget.org](https://www.nuget.org/packages/Raeffs.Quill/${VERSION})." \
+            -F generate_release_notes=true

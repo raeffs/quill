@@ -1,0 +1,32 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <!-- Repo-wide, not per-project, so tests run in the mode the tool ships in.
+         Quill is culture-free by construction: every comparer is Ordinal, every
+         date is InvariantCulture. The cost is that IdnMapping throws, so a
+         non-ASCII host in serverUrl would fail; Azure DevOps URLs are ASCII. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Authors>Raphael Fleischlin</Authors>
+    <Copyright>Copyright (c) Raphael Fleischlin</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/raeffs/quill</PackageProjectUrl>
+    <!-- Hardcoded, and PublishRepositoryUrl is deliberately absent: it overwrites
+         RepositoryUrl rather than adding to it, and from a Forgejo checkout no
+         SourceLink provider recognises the host, which would blank it entirely. -->
+    <RepositoryUrl>https://github.com/raeffs/quill</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Conditioned on the environment rather than passed by the workflow, so it
+         cannot be forgotten. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+</Project>

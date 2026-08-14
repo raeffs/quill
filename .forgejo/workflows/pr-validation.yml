@@ -1,0 +1,178 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build
+        run: dotnet build --configuration Release
+
+  test:
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test
+        run: dotnet test --configuration Release
+
+  format:
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check formatting
+        run: dotnet format --verify-no-changes
+
+  # A statement about the tree, not the diff, so nothing about it can be skipped:
+  # a PR that bumps the version changes both files, and one that does not changes
+  # neither. Keeping this true on main means a tag can always be pushed safely.
+  # Its own job because it needs no build and fails in seconds rather than behind
+  # a compile.
+  version:
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Version matches changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(dotnet msbuild src/Quill.Cli/Quill.Cli.csproj -getProperty:Version | tr -d '[:space:]')
+          HEADING=$(sed -n 's/^## \[\([0-9]\+\.[0-9]\+\.[0-9]\+\)\].*/\1/p' CHANGELOG.md | head -1)
+          echo "props <Version>: ${VERSION}"
+          echo "first changelog heading: ${HEADING}"
+          if [ "${VERSION}" != "${HEADING}" ]; then
+            echo "::error::Directory.Build.props <Version> (${VERSION}) does not match the first CHANGELOG.md heading (${HEADING})"
+            exit 1
+          fi
+
+  pack:
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Packs with no -p:Version, exactly as the release does: Directory.Build.props
+      # is the source of truth, so PR validation must not rehearse a code path the
+      # release never runs. win-x64 is absent because runs-on: docker is Linux and
+      # cross-OS AOT is unsupported — .github/workflows/release.yml covers it via
+      # its workflow_dispatch dry run.
+      - name: Pack meta, any and linux-x64
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(dotnet msbuild src/Quill.Cli/Quill.Cli.csproj -getProperty:Version | tr -d '[:space:]')
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+          dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -o artifacts
+
+          # rm -rf bin obj between packs, NOT dotnet clean. PackTool globs
+          # $(PublishDir)/**/*, and the meta pack above leaves a 40 MB
+          # bin/Release/net10.0/linux-x64/native/Quill.Cli.dbg behind. dotnet clean
+          # removes neither native/ nor publish/, so the linux-x64 pack would copy
+          # that stale .dbg into the package and ship 17 MB instead of 7 MB — even
+          # with DebugType=none, which only suppresses a symbol file it generates
+          # itself. Measured, not theoretical.
+          rm -rf src/Quill.Cli/bin src/Quill.Cli/obj
+          dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -r any -o artifacts
+
+          rm -rf src/Quill.Cli/bin src/Quill.Cli/obj
+          # Both -r and -p:RuntimeIdentifier are required. -r alone emits an
+          # unsuffixed package that overwrites the meta pointer.
+          dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release \
+            -r linux-x64 -p:RuntimeIdentifier=linux-x64 \
+            -p:DebugType=none -p:DebugSymbols=false -o artifacts
+
+          ls -l artifacts
+
+      - name: Assert the meta pointer names every RID
+        shell: bash
+        run: |
+          set -euo pipefail
+          SETTINGS=$(unzip -p "artifacts/Raeffs.Quill.${VERSION}.nupkg" '*DotnetToolSettings.xml')
+          echo "$SETTINGS"
+          for rid in linux-x64 win-x64 any; do
+            echo "$SETTINGS" | grep -q "$rid" \
+              || { echo "::error::meta pointer does not reference ${rid}"; exit 1; }
+          done
+
+      - name: Assert linux-x64 holds a native binary and any is framework-dependent
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/ridpkg && mkdir -p /tmp/ridpkg
+          unzip -q "artifacts/Raeffs.Quill.linux-x64.${VERSION}.nupkg" -d /tmp/ridpkg
+          BIN=$(find /tmp/ridpkg/tools -type f -name Quill.Cli)
+          test -n "$BIN"
+          # grep -a on the raw magic bytes. `od -c` renders them as `177   E   L   F`,
+          # space-separated, so grepping od's output for ELF never matches.
+          head -c 4 "$BIN" | grep -qa 'ELF' \
+            || { echo "::error::linux-x64 package does not hold a native ELF binary"; exit 1; }
+          unzip -p "artifacts/Raeffs.Quill.any.${VERSION}.nupkg" '*DotnetToolSettings.xml' \
+            | grep -q 'Runner="dotnet"'
+
+      # A leaked .dbg is 40 MB and changes nothing else about the package, so no
+      # other assert here would notice it. Stripped, the package is ~7.5 MB.
+      - name: Assert no debug symbols leaked into the linux-x64 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          if unzip -l "artifacts/Raeffs.Quill.linux-x64.${VERSION}.nupkg" | grep -q '\.dbg'; then
+            echo "::error::a .dbg file leaked into the linux-x64 package"
+            exit 1
+          fi
+          SIZE=$(stat -c %s "artifacts/Raeffs.Quill.linux-x64.${VERSION}.nupkg")
+          echo "linux-x64 package: ${SIZE} bytes"
+          if [ "${SIZE}" -gt 12000000 ]; then
+            echo "::error::linux-x64 package is ${SIZE} bytes, expected well under 12 MB"
+            exit 1
+          fi
+
+      # Packing proves the files exist; only running proves the tool works. Without
+      # InvariantGlobalization the AOT binary links cleanly and then dies inside
+      # System.CommandLine's ResourceManager when libicu is missing.
+      - name: Install from the local feed and smoke-run
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet tool install --global --add-source ./artifacts Raeffs.Quill --version "${VERSION}"
+          export PATH="${PATH}:${HOME}/.dotnet/tools"
+          quill --version
+          quill --help
+
+      # The only check that reaches FrontmatterParser in the native binary: every
+      # command needs Azure DevOps, so --version and --help never touch YamlDotNet.
+      # wi push parses frontmatter before it dials, so a network error proves the
+      # YAML parsed. A broken static context fails earlier and differently.
+      - name: Smoke-run the frontmatter path
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="${PATH}:${HOME}/.dotnet/tools"
+          WORK=$(mktemp -d)
+          printf -- '---\nid: 42\ntype: Bug\ntitle: Hello\nstate: Active\nparentId: 7\ntags:\n  - a\n  - b\nmeta:\n  k: v\n---\n\nBody\n' > "${WORK}/item.md"
+          cat > "${WORK}/.quill.json" <<'JSON'
+          {
+            "serverUrl": "https://nonexistent.invalid",
+            "collection": "c",
+            "project": "p",
+            "allowedStates": ["Active"],
+            "allowedParentStates": ["Active"]
+          }
+          JSON
+          cd "${WORK}"
+          QUILL_PAT=dummy quill wi push item.md > out.json || true
+          cat out.json
+          grep -q '"code":2' out.json \
+            || { echo "::error::frontmatter smoke test did not reach the network error"; exit 1; }

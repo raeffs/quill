@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Quill.Cli (Pull)": {
+      "commandName": "Project",
+      "commandLineArgs": "pull 58085 C:\\Users\\raf\\Downloads\\12345.md"
+    },
+    "Quill.Cli (Push)": {
+      "commandName": "Project",
+      "commandLineArgs": "push C:\\Users\\raf\\Downloads\\12345.md"
+    }
+  }
+}

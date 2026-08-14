@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Source packages -->
+    <PackageVersion Include="HtmlSanitizer" Version="9.2.995" />
+    <PackageVersion Include="Markdig" Version="1.3.2" />
+    <PackageVersion Include="ColorCode.Core" Version="2.0.15" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.152" />
+    <PackageVersion Include="ReverseMarkdown" Version="6.2.1" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+    <!-- Must track YamlDotNet exactly: the generator's source lives in the official
+         YamlDotNet repo at the matching tag; only its packaging is separate. -->
+    <PackageVersion Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" />
+    <!-- Test packages -->
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+</Project>

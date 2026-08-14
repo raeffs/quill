@@ -1,0 +1,15 @@
+{
+  "name": "quill",
+  "owner": {
+    "name": "Raphael Fleischlin",
+    "url": "https://github.com/raeffs"
+  },
+  "description": "Sync Azure DevOps backlog items with local markdown files via the quill CLI.",
+  "plugins": [
+    {
+      "name": "quill",
+      "source": "./",
+      "description": "Sync Azure DevOps backlog items with local markdown files via the quill CLI."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Quill.AzureDevOps/Quill.AzureDevOps.csproj" />
+    <Project Path="src/Quill.Cli/Quill.Cli.csproj" />
+    <Project Path="src/Quill.Core/Quill.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Quill.AzureDevOps.Tests/Quill.AzureDevOps.Tests.csproj" />
+    <Project Path="tests/Quill.Cli.Tests/Quill.Cli.Tests.csproj" />
+    <Project Path="tests/Quill.Core.Tests/Quill.Core.Tests.csproj" />
+    <Project Path="tests/Quill.Tests.Shared/Quill.Tests.Shared.csproj" />
+  </Folder>
+</Solution>
