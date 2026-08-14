@@ -1,14 +1,18 @@
 # Quill
 
-CLI that syncs Azure DevOps backlog items with local markdown files.
+Azure DevOps Server CLI for coding agents.
+
+Reads work items and pull requests as JSON. Edits work items as markdown.
 
 ## Install
 
-Requires the .NET 10 SDK.
+Installing needs the .NET 10 SDK. Earlier SDKs fail with an `unsupported runner` error.
 
 ```sh
 dotnet tool install -g Raeffs.Quill
 ```
+
+On `linux-x64` and `win-x64`, quill is a native binary and runs without a .NET runtime. Other platforms get a portable build that needs the .NET 10 runtime.
 
 ## Update
 

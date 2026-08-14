@@ -4,12 +4,12 @@
     "name": "Raphael Fleischlin",
     "url": "https://github.com/raeffs"
   },
-  "description": "Sync Azure DevOps backlog items with local markdown files via the quill CLI.",
+  "description": "Azure DevOps Server CLI for coding agents.",
   "plugins": [
     {
       "name": "quill",
       "source": "./",
-      "description": "Sync Azure DevOps backlog items with local markdown files via the quill CLI."
+      "description": "Azure DevOps Server CLI for coding agents."
     }
   ]
 }

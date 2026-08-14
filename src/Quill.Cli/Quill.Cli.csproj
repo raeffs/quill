@@ -27,8 +27,8 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>quill</ToolCommandName>
     <PackageId>Raeffs.Quill</PackageId>
-    <Description>Sync Azure DevOps backlog items with local markdown files.</Description>
-    <PackageTags>azure-devops;backlog;work-items;markdown;sync;cli;dotnet-tool</PackageTags>
+    <Description>Azure DevOps Server CLI for coding agents.</Description>
+    <PackageTags>azure-devops;azure-devops-server;work-items;pull-requests;backlog;markdown;json;cli;dotnet-tool</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- Only the `any` package carries managed IL; embedded symbols make it
          step-able without a fifth artifact to push. -->

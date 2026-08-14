@@ -1,11 +1,11 @@
 ---
 name: quill
-description: Sync Azure DevOps backlog items with local markdown files. Use when the user asks to pull, push, create, update, or sync work items / backlog items / PBIs / tasks with Azure DevOps. Supports creating new PBIs/Bugs and tasks, and managing parent-child relationships. Validation of allowed states is enforced via .quill.json. Assignee validation uses the authenticated PAT user.
+description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, or about pull requests — reading, searching, listing, creating, updating, pushing, walking the hierarchy, or reading comments and review threads.
 ---
 
-# Quill — Azure DevOps Backlog Sync
+# Quill — Azure DevOps Server CLI
 
-Quill is a CLI tool that syncs Azure DevOps Server backlog items with local markdown files. Use it to pull work items from the server into markdown files, edit them locally, and push changes back.
+Quill is a CLI tool that reads Azure DevOps Server work items and pull requests as JSON, and writes work items back. Read-only commands print to stdout. To edit a work item, pull it into a markdown file, change it, and push it back.
 
 Requires the `quill` CLI on PATH. Install once per machine with:
 
@@ -13,7 +13,7 @@ Requires the `quill` CLI on PATH. Install once per machine with:
 dotnet tool install -g Raeffs.Quill
 ```
 
-Requires the .NET 10 SDK.
+Installing needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs as a native binary; other platforms need the .NET 10 runtime.
 
 ## Executable
 

@@ -16,7 +16,7 @@ internal static class CliHost
 
     public static RootCommand BuildRootCommand(IServiceProvider serviceProvider)
     {
-        var rootCommand = new RootCommand("Quill — sync Azure DevOps backlog items with local markdown files");
+        var rootCommand = new RootCommand("Quill — Azure DevOps Server CLI for coding agents");
 
         rootCommand.Subcommands.Add(WorkItemCommand.Create(serviceProvider));
         rootCommand.Subcommands.Add(PrCommand.Create(serviceProvider));
