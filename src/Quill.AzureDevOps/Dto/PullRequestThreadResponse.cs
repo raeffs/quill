@@ -23,14 +23,56 @@ internal sealed class PullRequestThreadResponse
     [JsonPropertyName("publishedDate")]
     public DateTimeOffset PublishedDate { get; init; }
 
+    [JsonPropertyName("lastUpdatedDate")]
+    public DateTimeOffset? LastUpdatedDate { get; init; }
+
     [JsonPropertyName("threadContext")]
     public PullRequestThreadContextResponse? ThreadContext { get; init; }
 
+    [JsonPropertyName("pullRequestThreadContext")]
+    public PullRequestIterationThreadContextResponse? PullRequestThreadContext { get; init; }
+
     [JsonPropertyName("comments")]
-    public IReadOnlyList<PullRequestThreadCommentResponse> Comments { get; init; } = Array.Empty<PullRequestThreadCommentResponse>();
+    public IReadOnlyList<PullRequestThreadCommentResponse>? Comments { get; init; }
 
     [JsonPropertyName("properties")]
     public JsonElement? Properties { get; init; }
+}
+
+internal sealed class PullRequestIterationThreadContextResponse
+{
+    [JsonPropertyName("iterationContext")]
+    public PullRequestIterationContextResponse? IterationContext { get; init; }
+
+    [JsonPropertyName("trackingCriteria")]
+    public PullRequestTrackingCriteriaResponse? TrackingCriteria { get; init; }
+}
+
+internal sealed class PullRequestIterationContextResponse
+{
+    [JsonPropertyName("firstComparingIteration")]
+    public int FirstComparingIteration { get; init; }
+
+    [JsonPropertyName("secondComparingIteration")]
+    public int SecondComparingIteration { get; init; }
+}
+
+internal sealed class PullRequestTrackingCriteriaResponse
+{
+    [JsonPropertyName("origFilePath")]
+    public string? OrigFilePath { get; init; }
+
+    [JsonPropertyName("origRightFileStart")]
+    public PullRequestFilePosition? OrigRightFileStart { get; init; }
+
+    [JsonPropertyName("origRightFileEnd")]
+    public PullRequestFilePosition? OrigRightFileEnd { get; init; }
+
+    [JsonPropertyName("origLeftFileStart")]
+    public PullRequestFilePosition? OrigLeftFileStart { get; init; }
+
+    [JsonPropertyName("origLeftFileEnd")]
+    public PullRequestFilePosition? OrigLeftFileEnd { get; init; }
 }
 
 internal sealed class PullRequestThreadContextResponse
@@ -66,7 +108,7 @@ internal sealed class PullRequestThreadCommentResponse
     public int Id { get; init; }
 
     [JsonPropertyName("content")]
-    public string Content { get; init; } = string.Empty;
+    public string? Content { get; init; }
 
     [JsonPropertyName("isDeleted")]
     public bool IsDeleted { get; init; }
@@ -79,6 +121,12 @@ internal sealed class PullRequestThreadCommentResponse
 
     [JsonPropertyName("lastContentUpdatedDate")]
     public DateTimeOffset? LastContentUpdatedDate { get; init; }
+
+    [JsonPropertyName("lastUpdatedDate")]
+    public DateTimeOffset? LastUpdatedDate { get; init; }
+
+    [JsonPropertyName("usersLiked")]
+    public IReadOnlyList<PullRequestThreadAuthorResponse>? UsersLiked { get; init; }
 }
 
 internal sealed class PullRequestThreadAuthorResponse

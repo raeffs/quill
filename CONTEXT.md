@@ -7,14 +7,15 @@ look at, then acts on it, and quill's language follows that split.
 ## Language
 
 **Triage row**:
-What a listing command emits per result. It holds only what an agent needs to
-choose which item to open next.
+What a command emits while the agent is still choosing. It holds only what an
+agent needs to pick which item to open next.
 _Avoid_: list row, summary, preview
 
 **Detail row**:
-What a single-item command emits. It repeats every key of the triage row
-unchanged. It adds a key only when that key changes what the agent does next. It
-is not a copy of the API response.
+What a command emits once the agent has chosen. It repeats every key of the
+triage row unchanged. It adds a key only when that key changes what the agent
+does next. It is not a copy of the API response. Row count decides nothing: a
+command that returns many rows emits detail rows when no command follows it.
 _Avoid_: full object, view shape
 
 ## Merging
@@ -26,6 +27,42 @@ outcome and the two commits it used.
 _Avoid_: trial merge, merge preview
 
 ## Pull request review
+
+**Review thread**:
+A conversation anchored to code. It has a file, usually a line range, and
+comments people wrote.
+_Avoid_: comment thread, discussion
+
+**System thread**:
+What Azure DevOps records when something happens to a pull request — a push, a
+vote, a reviewer change. It has the shape of a review thread and is not one.
+No author wrote it, the server localises its text, and its content sits in
+properties. Quill reads the properties and never the text.
+_Avoid_: auto thread, generated comment
+
+**Anchor**:
+Where a review thread points in the code. It names a file, and on most threads a
+line range. A thread with no line range points at the whole file.
+_Avoid_: location, pin, marker
+
+**Original position**:
+The anchor as the reviewer left it. It belongs to the iteration the reviewer
+commented on, and the file has often changed since.
+_Avoid_: as posted, old line
+
+**Current position**:
+Where the anchored code sits at the head of the source branch. Azure DevOps
+tracks the code from the original position, and cannot always do so.
+_Avoid_: new line, tracked position, latest position
+
+**Position state**:
+How far an agent can trust a current position. It is one of four: current,
+tracked, deleted, or unverified. Under *current* the reviewer commented on the
+latest iteration, so nothing has moved. Under *tracked* Azure DevOps followed
+the code and found it. Under *deleted* Azure DevOps followed the code and found
+it gone, and the current position marks where it was. Under *unverified* Azure
+DevOps tracked nothing, and the current position repeats the original one.
+_Avoid_: confidence, accuracy, tracking status
 
 **Vote**:
 A reviewer's verdict on a pull request. It is one of five: approved, approved

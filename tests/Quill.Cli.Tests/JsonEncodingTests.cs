@@ -141,6 +141,89 @@ public class JsonEncodingTests
         json.ShouldContain("\"isContainer\":true");
     }
 
+    [Fact]
+    public void PullRequestThreadResult_CarriesBothPositionsAndOmitsOrigFilePath()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PullRequestThreadResult> { MakeThreadResult(origFilePath: null) },
+            CommandHelpers.Context.ListPullRequestThreadResult);
+
+        json.ShouldContain("\"startLine\":57");
+        json.ShouldContain("\"origStartLine\":40");
+        json.ShouldContain("\"origStartColumn\":1");
+        json.ShouldContain("\"origEndColumn\":null");
+        json.ShouldContain("\"positionState\":\"tracked\"");
+        json.ShouldContain("\"publishedDate\":\"2026-05-13T09:00:00Z\"");
+        json.ShouldContain("\"lastUpdatedDate\":\"2026-05-14T16:30:00Z\"");
+        json.ShouldContain("\"usersLiked\":[\"Jane Doe\"]");
+        json.ShouldNotContain("origFilePath");
+    }
+
+    [Fact]
+    public void PullRequestThreadResult_RenamedFile_EmitsOrigFilePath()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PullRequestThreadResult> { MakeThreadResult(origFilePath: "src/Importer/Retry.cs") },
+            CommandHelpers.Context.ListPullRequestThreadResult);
+
+        json.ShouldContain("\"origFilePath\":\"src/Importer/Retry.cs\"");
+    }
+
+    [Fact]
+    public void CommentResult_KeepsTheWorkItemCommentShape()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<CommentResult>
+            {
+                new()
+                {
+                    Id = 1,
+                    Author = "Jane Doe",
+                    CreatedDate = "2026-04-11T08:00:00Z",
+                    ModifiedDate = null,
+                    Text = "Blocked on dependency.",
+                },
+            },
+            CommandHelpers.Context.ListCommentResult);
+
+        json.ShouldNotContain("usersLiked");
+        json.ShouldNotContain("lastUpdatedDate");
+    }
+
+    private static PullRequestThreadResult MakeThreadResult(string? origFilePath)
+    {
+        return new PullRequestThreadResult
+        {
+            Id = 88123,
+            Status = "active",
+            FilePath = "src/Importer/RetryPolicy.cs",
+            Side = "right",
+            StartLine = 57,
+            EndLine = 57,
+            PositionState = "tracked",
+            OrigFilePath = origFilePath,
+            OrigStartLine = 40,
+            OrigEndLine = 40,
+            OrigStartColumn = 1,
+            OrigEndColumn = null,
+            PublishedDate = "2026-05-13T09:00:00Z",
+            LastUpdatedDate = "2026-05-14T16:30:00Z",
+            Comments =
+            [
+                new PullRequestCommentResult
+                {
+                    Id = 1,
+                    Author = "John Roe",
+                    CreatedDate = "2026-05-13T09:00:00Z",
+                    ModifiedDate = null,
+                    LastUpdatedDate = "2026-05-13T09:00:00Z",
+                    UsersLiked = ["Jane Doe"],
+                    Text = "Consider backoff.",
+                },
+            ],
+        };
+    }
+
     private static PullRequestViewResult MakeViewResult(IReadOnlyList<PullRequestReviewerResult> reviewers)
     {
         return new PullRequestViewResult

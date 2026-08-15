@@ -230,8 +230,57 @@ public class PullRequestThreadResult
     [JsonPropertyName("endLine")]
     public int? EndLine { get; init; }
 
+    [JsonPropertyName("positionState")]
+    public string? PositionState { get; init; }
+
+    [JsonPropertyName("origFilePath")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OrigFilePath { get; init; }
+
+    [JsonPropertyName("origStartLine")]
+    public int? OrigStartLine { get; init; }
+
+    [JsonPropertyName("origEndLine")]
+    public int? OrigEndLine { get; init; }
+
+    [JsonPropertyName("origStartColumn")]
+    public int? OrigStartColumn { get; init; }
+
+    [JsonPropertyName("origEndColumn")]
+    public int? OrigEndColumn { get; init; }
+
+    [JsonPropertyName("publishedDate")]
+    public required string PublishedDate { get; init; }
+
+    [JsonPropertyName("lastUpdatedDate")]
+    public required string LastUpdatedDate { get; init; }
+
     [JsonPropertyName("comments")]
-    public required IReadOnlyList<CommentResult> Comments { get; init; }
+    public required IReadOnlyList<PullRequestCommentResult> Comments { get; init; }
+}
+
+public class PullRequestCommentResult
+{
+    [JsonPropertyName("id")]
+    public required int Id { get; init; }
+
+    [JsonPropertyName("author")]
+    public string? Author { get; init; }
+
+    [JsonPropertyName("createdDate")]
+    public required string CreatedDate { get; init; }
+
+    [JsonPropertyName("modifiedDate")]
+    public string? ModifiedDate { get; init; }
+
+    [JsonPropertyName("lastUpdatedDate")]
+    public required string LastUpdatedDate { get; init; }
+
+    [JsonPropertyName("usersLiked")]
+    public required IReadOnlyList<string> UsersLiked { get; init; }
+
+    [JsonPropertyName("text")]
+    public required string Text { get; init; }
 }
 
 public class PullRequestViewResult

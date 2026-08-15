@@ -34,7 +34,7 @@ Use this table to pick the command. Run its help for the rest.
 | `wi comments` | You want the discussion on a work item. |
 | `pr list` | You want to find pull requests — by branch, by author, or the ones waiting on you (`--reviewer @me`). |
 | `pr view` | You want one pull request with its description and its linked work items. |
-| `pr threads` | You want the review comments on a pull request, with file and line. |
+| `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
 
 ## Prerequisites
 
@@ -108,6 +108,11 @@ These are the things the help output and a successful run do not tell you.
 - The list response truncates every description to 400 characters, so `pr list` omits the key entirely. Call `pr view` for the description.
 - `labels` holds active label names only, and is `[]` when a pull request carries none. `mergeStatus` is the Azure DevOps status verbatim, `null` when the server sends none.
 - `author` is `null` on a comment whose identity no longer resolves, for example a deleted user. `modifiedDate` is `null` until someone edits the comment.
+- `startLine` and `endLine` of `pr threads` name the line at the head of the source branch, not the line the reviewer pointed at. `origStartLine`, `origEndLine`, `origStartColumn` and `origEndColumn` name the reviewer's own anchor. Compare the two to see whether the code moved.
+- `positionState` says how far to trust `startLine`. Under `current` the reviewer commented on the latest iteration. Under `tracked` Azure DevOps followed the code and found it. Under `deleted` the code is gone, and `startLine` marks where it was. Under `unverified` Azure DevOps tracked nothing, so open the file before you act. All four keys are `null` on a thread with no file.
+- `origFilePath` appears only when the file was renamed after the reviewer commented. It is absent otherwise, not `null`.
+- The columns belong to the original position alone. Azure DevOps drops the character range when it re-tracks an anchor, so a tracked thread reports `origEndColumn: null`.
+- Quill does not read the file to check a line it prints. On `unverified` it reports the stale line rather than no line. The Azure DevOps web UI shows the same stale line, so comparing the two proves nothing.
 
 ## Exit codes
 

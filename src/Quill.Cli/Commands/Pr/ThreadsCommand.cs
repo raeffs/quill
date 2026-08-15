@@ -82,7 +82,7 @@ internal static class ThreadsCommand
             var results = new List<PullRequestThreadResult>();
             foreach (var thread in filtered)
             {
-                var commentResults = new List<CommentResult>(thread.Comments.Count);
+                var commentResults = new List<PullRequestCommentResult>(thread.Comments.Count);
                 foreach (var comment in thread.Comments)
                 {
                     var markdown = string.IsNullOrEmpty(comment.TextHtml)
@@ -90,7 +90,7 @@ internal static class ThreadsCommand
                         : (await MarkdownConverter.ToMarkdownAsync(
                             comment.TextHtml, config.ServerUrl, config.Collection, config.Project, workItemClient, logger)).TrimEnd();
 
-                    commentResults.Add(CommentsResultBuilder.Build(comment, markdown));
+                    commentResults.Add(PullRequestThreadResultBuilder.BuildComment(comment, markdown));
                 }
 
                 results.Add(PullRequestThreadResultBuilder.Build(thread, commentResults));

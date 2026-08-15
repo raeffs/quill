@@ -13,6 +13,9 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
     private const string RefsHeadsPrefix = "refs/heads/";
     private const string CodeReviewThreadTypeKey = "CodeReviewThreadType";
 
+    // Azure DevOps writes this on an end offset to mean "to the end of the line"
+    private const int EndOfLineOffset = 2147483647;
+
     private static readonly HashSet<string> BinaryExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".bmp", ".tiff", ".svg",
@@ -22,6 +25,9 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         ".mp3", ".mp4", ".wav", ".avi", ".mov", ".mkv",
         ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     };
+
+    private readonly Dictionary<string, IReadOnlyList<PullRequestIterationResponse>> _iterationsByPullRequest =
+        new(StringComparer.Ordinal);
 
     private readonly HttpClient _httpClient;
     private readonly string _serverUrl;
@@ -127,7 +133,16 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prId);
         ArgumentException.ThrowIfNullOrWhiteSpace(repo);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}/threads?api-version={AzureDevOpsConstants.ApiVersion}";
+        var iterations = await GetIterationsAsync(prId, repo, cancellationToken);
+        var latestIteration = LatestIteration(iterations)?.Id;
+
+        // Both parameters are required. `$iteration` alone is ignored, and `$baseIteration=0`
+        // normalises to the whole-pull-request diff, which is what re-tracks the anchors. An empty
+        // pull request has no iteration to scope to, so it falls back to the plain call. See ADR 0006.
+        var scope = latestIteration is { } n
+            ? $"$iteration={n.ToString(CultureInfo.InvariantCulture)}&$baseIteration=0&"
+            : string.Empty;
+        var url = $"{PullRequestRoot(prId, repo)}/threads?{scope}api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -149,21 +164,24 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
                 continue;
             }
 
-            var liveComments = new List<WorkItemComment>(thread.Comments.Count);
-            foreach (var c in thread.Comments)
+            var comments = thread.Comments ?? Array.Empty<PullRequestThreadCommentResponse>();
+            var liveComments = new List<PullRequestComment>(comments.Count);
+            foreach (var c in comments)
             {
-                if (c.IsDeleted)
+                if (c.IsDeleted || c.Content is null)
                 {
                     continue;
                 }
 
                 var modified = c.LastContentUpdatedDate is { } m && m != c.PublishedDate ? (DateTimeOffset?)m : null;
-                liveComments.Add(new WorkItemComment
+                liveComments.Add(new PullRequestComment
                 {
                     Id = c.Id,
                     Author = string.IsNullOrEmpty(c.Author?.DisplayName) ? null : c.Author.DisplayName,
                     CreatedDate = c.PublishedDate,
                     ModifiedDate = modified,
+                    LastUpdatedDate = c.LastUpdatedDate ?? c.PublishedDate,
+                    UsersLiked = ToDisplayNames(c.UsersLiked),
                     TextHtml = c.Content,
                 });
             }
@@ -175,17 +193,24 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
             liveComments.Sort((a, b) => a.CreatedDate.CompareTo(b.CreatedDate));
 
-            var (filePath, side, startLine, endLine) = ResolveThreadLocation(thread.ThreadContext);
+            var position = ResolveThreadPosition(thread, latestIteration);
 
             results.Add(new PullRequestThread
             {
                 Id = thread.Id,
                 Status = thread.Status ?? string.Empty,
                 PublishedDate = thread.PublishedDate,
-                FilePath = filePath,
-                Side = side,
-                StartLine = startLine,
-                EndLine = endLine,
+                LastUpdatedDate = thread.LastUpdatedDate ?? thread.PublishedDate,
+                FilePath = position.FilePath,
+                Side = position.Side,
+                StartLine = position.StartLine,
+                EndLine = position.EndLine,
+                PositionState = position.State,
+                OrigFilePath = position.OrigFilePath,
+                OrigStartLine = position.OrigStartLine,
+                OrigEndLine = position.OrigEndLine,
+                OrigStartColumn = position.OrigStartColumn,
+                OrigEndColumn = position.OrigEndColumn,
                 Comments = liveComments,
             });
         }
@@ -231,21 +256,14 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prId);
         ArgumentException.ThrowIfNullOrWhiteSpace(repo);
 
-        var prRoot = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}";
+        var prRoot = PullRequestRoot(prId, repo);
 
-        var iterationsUrl = $"{prRoot}/iterations?api-version={AzureDevOpsConstants.ApiVersion}";
-        var iterationsResponse = await _httpClient.GetAsync(iterationsUrl, cancellationToken);
-        iterationsResponse.EnsureSuccessStatusCode();
-        var iterationsDto = await iterationsResponse.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestIterationsResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request iterations response.");
-
-        if (iterationsDto.Value.Count == 0)
+        var iterations = await GetIterationsAsync(prId, repo, cancellationToken);
+        if (LatestIteration(iterations) is not { } latest)
         {
             return EmptyDiffStats();
         }
 
-        var latest = iterationsDto.Value[^1];
         var iterationId = latest.Id;
         var baseCommit = latest.CommonRefCommit?.CommitId;
         var targetCommit = latest.SourceRefCommit?.CommitId;
@@ -474,27 +492,164 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return properties.Value.TryGetProperty(CodeReviewThreadTypeKey, out _);
     }
 
-    private static (string? FilePath, string? Side, int? StartLine, int? EndLine) ResolveThreadLocation(
-        PullRequestThreadContextResponse? context)
+    private string PullRequestRoot(int prId, string repo) =>
+        $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}";
+
+    private async Task<IReadOnlyList<PullRequestIterationResponse>> GetIterationsAsync(
+        int prId,
+        string repo,
+        CancellationToken cancellationToken)
     {
-        if (context is null || string.IsNullOrEmpty(context.FilePath))
+        var key = $"{prId.ToString(CultureInfo.InvariantCulture)}/{repo}";
+        if (_iterationsByPullRequest.TryGetValue(key, out var cached))
         {
-            return (null, null, null, null);
+            return cached;
         }
 
-        var filePath = context.FilePath.StartsWith('/') ? context.FilePath[1..] : context.FilePath;
+        var url = $"{PullRequestRoot(prId, repo)}/iterations?api-version={AzureDevOpsConstants.ApiVersion}";
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.PullRequestIterationsResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize pull request iterations response.");
+
+        _iterationsByPullRequest[key] = dto.Value;
+        return dto.Value;
+    }
+
+    private static PullRequestIterationResponse? LatestIteration(IReadOnlyList<PullRequestIterationResponse> iterations)
+    {
+        PullRequestIterationResponse? latest = null;
+        foreach (var iteration in iterations)
+        {
+            if (latest is null || iteration.Id > latest.Id)
+            {
+                latest = iteration;
+            }
+        }
+
+        return latest;
+    }
+
+    private static ThreadPosition ResolveThreadPosition(PullRequestThreadResponse thread, int? latestIteration)
+    {
+        var context = thread.ThreadContext;
+        if (context is null || string.IsNullOrEmpty(context.FilePath))
+        {
+            return new ThreadPosition();
+        }
+
+        var filePath = StripLeadingSlash(context.FilePath);
+        var (side, start, end) = ResolveAnchor(context);
+
+        // Azure DevOps re-tracks the anchor and moves the reviewer's own position into the tracking
+        // criteria. Without them, the two positions are the same one.
+        var criteria = thread.PullRequestThreadContext?.TrackingCriteria;
+        var (trackedStart, trackedEnd) = ResolveTrackingAnchor(criteria);
+        var origStart = trackedStart ?? start;
+        var origEnd = trackedEnd ?? end;
+
+        var origFilePath = criteria?.OrigFilePath is { Length: > 0 } tracked
+            ? StripLeadingSlash(tracked)
+            : null;
+
+        return new ThreadPosition
+        {
+            FilePath = filePath,
+            Side = side,
+            StartLine = start?.Line,
+            EndLine = end?.Line,
+            State = DerivePositionState(thread.PullRequestThreadContext, latestIteration, trackedStart, trackedEnd),
+            OrigFilePath = string.Equals(origFilePath, filePath, StringComparison.Ordinal) ? null : origFilePath,
+            OrigStartLine = origStart?.Line,
+            OrigEndLine = origEnd?.Line,
+            OrigStartColumn = ToColumn(origStart?.Offset),
+            OrigEndColumn = ToColumn(origEnd?.Offset),
+        };
+    }
+
+    private static (string? Side, PullRequestFilePosition? Start, PullRequestFilePosition? End) ResolveAnchor(
+        PullRequestThreadContextResponse context)
+    {
         if (context.RightFileStart is { } rs)
         {
-            return (filePath, "right", rs.Line, context.RightFileEnd?.Line ?? rs.Line);
+            return ("right", rs, context.RightFileEnd ?? rs);
         }
 
         if (context.LeftFileStart is { } ls)
         {
-            return (filePath, "left", ls.Line, context.LeftFileEnd?.Line ?? ls.Line);
+            return ("left", ls, context.LeftFileEnd ?? ls);
         }
 
-        return (filePath, null, null, null);
+        return (null, null, null);
+    }
+
+    private static (PullRequestFilePosition? Start, PullRequestFilePosition? End) ResolveTrackingAnchor(
+        PullRequestTrackingCriteriaResponse? criteria)
+    {
+        if (criteria?.OrigRightFileStart is { } rs)
+        {
+            return (rs, criteria.OrigRightFileEnd ?? rs);
+        }
+
+        if (criteria?.OrigLeftFileStart is { } ls)
+        {
+            return (ls, criteria.OrigLeftFileEnd ?? ls);
+        }
+
+        return (null, null);
+    }
+
+    private static string DerivePositionState(
+        PullRequestIterationThreadContextResponse? context,
+        int? latestIteration,
+        PullRequestFilePosition? trackedStart,
+        PullRequestFilePosition? trackedEnd)
+    {
+        // The reviewer commented on the latest iteration, so nothing can have moved.
+        if (latestIteration is { } n && context?.IterationContext?.FirstComparingIteration == n)
+        {
+            return "current";
+        }
+
+        // Azure DevOps widened the anchor to whole lines, which it does when the code survives.
+        if (trackedEnd?.Offset == EndOfLineOffset)
+        {
+            return "tracked";
+        }
+
+        // A zero-width caret marks the join point where the code was.
+        if (trackedStart is { Offset: 1 } start && trackedEnd is { Offset: 1 } end && start.Line == end.Line)
+        {
+            return "deleted";
+        }
+
+        return "unverified";
+    }
+
+    private static int? ToColumn(int? offset)
+    {
+        return offset is > 0 and not EndOfLineOffset ? offset : null;
+    }
+
+    private static IReadOnlyList<string> ToDisplayNames(IReadOnlyList<PullRequestThreadAuthorResponse>? identities)
+    {
+        if (identities is null || identities.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        var names = new List<string>(identities.Count);
+        foreach (var identity in identities)
+        {
+            if (!string.IsNullOrEmpty(identity.DisplayName))
+            {
+                names.Add(identity.DisplayName);
+            }
+        }
+
+        return names;
     }
 
     private PullRequest MapToPullRequest(PullRequestItemResponse dto)
@@ -566,5 +721,28 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return branch.StartsWith("refs/", StringComparison.Ordinal)
             ? branch
             : RefsHeadsPrefix + branch;
+    }
+
+    private sealed class ThreadPosition
+    {
+        public string? FilePath { get; init; }
+
+        public string? Side { get; init; }
+
+        public int? StartLine { get; init; }
+
+        public int? EndLine { get; init; }
+
+        public string? State { get; init; }
+
+        public string? OrigFilePath { get; init; }
+
+        public int? OrigStartLine { get; init; }
+
+        public int? OrigEndLine { get; init; }
+
+        public int? OrigStartColumn { get; init; }
+
+        public int? OrigEndColumn { get; init; }
     }
 }

@@ -199,7 +199,8 @@ public class PullRequestViewResultBuilderTests
             new PullRequestThreadResult
             {
                 Id = 1, Status = "active", FilePath = null, Side = null, StartLine = null, EndLine = null,
-                Comments = Array.Empty<CommentResult>(),
+                PublishedDate = "2026-05-13T09:00:00Z", LastUpdatedDate = "2026-05-13T09:00:00Z",
+                Comments = Array.Empty<PullRequestCommentResult>(),
             },
         };
 

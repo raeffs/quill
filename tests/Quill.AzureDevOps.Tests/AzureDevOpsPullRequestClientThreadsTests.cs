@@ -61,25 +61,23 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_HitsRepoScopedThreadsEndpoint()
     {
         // Arrange
-        using var handler = new FakeHttpHandler("""{"value":[]}""", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        using var handler = ThreadsHandler("""{"value":[]}""");
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
 
         // Assert
         threads.ShouldBeEmpty();
-        var url = handler.LastRequest!.RequestUri!.ToString();
-        url.ShouldStartWith($"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/git/repositories/importer/pullRequests/4711/threads?");
+        handler.Requests[1].Url!.ShouldStartWith($"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/git/repositories/importer/pullRequests/4711/threads?");
     }
 
     [Fact]
     public async Task GetThreadsAsync_MapsFileScopedRightSideThread()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -103,11 +101,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -131,7 +127,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_LeftSideThread_MapsToLeft()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -154,11 +150,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -175,7 +169,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_OverallThread_AllLocationFieldsNull()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -195,11 +189,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -217,7 +209,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_DeletedThread_IsFiltered()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -239,11 +231,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -256,7 +246,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_SystemThread_IsFiltered()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -280,11 +270,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -297,7 +285,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_ThreadWithAllDeletedComments_DropsOut()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -310,11 +298,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -327,7 +313,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_DeletedComments_AreFilteredWithinThread()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -341,11 +327,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -360,7 +344,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_SortsThreadsNewestFirstAndCommentsAscending()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -382,11 +366,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -400,7 +382,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_UnresolvedAuthor_AuthorIsNull()
     {
         // Arrange
-        var responseJson = """
+        using var handler = ThreadsHandler("""
         {
             "value": [
                 {
@@ -413,11 +395,9 @@ public class AzureDevOpsPullRequestClientThreadsTests
                 }
             ]
         }
-        """;
-        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        """);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         var threads = await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -430,10 +410,12 @@ public class AzureDevOpsPullRequestClientThreadsTests
     public async Task GetThreadsAsync_Non2xx_ThrowsHttpRequestException()
     {
         // Arrange
-        using var handler = new FakeHttpHandler("""{"message":"nope"}""", HttpStatusCode.NotFound);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        using var handler = new RecordingHandler(
+        [
+            new FakeResponse(HttpStatusCode.NotFound, """{"message":"nope"}"""),
+        ]);
+        using var httpClient = NewHttpClient(handler);
+        var client = NewClient(httpClient);
 
         // Act
         Func<Task> act = () => client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -475,4 +457,16 @@ public class AzureDevOpsPullRequestClientThreadsTests
         // Assert
         await Should.ThrowAsync<ArgumentException>(act);
     }
+
+    private static RecordingHandler ThreadsHandler(string threadsJson) => new(
+    [
+        new FakeResponse(HttpStatusCode.OK, """{"value":[{"id":1}]}"""),
+        new FakeResponse(HttpStatusCode.OK, threadsJson),
+    ]);
+
+    private static HttpClient NewHttpClient(RecordingHandler handler) =>
+        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+
+    private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(
+        httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 }
