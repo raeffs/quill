@@ -18,8 +18,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: "hi",
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.Id.ShouldBe(42);
@@ -36,7 +35,6 @@ public class PullRequestViewResultBuilderTests
         result.Description.ShouldBe("hi");
         result.WorkItems.ShouldBeEmpty();
         result.Threads.ShouldBeNull();
-        result.DiffStats.ShouldBeNull();
     }
 
     [Fact]
@@ -55,8 +53,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.MyVote.ShouldBe("waitingForAuthor");
@@ -81,8 +78,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.MergeStatus.ShouldBe("conflicts");
@@ -112,8 +108,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.Reviewers.Select(r => r.Vote).ShouldBe(
@@ -136,8 +131,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.Reviewers.Count.ShouldBe(2);
@@ -161,8 +155,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.LastMergeSourceCommit.ShouldBe("1111111111111111111111111111111111111111");
@@ -181,8 +174,7 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: null);
+            threads: null);
 
         // Assert
         result.MyVote.ShouldBeNull();
@@ -210,49 +202,11 @@ public class PullRequestViewResultBuilderTests
             currentUserId: "me",
             markdownDescription: string.Empty,
             workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: threads,
-            diffStats: null);
+            threads: threads);
 
         // Assert
         result.Threads.ShouldNotBeNull();
         result.Threads.ShouldHaveSingleItem().Id.ShouldBe(1);
-        result.DiffStats.ShouldBeNull();
-    }
-
-    [Fact]
-    public void Build_WithDiffStats_MapsAggregateAndFiles()
-    {
-        // Arrange
-        var pr = MakePullRequest([]);
-        var stats = new PullRequestDiffStats
-        {
-            TotalFiles = 2,
-            TotalAdded = 12,
-            TotalRemoved = 3,
-            Files =
-            [
-                new PullRequestDiffFile { Path = "src/Foo.cs", ChangeType = "edit", Added = 12, Removed = 3 },
-                new PullRequestDiffFile { Path = "src/Bar.cs", ChangeType = "rename", OldPath = "src/Baz.cs", Added = 0, Removed = 0 },
-            ],
-        };
-
-        // Act
-        var result = PullRequestViewResultBuilder.Build(
-            pr,
-            currentUserId: "me",
-            markdownDescription: string.Empty,
-            workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
-            threads: null,
-            diffStats: stats);
-
-        // Assert
-        result.DiffStats.ShouldNotBeNull();
-        result.DiffStats!.TotalFiles.ShouldBe(2);
-        result.DiffStats.TotalAdded.ShouldBe(12);
-        result.DiffStats.TotalRemoved.ShouldBe(3);
-        result.DiffStats.Files.Count.ShouldBe(2);
-        result.DiffStats.Files[1].ChangeType.ShouldBe("rename");
-        result.DiffStats.Files[1].OldPath.ShouldBe("src/Baz.cs");
     }
 
     [Fact]

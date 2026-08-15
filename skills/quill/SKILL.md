@@ -95,7 +95,6 @@ These are the things the help output and a successful run do not tell you.
 - In `wi tree`, a bare `{"id": 99999}` node means the child was clipped by `--depth`, not that it has no children. A fetched node with no children has `"children": []`.
 - `wi search` silently omits items that fail to load. Search is a discovery list, not a structural view.
 - `wi tree` walks parent-child relations only. It does not follow `Related` links.
-- In `pr view --with-diff-stats`, `oldPath` appears only on `rename` entries and `binary: true` appears only on binary files. Both keys are absent otherwise, not `null`. Binary files always report `added: 0, removed: 0`.
 - `pr list` and `pr view` name votes: `approved`, `approvedWithSuggestions`, `waitingForAuthor`, `rejected`, `noVote`. `myVote` and every `reviewers[].vote` of `pr view` carry one of those names. `myVote` is `null` when the authenticated user is not a reviewer — a different fact from `noVote`. `myIsRequired` is `null` in the same case.
 - The `votes` counts fold `approvedWithSuggestions` into `approved`, because the suggestions live in the threads. They skip container reviewers — a group attached as a reviewer casts no vote of its own, and counting it would inflate `noVote`.
 - `lastMergeSourceCommit` and `lastMergeTargetCommit` on `pr view` are the two commits of the last merge attempt. They are not merge bases. To diff the pull request in a clone, use three dots: `git diff <lastMergeTargetCommit>...<lastMergeSourceCommit>`. A two-dot diff includes commits the pull request does not contain.

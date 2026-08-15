@@ -1,7 +1,7 @@
 # Nest collections, keep scalars flat
 
 Quill nests a key only when it holds a collection or a set of counts:
-`reviewers`, `threads`, `workItems`, `votes`, `diffStats`. Related scalars stay
+`reviewers`, `threads`, `workItems`, `votes`. Related scalars stay
 flat, side by side. `myVote` and `myIsRequired` are siblings rather than a `me`
 object. The merge fields sit next to `mergeStatus` rather than inside a `merge`
 object.

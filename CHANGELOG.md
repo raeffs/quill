@@ -14,6 +14,10 @@
 - `quill pr list` returns draft pull requests.
 - `quill pr list --reviewer` has no default.
 
+### Removed
+
+- `quill pr view` no longer offers `--with-diff-stats`.
+
 ### Fixed
 
 - A pull request payload without a `reviewers` key no longer crashes `quill pr list` and `quill pr view`.

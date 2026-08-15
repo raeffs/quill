@@ -634,37 +634,6 @@ public class AzureDevOpsPullRequestClientThreadPositionsTests
         threads.ShouldBeEmpty();
     }
 
-    [Fact]
-    public async Task GetThreadsAsync_ThenGetDiffStatsAsync_ReadsIterationsOnce()
-    {
-        // Arrange
-        var iterations = """
-        {
-            "value": [{
-                "id": 2,
-                "sourceRefCommit": {"commitId": "head"},
-                "commonRefCommit": {"commitId": "base"}
-            }]
-        }
-        """;
-        using var handler = new RecordingHandler(
-        [
-            new FakeResponse(HttpStatusCode.OK, iterations),
-            new FakeResponse(HttpStatusCode.OK, """{"value":[]}"""),
-            new FakeResponse(HttpStatusCode.OK, """{"changeEntries":[]}"""),
-        ]);
-        using var httpClient = NewHttpClient(handler);
-        var client = NewClient(httpClient);
-
-        // Act
-        await client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
-        await client.GetDiffStatsAsync(4711, "importer", TestContext.Current.CancellationToken);
-
-        // Assert
-        handler.Requests.Count.ShouldBe(3);
-        handler.Requests.Count(r => r.Url!.Contains("/iterations?", StringComparison.Ordinal)).ShouldBe(1);
-    }
-
     private static string Threads(string threadObject) =>
         $$"""{"value":[{{threadObject}}]}""";
 

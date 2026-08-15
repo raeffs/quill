@@ -10,8 +10,7 @@ public static class PullRequestViewResultBuilder
         string currentUserId,
         string markdownDescription,
         IReadOnlyList<PullRequestLinkedWorkItemResult> workItems,
-        IReadOnlyList<PullRequestThreadResult>? threads,
-        PullRequestDiffStats? diffStats)
+        IReadOnlyList<PullRequestThreadResult>? threads)
     {
         var matching = pullRequest.Reviewers.FirstOrDefault(
             r => string.Equals(r.Id, currentUserId, StringComparison.Ordinal));
@@ -52,7 +51,6 @@ public static class PullRequestViewResultBuilder
             Description = markdownDescription,
             WorkItems = workItems,
             Threads = threads,
-            DiffStats = diffStats is null ? null : BuildDiffStats(diffStats),
         };
     }
 
@@ -75,31 +73,6 @@ public static class PullRequestViewResultBuilder
         {
             Id = id,
             Error = error,
-        };
-    }
-
-    private static PullRequestDiffStatsResult BuildDiffStats(PullRequestDiffStats stats)
-    {
-        var files = new List<PullRequestDiffFileResult>(stats.Files.Count);
-        foreach (var f in stats.Files)
-        {
-            files.Add(new PullRequestDiffFileResult
-            {
-                Path = f.Path,
-                ChangeType = f.ChangeType,
-                OldPath = f.OldPath,
-                Added = f.Added,
-                Removed = f.Removed,
-                Binary = f.Binary,
-            });
-        }
-
-        return new PullRequestDiffStatsResult
-        {
-            TotalFiles = stats.TotalFiles,
-            TotalAdded = stats.TotalAdded,
-            TotalRemoved = stats.TotalRemoved,
-            Files = files,
         };
     }
 

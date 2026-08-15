@@ -19,9 +19,4 @@ public interface IAzureDevOpsPullRequestClient
         int prId,
         string repo,
         CancellationToken cancellationToken = default);
-
-    Task<PullRequestDiffStats> GetDiffStatsAsync(
-        int prId,
-        string repo,
-        CancellationToken cancellationToken = default);
 }

@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using Quill.AzureDevOps.Dto;
 using Quill.Core;
@@ -15,16 +14,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
     // Azure DevOps writes this on an end offset to mean "to the end of the line"
     private const int EndOfLineOffset = 2147483647;
-
-    private static readonly HashSet<string> BinaryExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".bmp", ".tiff", ".svg",
-        ".pdf", ".zip", ".tar", ".gz", ".7z", ".rar",
-        ".exe", ".dll", ".so", ".dylib", ".bin", ".class", ".jar",
-        ".ttf", ".otf", ".woff", ".woff2", ".eot",
-        ".mp3", ".mp4", ".wav", ".avi", ".mov", ".mkv",
-        ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-    };
 
     private readonly Dictionary<string, IReadOnlyList<PullRequestIterationResponse>> _iterationsByPullRequest =
         new(StringComparer.Ordinal);
@@ -138,7 +127,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         // Both parameters are required. `$iteration` alone is ignored, and `$baseIteration=0`
         // normalises to the whole-pull-request diff, which is what re-tracks the anchors. An empty
-        // pull request has no iteration to scope to, so it falls back to the plain call. See ADR 0006.
+        // pull request has no iteration to scope to, so it falls back to the plain call.
         var scope = latestIteration is { } n
             ? $"$iteration={n.ToString(CultureInfo.InvariantCulture)}&$baseIteration=0&"
             : string.Empty;
@@ -248,238 +237,9 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return ids;
     }
 
-    public async Task<PullRequestDiffStats> GetDiffStatsAsync(
-        int prId,
-        string repo,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(repo);
-
-        var prRoot = PullRequestRoot(prId, repo);
-
-        var iterations = await GetIterationsAsync(prId, repo, cancellationToken);
-        if (LatestIteration(iterations) is not { } latest)
-        {
-            return EmptyDiffStats();
-        }
-
-        var iterationId = latest.Id;
-        var baseCommit = latest.CommonRefCommit?.CommitId;
-        var targetCommit = latest.SourceRefCommit?.CommitId;
-
-        var changesUrl = $"{prRoot}/iterations/{iterationId.ToString(CultureInfo.InvariantCulture)}/changes?$top=10000&api-version={AzureDevOpsConstants.ApiVersion}";
-        var changesResponse = await _httpClient.GetAsync(changesUrl, cancellationToken);
-        changesResponse.EnsureSuccessStatusCode();
-        var changesDto = await changesResponse.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestIterationChangesResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request iteration changes response.");
-
-        var fileChanges = new List<(string Path, string ChangeType, string? OriginalPath)>();
-        foreach (var entry in changesDto.ChangeEntries)
-        {
-            if (entry.Item is null || entry.Item.IsFolder || string.IsNullOrEmpty(entry.Item.Path))
-            {
-                continue;
-            }
-
-            fileChanges.Add((entry.Item.Path, entry.ChangeType, entry.OriginalPath));
-        }
-
-        if (fileChanges.Count == 0)
-        {
-            return EmptyDiffStats();
-        }
-
-        var lineCountsByPath = new Dictionary<string, (int Added, int Removed)>(StringComparer.Ordinal);
-        var binaryByPath = new HashSet<string>(StringComparer.Ordinal);
-
-        if (!string.IsNullOrEmpty(baseCommit) && !string.IsNullOrEmpty(targetCommit))
-        {
-            var diffParams = new List<PullRequestFileDiffParam>(fileChanges.Count);
-            foreach (var change in fileChanges)
-            {
-                if (IsAddChange(change.ChangeType))
-                {
-                    diffParams.Add(new PullRequestFileDiffParam { Path = change.Path, OriginalPath = string.Empty });
-                }
-                else if (IsDeleteChange(change.ChangeType))
-                {
-                    diffParams.Add(new PullRequestFileDiffParam { Path = string.Empty, OriginalPath = change.OriginalPath ?? change.Path });
-                }
-                else
-                {
-                    diffParams.Add(new PullRequestFileDiffParam { Path = change.Path, OriginalPath = change.OriginalPath ?? change.Path });
-                }
-            }
-
-            var fileDiffsUrl = $"{prRoot}/fileDiffs?baseVersionCommit={Uri.EscapeDataString(baseCommit)}&targetVersionCommit={Uri.EscapeDataString(targetCommit)}&api-version={AzureDevOpsConstants.ApiVersion}";
-            var requestDto = new PullRequestFileDiffsRequest { FileDiffParams = diffParams };
-            var requestJson = JsonSerializer.Serialize(requestDto, AzureDevOpsJsonContext.Default.PullRequestFileDiffsRequest);
-            using var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-            var diffsResponse = await _httpClient.PostAsync(fileDiffsUrl, requestContent, cancellationToken);
-            diffsResponse.EnsureSuccessStatusCode();
-
-            var diffEntries = await diffsResponse.Content.ReadFromJsonAsync(
-                AzureDevOpsJsonContext.Default.ListPullRequestFileDiffEntry, cancellationToken);
-
-            if (diffEntries is not null)
-            {
-                foreach (var entry in diffEntries)
-                {
-                    var key = string.IsNullOrEmpty(entry.Path) ? entry.OriginalPath : entry.Path;
-                    if (string.IsNullOrEmpty(key))
-                    {
-                        continue;
-                    }
-
-                    if (entry.BinaryContent)
-                    {
-                        binaryByPath.Add(key);
-                        continue;
-                    }
-
-                    int added = 0;
-                    int removed = 0;
-                    foreach (var block in entry.LineCharBlocks)
-                    {
-                        if (block.Modified is { LineCount: > 0 } modified)
-                        {
-                            added += modified.LineCount;
-                        }
-
-                        if (block.Original is { LineCount: > 0 } original)
-                        {
-                            removed += original.LineCount;
-                        }
-                    }
-
-                    lineCountsByPath[key] = (added, removed);
-                }
-            }
-        }
-
-        var files = new List<PullRequestDiffFile>(fileChanges.Count);
-        int totalAdded = 0;
-        int totalRemoved = 0;
-        foreach (var change in fileChanges)
-        {
-            var changeType = NormalizeChangeType(change.ChangeType);
-            var displayPath = StripLeadingSlash(change.Path);
-            var oldDisplayPath = change.OriginalPath is null ? null : StripLeadingSlash(change.OriginalPath);
-            var isBinary = binaryByPath.Contains(change.Path) || HasBinaryExtension(displayPath);
-
-            var isRename = string.Equals(changeType, "rename", StringComparison.Ordinal);
-
-            int added;
-            int removed;
-            if (isBinary || isRename)
-            {
-                added = 0;
-                removed = 0;
-            }
-            else if (lineCountsByPath.TryGetValue(change.Path, out var counts))
-            {
-                added = counts.Added;
-                removed = counts.Removed;
-            }
-            else
-            {
-                added = 0;
-                removed = 0;
-            }
-
-            files.Add(new PullRequestDiffFile
-            {
-                Path = displayPath,
-                ChangeType = changeType,
-                OldPath = isRename ? oldDisplayPath : null,
-                Added = added,
-                Removed = removed,
-                Binary = isBinary,
-            });
-
-            totalAdded += added;
-            totalRemoved += removed;
-        }
-
-        return new PullRequestDiffStats
-        {
-            TotalFiles = files.Count,
-            TotalAdded = totalAdded,
-            TotalRemoved = totalRemoved,
-            Files = files,
-        };
-    }
-
-    private static PullRequestDiffStats EmptyDiffStats() => new()
-    {
-        TotalFiles = 0,
-        TotalAdded = 0,
-        TotalRemoved = 0,
-        Files = Array.Empty<PullRequestDiffFile>(),
-    };
-
-    private static string NormalizeChangeType(string adoChangeType)
-    {
-        if (string.IsNullOrEmpty(adoChangeType))
-        {
-            return "edit";
-        }
-
-        var tokens = adoChangeType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var set = new HashSet<string>(tokens, StringComparer.OrdinalIgnoreCase);
-
-        if (set.Contains("rename"))
-        {
-            return "rename";
-        }
-
-        if (set.Contains("delete"))
-        {
-            return "delete";
-        }
-
-        if (set.Contains("add"))
-        {
-            return "add";
-        }
-
-        return "edit";
-    }
-
-    private static bool IsAddChange(string adoChangeType)
-    {
-        return Tokenize(adoChangeType).Contains("add");
-    }
-
-    private static bool IsDeleteChange(string adoChangeType)
-    {
-        var tokens = Tokenize(adoChangeType);
-        return tokens.Contains("delete") && !tokens.Contains("rename");
-    }
-
-    private static HashSet<string> Tokenize(string adoChangeType)
-    {
-        var tokens = adoChangeType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        return new HashSet<string>(tokens, StringComparer.OrdinalIgnoreCase);
-    }
-
     private static string StripLeadingSlash(string path)
     {
         return path.StartsWith('/') ? path[1..] : path;
-    }
-
-    private static bool HasBinaryExtension(string path)
-    {
-        var ext = Path.GetExtension(path);
-        if (string.IsNullOrEmpty(ext))
-        {
-            return false;
-        }
-
-        return BinaryExtensions.Contains(ext);
     }
 
     private static bool IsSystemThread(JsonElement? properties)

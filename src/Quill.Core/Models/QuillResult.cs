@@ -351,10 +351,6 @@ public class PullRequestViewResult
     [JsonPropertyName("threads")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<PullRequestThreadResult>? Threads { get; init; }
-
-    [JsonPropertyName("diffStats")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public PullRequestDiffStatsResult? DiffStats { get; init; }
 }
 
 public class PullRequestLinkedWorkItemResult
@@ -385,42 +381,4 @@ public class PullRequestLinkedWorkItemResult
     [JsonPropertyName("error")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Error { get; init; }
-}
-
-public class PullRequestDiffStatsResult
-{
-    [JsonPropertyName("totalFiles")]
-    public required int TotalFiles { get; init; }
-
-    [JsonPropertyName("totalAdded")]
-    public required int TotalAdded { get; init; }
-
-    [JsonPropertyName("totalRemoved")]
-    public required int TotalRemoved { get; init; }
-
-    [JsonPropertyName("files")]
-    public required IReadOnlyList<PullRequestDiffFileResult> Files { get; init; }
-}
-
-public class PullRequestDiffFileResult
-{
-    [JsonPropertyName("path")]
-    public required string Path { get; init; }
-
-    [JsonPropertyName("changeType")]
-    public required string ChangeType { get; init; }
-
-    [JsonPropertyName("oldPath")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? OldPath { get; init; }
-
-    [JsonPropertyName("added")]
-    public required int Added { get; init; }
-
-    [JsonPropertyName("removed")]
-    public required int Removed { get; init; }
-
-    [JsonPropertyName("binary")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public bool Binary { get; init; }
 }

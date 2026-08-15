@@ -20,24 +20,17 @@ internal static class ViewCommand
             Description = "Append a `threads` array with the PR's review threads (same payload as `pr threads`).",
         };
 
-        var withDiffStatsOption = new Option<bool>("--with-diff-stats")
-        {
-            Description = "Append a `diffStats` object with per-file added/removed counts and aggregate totals.",
-        };
-
         var command = new Command("view", "Print a pull request to stdout as JSON")
         {
             idArg,
             withThreadsOption,
-            withDiffStatsOption,
         };
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
             var id = parseResult.GetValue(idArg);
             var withThreads = parseResult.GetValue(withThreadsOption);
-            var withDiffStats = parseResult.GetValue(withDiffStatsOption);
-            await ExecuteAsync(serviceProvider, id, withThreads, withDiffStats, cancellationToken);
+            await ExecuteAsync(serviceProvider, id, withThreads, cancellationToken);
         });
 
         return command;
@@ -47,7 +40,6 @@ internal static class ViewCommand
         IServiceProvider serviceProvider,
         int id,
         bool withThreads,
-        bool withDiffStats,
         CancellationToken cancellationToken)
     {
         try
@@ -78,14 +70,8 @@ internal static class ViewCommand
                     pullRequestClient, workItemClient, id, pullRequest.RepoName, config, logger, cancellationToken);
             }
 
-            PullRequestDiffStats? diffStats = null;
-            if (withDiffStats)
-            {
-                diffStats = await pullRequestClient.GetDiffStatsAsync(id, pullRequest.RepoName, cancellationToken);
-            }
-
             var result = PullRequestViewResultBuilder.Build(
-                pullRequest, currentUser.Id, description, workItems, threads, diffStats);
+                pullRequest, currentUser.Id, description, workItems, threads);
 
             Console.WriteLine(JsonSerializer.Serialize(result, CommandHelpers.Context.PullRequestViewResult));
         }
