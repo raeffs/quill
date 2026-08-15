@@ -1,5 +1,6 @@
 {
   "name": "quill",
+  "version": "1.0.0",
   "description": "Azure DevOps Server CLI for coding agents.",
   "author": { "name": "Raphael Fleischlin" },
   "homepage": "https://github.com/raeffs",
