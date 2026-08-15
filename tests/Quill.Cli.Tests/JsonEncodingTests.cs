@@ -109,4 +109,69 @@ public class JsonEncodingTests
         json.ShouldContain("\"labels\":[]");
         json.ShouldContain("\"myVote\":null");
     }
+
+    [Fact]
+    public void PullRequestViewResult_NoMergeAttempt_StillEmitsBothCommitKeys()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeViewResult([]),
+            CommandHelpers.Context.PullRequestViewResult);
+
+        json.ShouldContain("\"lastMergeSourceCommit\":null");
+        json.ShouldContain("\"lastMergeTargetCommit\":null");
+    }
+
+    [Fact]
+    public void PullRequestViewResult_Reviewers_CarryNamedVoteAndIsContainer()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeViewResult(
+                [
+                    new PullRequestReviewerResult
+                    {
+                        DisplayName = "Importer Team",
+                        Vote = "noVote",
+                        IsRequired = true,
+                        IsContainer = true,
+                    },
+                ]),
+            CommandHelpers.Context.PullRequestViewResult);
+
+        json.ShouldContain("\"vote\":\"noVote\"");
+        json.ShouldContain("\"isContainer\":true");
+    }
+
+    private static PullRequestViewResult MakeViewResult(IReadOnlyList<PullRequestReviewerResult> reviewers)
+    {
+        return new PullRequestViewResult
+        {
+            Id = 4711,
+            Title = "Fix retry policy",
+            Author = "Jane Doe",
+            State = "active",
+            IsDraft = false,
+            Repo = "importer",
+            Url = "https://server/coll/project/_git/importer/pullrequest/4711",
+            SourceBranch = "feat/retry",
+            TargetBranch = "main",
+            CreatedDate = "2026-05-12T08:00:00Z",
+            ClosedDate = null,
+            MergeStatus = null,
+            LastMergeSourceCommit = null,
+            LastMergeTargetCommit = null,
+            Labels = [],
+            Votes = new PullRequestVoteCountsResult
+            {
+                Approved = 0,
+                WaitingForAuthor = 0,
+                Rejected = 0,
+                NoVote = 0,
+            },
+            Reviewers = reviewers,
+            MyVote = null,
+            MyIsRequired = null,
+            Description = string.Empty,
+            WorkItems = [],
+        };
+    }
 }

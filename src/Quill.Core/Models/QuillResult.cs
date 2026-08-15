@@ -201,10 +201,13 @@ public class PullRequestReviewerResult
     public required string DisplayName { get; init; }
 
     [JsonPropertyName("vote")]
-    public required int Vote { get; init; }
+    public required string Vote { get; init; }
 
     [JsonPropertyName("isRequired")]
     public required bool IsRequired { get; init; }
+
+    [JsonPropertyName("isContainer")]
+    public required bool IsContainer { get; init; }
 }
 
 public class PullRequestThreadResult
@@ -268,6 +271,12 @@ public class PullRequestViewResult
 
     [JsonPropertyName("mergeStatus")]
     public string? MergeStatus { get; init; }
+
+    [JsonPropertyName("lastMergeSourceCommit")]
+    public string? LastMergeSourceCommit { get; init; }
+
+    [JsonPropertyName("lastMergeTargetCommit")]
+    public string? LastMergeTargetCommit { get; init; }
 
     [JsonPropertyName("labels")]
     public required IReadOnlyList<string> Labels { get; init; }

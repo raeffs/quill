@@ -94,6 +94,82 @@ public class PullRequestViewResultBuilderTests
     }
 
     [Fact]
+    public void Build_NamesEveryReviewerVote()
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [
+                new PullRequestReviewer { Id = "u1", DisplayName = "Approver", Vote = 10, IsRequired = false },
+                new PullRequestReviewer { Id = "u2", DisplayName = "Suggester", Vote = 5, IsRequired = false },
+                new PullRequestReviewer { Id = "u3", DisplayName = "Waiter", Vote = -5, IsRequired = false },
+                new PullRequestReviewer { Id = "u4", DisplayName = "Rejecter", Vote = -10, IsRequired = false },
+                new PullRequestReviewer { Id = "u5", DisplayName = "Silent", Vote = 0, IsRequired = false },
+            ]);
+
+        // Act
+        var result = PullRequestViewResultBuilder.Build(
+            pr,
+            currentUserId: "me",
+            markdownDescription: string.Empty,
+            workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
+            threads: null,
+            diffStats: null);
+
+        // Assert
+        result.Reviewers.Select(r => r.Vote).ShouldBe(
+            ["approved", "approvedWithSuggestions", "waitingForAuthor", "rejected", "noVote"]);
+    }
+
+    [Fact]
+    public void Build_ContainerReviewer_IsMarkedAndStillExcludedFromVotes()
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [
+                new PullRequestReviewer { Id = "g1", DisplayName = "Importer Team", Vote = 0, IsRequired = true, IsContainer = true },
+                new PullRequestReviewer { Id = "u1", DisplayName = "John Roe", Vote = 0, IsRequired = true },
+            ]);
+
+        // Act
+        var result = PullRequestViewResultBuilder.Build(
+            pr,
+            currentUserId: "me",
+            markdownDescription: string.Empty,
+            workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
+            threads: null,
+            diffStats: null);
+
+        // Assert
+        result.Reviewers.Count.ShouldBe(2);
+        result.Reviewers[0].IsContainer.ShouldBeTrue();
+        result.Reviewers[1].IsContainer.ShouldBeFalse();
+        result.Votes.NoVote.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Build_CarriesTheMergeAttemptCommits()
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [],
+            lastMergeSourceCommit: "1111111111111111111111111111111111111111",
+            lastMergeTargetCommit: "2222222222222222222222222222222222222222");
+
+        // Act
+        var result = PullRequestViewResultBuilder.Build(
+            pr,
+            currentUserId: "me",
+            markdownDescription: string.Empty,
+            workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
+            threads: null,
+            diffStats: null);
+
+        // Assert
+        result.LastMergeSourceCommit.ShouldBe("1111111111111111111111111111111111111111");
+        result.LastMergeTargetCommit.ShouldBe("2222222222222222222222222222222222222222");
+    }
+
+    [Fact]
     public void Build_UserNotReviewer_LeavesMyVoteAndMyIsRequiredNull()
     {
         // Arrange
@@ -248,11 +324,15 @@ public class PullRequestViewResultBuilderTests
         IReadOnlyList<PullRequestReviewer> reviewers,
         string description = "",
         string? mergeStatus = null,
-        IReadOnlyList<string>? labels = null)
+        IReadOnlyList<string>? labels = null,
+        string? lastMergeSourceCommit = null,
+        string? lastMergeTargetCommit = null)
     {
         return new PullRequest
         {
             MergeStatus = mergeStatus,
+            LastMergeSourceCommit = lastMergeSourceCommit,
+            LastMergeTargetCommit = lastMergeTargetCommit,
             Labels = labels ?? [],
             Id = 42,
             Title = "Fix it",

@@ -22,8 +22,9 @@ public static class PullRequestViewResultBuilder
             reviewers.Add(new PullRequestReviewerResult
             {
                 DisplayName = r.DisplayName,
-                Vote = r.Vote,
+                Vote = PullRequestVotes.Name(r.Vote),
                 IsRequired = r.IsRequired,
+                IsContainer = r.IsContainer,
             });
         }
 
@@ -41,6 +42,8 @@ public static class PullRequestViewResultBuilder
             CreatedDate = FormatIsoUtc(pullRequest.CreatedDate),
             ClosedDate = pullRequest.ClosedDate is null ? null : FormatIsoUtc(pullRequest.ClosedDate.Value),
             MergeStatus = pullRequest.MergeStatus,
+            LastMergeSourceCommit = pullRequest.LastMergeSourceCommit,
+            LastMergeTargetCommit = pullRequest.LastMergeTargetCommit,
             Labels = pullRequest.Labels,
             Votes = PullRequestVotes.Count(pullRequest.Reviewers),
             Reviewers = reviewers,

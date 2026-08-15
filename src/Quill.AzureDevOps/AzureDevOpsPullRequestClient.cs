@@ -541,10 +541,17 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             ClosedDate = dto.ClosedDate,
             Reviewers = reviewers,
             MergeStatus = dto.MergeStatus,
+            LastMergeSourceCommit = ToCommitId(dto.LastMergeSourceCommit),
+            LastMergeTargetCommit = ToCommitId(dto.LastMergeTargetCommit),
             Labels = labels,
             WebUrl = webUrl,
             Description = dto.Description ?? string.Empty,
         };
+    }
+
+    private static string? ToCommitId(PullRequestCommitRefResponse? commitRef)
+    {
+        return string.IsNullOrEmpty(commitRef?.CommitId) ? null : commitRef.CommitId;
     }
 
     private static string StripRefsHeads(string refName)

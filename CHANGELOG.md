@@ -6,7 +6,8 @@
 
 - `quill pr list --source-branch` and `--target-branch`.
 - `quill pr list --skip N`, for paging alongside `--limit`.
-- `mergeStatus`, `labels` and `votes` on every `quill pr list` and `quill pr view` row.
+- `quill pr list` and `quill pr view` include `mergeStatus`, `labels` and `votes`.
+- `quill pr view` includes `lastMergeSourceCommit` and `lastMergeTargetCommit`.
 
 ### Changed
 

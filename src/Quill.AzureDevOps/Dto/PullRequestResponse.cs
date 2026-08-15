@@ -25,6 +25,12 @@ internal sealed class PullRequestItemResponse
     [JsonPropertyName("mergeStatus")]
     public string? MergeStatus { get; init; }
 
+    [JsonPropertyName("lastMergeSourceCommit")]
+    public PullRequestCommitRefResponse? LastMergeSourceCommit { get; init; }
+
+    [JsonPropertyName("lastMergeTargetCommit")]
+    public PullRequestCommitRefResponse? LastMergeTargetCommit { get; init; }
+
     [JsonPropertyName("labels")]
     public IReadOnlyList<PullRequestLabelResponse>? Labels { get; init; }
 
@@ -69,6 +75,12 @@ internal sealed class PullRequestRepositoryResponse
 
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
+}
+
+internal sealed class PullRequestCommitRefResponse
+{
+    [JsonPropertyName("commitId")]
+    public string CommitId { get; init; } = string.Empty;
 }
 
 internal sealed class PullRequestLabelResponse

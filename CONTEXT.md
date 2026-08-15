@@ -12,9 +12,18 @@ choose which item to open next.
 _Avoid_: list row, summary, preview
 
 **Detail row**:
-What a single-item command emits. It holds everything an agent needs to act on
-that item, and it repeats every key of the triage row unchanged.
+What a single-item command emits. It repeats every key of the triage row
+unchanged. It adds a key only when that key changes what the agent does next. It
+is not a copy of the API response.
 _Avoid_: full object, view shape
+
+## Merging
+
+**Merge attempt**:
+Azure DevOps merges the source branch into the target branch to find out whether
+it can. It repeats the attempt each time either branch moves. It reports the
+outcome and the two commits it used.
+_Avoid_: trial merge, merge preview
 
 ## Pull request review
 

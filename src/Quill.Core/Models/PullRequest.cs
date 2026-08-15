@@ -26,6 +26,10 @@ public class PullRequest
 
     public string? MergeStatus { get; init; }
 
+    public string? LastMergeSourceCommit { get; init; }
+
+    public string? LastMergeTargetCommit { get; init; }
+
     public IReadOnlyList<string> Labels { get; init; } = Array.Empty<string>();
 
     public required string WebUrl { get; init; }
