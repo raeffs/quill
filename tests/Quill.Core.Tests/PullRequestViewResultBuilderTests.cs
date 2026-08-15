@@ -59,8 +59,38 @@ public class PullRequestViewResultBuilderTests
             diffStats: null);
 
         // Assert
-        result.MyVote.ShouldBe(-5);
+        result.MyVote.ShouldBe("waitingForAuthor");
         result.MyIsRequired.ShouldBe(true);
+    }
+
+    [Fact]
+    public void Build_EmitsEveryTriageKeyAndKeepsReviewers()
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [
+                new PullRequestReviewer { Id = "u1", DisplayName = "John Roe", Vote = 10, IsRequired = true },
+                new PullRequestReviewer { Id = "g1", DisplayName = "Team", Vote = 0, IsRequired = true, IsContainer = true },
+            ],
+            mergeStatus: "conflicts",
+            labels: ["needs-docs"]);
+
+        // Act
+        var result = PullRequestViewResultBuilder.Build(
+            pr,
+            currentUserId: "me",
+            markdownDescription: string.Empty,
+            workItems: Array.Empty<PullRequestLinkedWorkItemResult>(),
+            threads: null,
+            diffStats: null);
+
+        // Assert
+        result.MergeStatus.ShouldBe("conflicts");
+        result.Labels.ShouldBe(["needs-docs"]);
+        result.Votes.Approved.ShouldBe(1);
+        result.Votes.NoVote.ShouldBe(0);
+        result.Reviewers.Count.ShouldBe(2);
+        result.Reviewers[0].DisplayName.ShouldBe("John Roe");
     }
 
     [Fact]
@@ -216,10 +246,14 @@ public class PullRequestViewResultBuilderTests
 
     private static PullRequest MakePullRequest(
         IReadOnlyList<PullRequestReviewer> reviewers,
-        string description = "")
+        string description = "",
+        string? mergeStatus = null,
+        IReadOnlyList<string>? labels = null)
     {
         return new PullRequest
         {
+            MergeStatus = mergeStatus,
+            Labels = labels ?? [],
             Id = 42,
             Title = "Fix it",
             AuthorDisplayName = "Jane Doe",

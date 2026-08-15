@@ -7,7 +7,7 @@ namespace Quill.Core.Tests;
 public class PullRequestResultBuilderTests
 {
     [Fact]
-    public void Build_UserIsReviewer_PopulatesMyVoteAndMyIsRequired()
+    public void Build_UserIsReviewer_NamesMyVoteAndPopulatesMyIsRequired()
     {
         // Arrange
         var pr = MakePullRequest(
@@ -20,8 +20,29 @@ public class PullRequestResultBuilderTests
         var result = PullRequestResultBuilder.Build(pr, currentUserId: "me");
 
         // Assert
-        result.MyVote.ShouldBe(-5);
+        result.MyVote.ShouldBe("waitingForAuthor");
         result.MyIsRequired.ShouldBe(true);
+    }
+
+    [Theory]
+    [InlineData(10, "approved")]
+    [InlineData(5, "approvedWithSuggestions")]
+    [InlineData(0, "noVote")]
+    [InlineData(-5, "waitingForAuthor")]
+    [InlineData(-10, "rejected")]
+    public void Build_UserIsReviewer_NamesEveryVote(int vote, string expected)
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [
+                new PullRequestReviewer { Id = "me", DisplayName = "Me", Vote = vote, IsRequired = true },
+            ]);
+
+        // Act
+        var result = PullRequestResultBuilder.Build(pr, currentUserId: "me");
+
+        // Assert
+        result.MyVote.ShouldBe(expected);
     }
 
     [Fact]
@@ -42,13 +63,15 @@ public class PullRequestResultBuilderTests
     }
 
     [Fact]
-    public void Build_CopiesScalarsAndProjectsReviewers()
+    public void Build_CopiesScalars()
     {
         // Arrange
         var pr = MakePullRequest(
             [
                 new PullRequestReviewer { Id = "u1", DisplayName = "John Roe", Vote = 10, IsRequired = true },
-            ]);
+            ],
+            mergeStatus: "succeeded",
+            labels: ["needs-docs"]);
 
         // Act
         var result = PullRequestResultBuilder.Build(pr, currentUserId: "me");
@@ -65,10 +88,61 @@ public class PullRequestResultBuilderTests
         result.TargetBranch.ShouldBe("main");
         result.CreatedDate.ShouldBe("2026-05-12T08:00:00Z");
         result.ClosedDate.ShouldBeNull();
-        result.Reviewers.Count.ShouldBe(1);
-        result.Reviewers[0].DisplayName.ShouldBe("John Roe");
-        result.Reviewers[0].Vote.ShouldBe(10);
-        result.Reviewers[0].IsRequired.ShouldBeTrue();
+        result.MergeStatus.ShouldBe("succeeded");
+        result.Labels.ShouldBe(["needs-docs"]);
+    }
+
+    [Fact]
+    public void Build_NoLabels_EmitsEmptyArray()
+    {
+        // Arrange
+        var pr = MakePullRequest([]);
+
+        // Act
+        var result = PullRequestResultBuilder.Build(pr, currentUserId: "me");
+
+        // Assert
+        result.Labels.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Build_MixedVotes_CountsThemFoldingApprovedWithSuggestions()
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [
+                new PullRequestReviewer { Id = "u1", DisplayName = "Approver", Vote = 10, IsRequired = true },
+                new PullRequestReviewer { Id = "u2", DisplayName = "Suggester", Vote = 5, IsRequired = false },
+                new PullRequestReviewer { Id = "u3", DisplayName = "Waiter", Vote = -5, IsRequired = true },
+                new PullRequestReviewer { Id = "u4", DisplayName = "Rejecter", Vote = -10, IsRequired = true },
+                new PullRequestReviewer { Id = "u5", DisplayName = "Silent", Vote = 0, IsRequired = false },
+            ]);
+
+        // Act
+        var result = PullRequestResultBuilder.Build(pr, currentUserId: "me");
+
+        // Assert
+        result.Votes.Approved.ShouldBe(2);
+        result.Votes.WaitingForAuthor.ShouldBe(1);
+        result.Votes.Rejected.ShouldBe(1);
+        result.Votes.NoVote.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Build_ContainerReviewer_IsNotCounted()
+    {
+        // Arrange
+        var pr = MakePullRequest(
+            [
+                new PullRequestReviewer { Id = "g1", DisplayName = "Team", Vote = 0, IsRequired = true, IsContainer = true },
+                new PullRequestReviewer { Id = "u1", DisplayName = "Person", Vote = 0, IsRequired = false },
+            ]);
+
+        // Act
+        var result = PullRequestResultBuilder.Build(pr, currentUserId: "me");
+
+        // Assert
+        result.Votes.NoVote.ShouldBe(1);
     }
 
     [Fact]
@@ -87,11 +161,17 @@ public class PullRequestResultBuilderTests
         result.ClosedDate.ShouldBe("2026-06-01T12:30:00Z");
     }
 
-    private static PullRequest MakePullRequest(IReadOnlyList<PullRequestReviewer> reviewers, DateTimeOffset? closedDate = null)
+    private static PullRequest MakePullRequest(
+        IReadOnlyList<PullRequestReviewer> reviewers,
+        DateTimeOffset? closedDate = null,
+        string? mergeStatus = null,
+        IReadOnlyList<string>? labels = null)
     {
         // Arrange
         return new PullRequest
         {
+            MergeStatus = mergeStatus,
+            Labels = labels ?? [],
             Id = 42,
             Title = "Fix it",
             AuthorDisplayName = "Jane Doe",

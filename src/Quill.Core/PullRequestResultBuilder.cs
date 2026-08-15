@@ -10,17 +10,6 @@ public static class PullRequestResultBuilder
         var matching = pullRequest.Reviewers.FirstOrDefault(
             r => string.Equals(r.Id, currentUserId, StringComparison.Ordinal));
 
-        var reviewers = new List<PullRequestReviewerResult>(pullRequest.Reviewers.Count);
-        foreach (var r in pullRequest.Reviewers)
-        {
-            reviewers.Add(new PullRequestReviewerResult
-            {
-                DisplayName = r.DisplayName,
-                Vote = r.Vote,
-                IsRequired = r.IsRequired,
-            });
-        }
-
         return new PullRequestResult
         {
             Id = pullRequest.Id,
@@ -34,8 +23,10 @@ public static class PullRequestResultBuilder
             TargetBranch = pullRequest.TargetBranch,
             CreatedDate = FormatIsoUtc(pullRequest.CreatedDate),
             ClosedDate = pullRequest.ClosedDate is null ? null : FormatIsoUtc(pullRequest.ClosedDate.Value),
-            Reviewers = reviewers,
-            MyVote = matching?.Vote,
+            MergeStatus = pullRequest.MergeStatus,
+            Labels = pullRequest.Labels,
+            Votes = PullRequestVotes.Count(pullRequest.Reviewers),
+            MyVote = matching is null ? null : PullRequestVotes.Name(matching.Vote),
             MyIsRequired = matching?.IsRequired,
         };
     }

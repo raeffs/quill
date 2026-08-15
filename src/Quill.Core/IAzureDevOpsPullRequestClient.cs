@@ -5,11 +5,7 @@ namespace Quill.Core;
 public interface IAzureDevOpsPullRequestClient
 {
     Task<IReadOnlyList<PullRequest>> ListAsync(
-        string? creatorId,
-        string? reviewerId,
-        string status,
-        string? repo,
-        int top,
+        PullRequestListQuery query,
         CancellationToken cancellationToken = default);
 
     Task<PullRequest> GetByIdAsync(int prId, CancellationToken cancellationToken = default);

@@ -15,8 +15,7 @@ internal static class ListCommand
     {
         var reviewerOption = new Option<string?>("--reviewer")
         {
-            Description = "Reviewer filter. Only @me is accepted in this release. Defaults to @me when omitted.",
-            DefaultValueFactory = _ => "@me",
+            Description = "Reviewer filter. Only @me is accepted in this release.",
         };
 
         var authorOption = new Option<string?>("--author")
@@ -35,9 +34,14 @@ internal static class ListCommand
             Description = "Filter to a single repository by display name.",
         };
 
-        var includeDraftsOption = new Option<bool>("--include-drafts")
+        var sourceBranchOption = new Option<string?>("--source-branch")
         {
-            Description = "Include draft pull requests in the output. Drafts are filtered out by default.",
+            Description = "Source branch filter. Short name or full ref. Matches exactly.",
+        };
+
+        var targetBranchOption = new Option<string?>("--target-branch")
+        {
+            Description = "Target branch filter. Short name or full ref. Matches exactly.",
         };
 
         var limitOption = new Option<int>("--limit")
@@ -46,14 +50,21 @@ internal static class ListCommand
             DefaultValueFactory = _ => 50,
         };
 
+        var skipOption = new Option<int?>("--skip")
+        {
+            Description = "Skip this many results. Use with --limit to page.",
+        };
+
         var command = new Command("list", "List Azure DevOps pull requests and print matches as a JSON array")
         {
             reviewerOption,
             authorOption,
             stateOption,
             repoOption,
-            includeDraftsOption,
+            sourceBranchOption,
+            targetBranchOption,
             limitOption,
+            skipOption,
         };
 
         command.SetAction(async (parseResult, cancellationToken) =>
@@ -62,9 +73,12 @@ internal static class ListCommand
             var author = parseResult.GetValue(authorOption);
             var state = parseResult.GetValue(stateOption);
             var repo = parseResult.GetValue(repoOption);
-            var includeDrafts = parseResult.GetValue(includeDraftsOption);
+            var sourceBranch = parseResult.GetValue(sourceBranchOption);
+            var targetBranch = parseResult.GetValue(targetBranchOption);
             var limit = parseResult.GetValue(limitOption);
-            await ExecuteAsync(serviceProvider, reviewer, author, state, repo, includeDrafts, limit, cancellationToken);
+            var skip = parseResult.GetValue(skipOption);
+            await ExecuteAsync(
+                serviceProvider, reviewer, author, state, repo, sourceBranch, targetBranch, limit, skip, cancellationToken);
         });
 
         return command;
@@ -76,8 +90,10 @@ internal static class ListCommand
         string? author,
         string? state,
         string? repo,
-        bool includeDrafts,
+        string? sourceBranch,
+        string? targetBranch,
         int limit,
+        int? skip,
         CancellationToken cancellationToken)
     {
         try
@@ -85,13 +101,18 @@ internal static class ListCommand
             if (reviewer is not null && !string.Equals(reviewer, "@me", StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    "--reviewer accepts only '@me' in this release. Named-identity resolution is tracked in issue #99.");
+                    "--reviewer accepts only '@me' in this release.");
             }
 
             if (author is not null && !string.Equals(author, "@me", StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    "--author accepts only '@me' in this release. Named-identity resolution is tracked in issue #99.");
+                    "--author accepts only '@me' in this release.");
+            }
+
+            if (skip is < 0)
+            {
+                throw new InvalidOperationException("--skip must be zero or greater.");
             }
 
             var effectiveState = string.IsNullOrEmpty(state) ? "active" : state;
@@ -110,16 +131,21 @@ internal static class ListCommand
             var creatorId = string.Equals(author, "@me", StringComparison.Ordinal) ? userId : null;
             var reviewerId = string.Equals(reviewer, "@me", StringComparison.Ordinal) ? userId : null;
 
-            var pullRequests = await pullRequestClient.ListAsync(
-                creatorId, reviewerId, effectiveState, repo, limit, cancellationToken);
-
-            IEnumerable<PullRequest> filtered = pullRequests;
-            if (!includeDrafts)
+            var query = new PullRequestListQuery
             {
-                filtered = filtered.Where(pr => !pr.IsDraft);
-            }
+                CreatorId = creatorId,
+                ReviewerId = reviewerId,
+                Status = effectiveState,
+                Repo = repo,
+                SourceBranch = sourceBranch,
+                TargetBranch = targetBranch,
+                Top = limit,
+                Skip = skip,
+            };
 
-            var results = filtered
+            var pullRequests = await pullRequestClient.ListAsync(query, cancellationToken);
+
+            var results = pullRequests
                 .Select(pr => PullRequestResultBuilder.Build(pr, userId))
                 .ToList();
 

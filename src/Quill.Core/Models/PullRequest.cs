@@ -24,6 +24,10 @@ public class PullRequest
 
     public required IReadOnlyList<PullRequestReviewer> Reviewers { get; init; }
 
+    public string? MergeStatus { get; init; }
+
+    public IReadOnlyList<string> Labels { get; init; } = Array.Empty<string>();
+
     public required string WebUrl { get; init; }
 
     public string Description { get; init; } = string.Empty;

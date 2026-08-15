@@ -32,7 +32,7 @@ Use this table to pick the command. Run its help for the rest.
 | `wi search` | You want to find items anywhere in the project by title text or filter. |
 | `wi tree` | You want to orient yourself under an Epic or Feature. Use `--depth 1` for direct children only. |
 | `wi comments` | You want the discussion on a work item. |
-| `pr list` | You want the answer to "what reviews are waiting on me". |
+| `pr list` | You want to find pull requests — by branch, by author, or the ones waiting on you (`--reviewer @me`). |
 | `pr view` | You want one pull request with its description and its linked work items. |
 | `pr threads` | You want the review comments on a pull request, with file and line. |
 
@@ -96,7 +96,15 @@ These are the things the help output and a successful run do not tell you.
 - `wi search` silently omits items that fail to load. Search is a discovery list, not a structural view.
 - `wi tree` walks parent-child relations only. It does not follow `Related` links.
 - In `pr view --with-diff-stats`, `oldPath` appears only on `rename` entries and `binary: true` appears only on binary files. Both keys are absent otherwise, not `null`. Binary files always report `added: 0, removed: 0`.
-- Reviewer vote values follow the Azure DevOps convention: `10` approved, `5` approved with suggestions, `0` no vote, `-5` waiting for author, `-10` rejected. In `pr list` and `pr view`, `myVote` and `myIsRequired` are `null` when the authenticated user is not a reviewer.
+- `pr list` and `pr view` name votes: `approved`, `approvedWithSuggestions`, `waitingForAuthor`, `rejected`, `noVote`. `myVote` carries one of those names, or `null` when the authenticated user is not a reviewer — a different fact from `noVote`. `myIsRequired` is `null` on the same condition. The `reviewers[]` array of `pr view` still carries the raw Azure DevOps number: `10` approved, `5` approved with suggestions, `0` no vote, `-5` waiting for author, `-10` rejected.
+- The `votes` counts fold `approvedWithSuggestions` into `approved`, because the suggestions live in the threads. They skip container reviewers — a group attached as a reviewer casts no vote of its own, and counting it would inflate `noVote`.
+- `pr list` returns draft pull requests, marked `isDraft`. No flag excludes them. Filter on the key.
+- `pr list` has no default `--reviewer`. A bare call returns every active pull request in the project.
+- `pr list` returns a bare JSON array with no `hasMore`. Fewer rows than `--limit` means you reached the end. Exactly `--limit` rows means ask again with a larger `--skip`.
+- A `--skip` walk is not a snapshot. The list is live and newest-first, so a pull request created part-way through shifts the rest down a place: you can be served one row twice, or miss one. Widen `--limit` instead when you need a stable set.
+- Quill never reads the working copy, so no flag means "the branch I am on". Run git yourself: `--source-branch "$(git rev-parse --abbrev-ref HEAD)"` in bash, `--source-branch (git rev-parse --abbrev-ref HEAD)` in PowerShell.
+- The list response truncates every description to 400 characters, so `pr list` omits the key entirely. Call `pr view` for the description.
+- `labels` holds active label names only, and is `[]` when a pull request carries none. `mergeStatus` is the Azure DevOps status verbatim, `null` when the server sends none.
 - `author` is `null` on a comment whose identity no longer resolves, for example a deleted user. `modifiedDate` is `null` until someone edits the comment.
 
 ## Exit codes

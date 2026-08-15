@@ -22,6 +22,12 @@ internal sealed class PullRequestItemResponse
     [JsonPropertyName("isDraft")]
     public bool IsDraft { get; init; }
 
+    [JsonPropertyName("mergeStatus")]
+    public string? MergeStatus { get; init; }
+
+    [JsonPropertyName("labels")]
+    public IReadOnlyList<PullRequestLabelResponse>? Labels { get; init; }
+
     [JsonPropertyName("sourceRefName")]
     public string SourceRefName { get; init; } = string.Empty;
 
@@ -41,7 +47,7 @@ internal sealed class PullRequestItemResponse
     public PullRequestRepositoryResponse? Repository { get; init; }
 
     [JsonPropertyName("reviewers")]
-    public IReadOnlyList<PullRequestReviewerResponse> Reviewers { get; init; } = Array.Empty<PullRequestReviewerResponse>();
+    public IReadOnlyList<PullRequestReviewerResponse>? Reviewers { get; init; }
 
     [JsonPropertyName("description")]
     public string? Description { get; init; }
@@ -65,6 +71,15 @@ internal sealed class PullRequestRepositoryResponse
     public string Name { get; init; } = string.Empty;
 }
 
+internal sealed class PullRequestLabelResponse
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+
+    [JsonPropertyName("active")]
+    public bool Active { get; init; }
+}
+
 internal sealed class PullRequestReviewerResponse
 {
     [JsonPropertyName("id")]
@@ -78,4 +93,7 @@ internal sealed class PullRequestReviewerResponse
 
     [JsonPropertyName("isRequired")]
     public bool IsRequired { get; init; }
+
+    [JsonPropertyName("isContainer")]
+    public bool IsContainer { get; init; }
 }

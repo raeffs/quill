@@ -164,14 +164,35 @@ public class PullRequestResult
     [JsonPropertyName("closedDate")]
     public string? ClosedDate { get; init; }
 
-    [JsonPropertyName("reviewers")]
-    public required IReadOnlyList<PullRequestReviewerResult> Reviewers { get; init; }
+    [JsonPropertyName("mergeStatus")]
+    public string? MergeStatus { get; init; }
+
+    [JsonPropertyName("labels")]
+    public required IReadOnlyList<string> Labels { get; init; }
+
+    [JsonPropertyName("votes")]
+    public required PullRequestVoteCountsResult Votes { get; init; }
 
     [JsonPropertyName("myVote")]
-    public int? MyVote { get; init; }
+    public string? MyVote { get; init; }
 
     [JsonPropertyName("myIsRequired")]
     public bool? MyIsRequired { get; init; }
+}
+
+public class PullRequestVoteCountsResult
+{
+    [JsonPropertyName("approved")]
+    public required int Approved { get; init; }
+
+    [JsonPropertyName("waitingForAuthor")]
+    public required int WaitingForAuthor { get; init; }
+
+    [JsonPropertyName("rejected")]
+    public required int Rejected { get; init; }
+
+    [JsonPropertyName("noVote")]
+    public required int NoVote { get; init; }
 }
 
 public class PullRequestReviewerResult
@@ -245,11 +266,20 @@ public class PullRequestViewResult
     [JsonPropertyName("closedDate")]
     public string? ClosedDate { get; init; }
 
+    [JsonPropertyName("mergeStatus")]
+    public string? MergeStatus { get; init; }
+
+    [JsonPropertyName("labels")]
+    public required IReadOnlyList<string> Labels { get; init; }
+
+    [JsonPropertyName("votes")]
+    public required PullRequestVoteCountsResult Votes { get; init; }
+
     [JsonPropertyName("reviewers")]
     public required IReadOnlyList<PullRequestReviewerResult> Reviewers { get; init; }
 
     [JsonPropertyName("myVote")]
-    public int? MyVote { get; init; }
+    public string? MyVote { get; init; }
 
     [JsonPropertyName("myIsRequired")]
     public bool? MyIsRequired { get; init; }

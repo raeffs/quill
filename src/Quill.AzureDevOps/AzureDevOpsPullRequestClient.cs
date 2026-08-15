@@ -37,38 +37,55 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
     }
 
     public async Task<IReadOnlyList<PullRequest>> ListAsync(
-        string? creatorId,
-        string? reviewerId,
-        string status,
-        string? repo,
-        int top,
+        PullRequestListQuery query,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(status);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(top);
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentException.ThrowIfNullOrWhiteSpace(query.Status, nameof(query));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Top, nameof(query));
 
-        var baseUrl = string.IsNullOrEmpty(repo)
-            ? $"{_serverUrl}/{_collection}/{_project}/_apis/git/pullrequests"
-            : $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullrequests";
-
-        var query = new List<string>
+        if (query.Skip is { } skip)
         {
-            $"searchCriteria.status={Uri.EscapeDataString(status)}",
-            $"$top={top.ToString(CultureInfo.InvariantCulture)}",
+            ArgumentOutOfRangeException.ThrowIfNegative(skip, nameof(query));
+        }
+
+        var baseUrl = string.IsNullOrEmpty(query.Repo)
+            ? $"{_serverUrl}/{_collection}/{_project}/_apis/git/pullrequests"
+            : $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(query.Repo)}/pullrequests";
+
+        var parameters = new List<string>
+        {
+            $"searchCriteria.status={Uri.EscapeDataString(query.Status)}",
+            $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
             $"api-version={AzureDevOpsConstants.ApiVersion}",
         };
 
-        if (!string.IsNullOrEmpty(creatorId))
+        if (!string.IsNullOrEmpty(query.CreatorId))
         {
-            query.Add($"searchCriteria.creatorId={Uri.EscapeDataString(creatorId)}");
+            parameters.Add($"searchCriteria.creatorId={Uri.EscapeDataString(query.CreatorId)}");
         }
 
-        if (!string.IsNullOrEmpty(reviewerId))
+        if (!string.IsNullOrEmpty(query.ReviewerId))
         {
-            query.Add($"searchCriteria.reviewerId={Uri.EscapeDataString(reviewerId)}");
+            parameters.Add($"searchCriteria.reviewerId={Uri.EscapeDataString(query.ReviewerId)}");
         }
 
-        var url = $"{baseUrl}?{string.Join('&', query)}";
+        if (!string.IsNullOrEmpty(query.SourceBranch))
+        {
+            parameters.Add($"searchCriteria.sourceRefName={Uri.EscapeDataString(ToRefName(query.SourceBranch))}");
+        }
+
+        if (!string.IsNullOrEmpty(query.TargetBranch))
+        {
+            parameters.Add($"searchCriteria.targetRefName={Uri.EscapeDataString(ToRefName(query.TargetBranch))}");
+        }
+
+        if (query.Skip is { } skipValue)
+        {
+            parameters.Add($"$skip={skipValue.ToString(CultureInfo.InvariantCulture)}");
+        }
+
+        var url = $"{baseUrl}?{string.Join('&', parameters)}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -486,8 +503,9 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             ?? throw new InvalidOperationException($"Pull request {dto.PullRequestId.ToString(CultureInfo.InvariantCulture)} has no repository.");
         var webUrl = $"{_serverUrl}/{_collection}/{_project}/_git/{repoName}/pullrequest/{dto.PullRequestId.ToString(CultureInfo.InvariantCulture)}";
 
-        var reviewers = new List<PullRequestReviewer>(dto.Reviewers.Count);
-        foreach (var r in dto.Reviewers)
+        var dtoReviewers = dto.Reviewers ?? [];
+        var reviewers = new List<PullRequestReviewer>(dtoReviewers.Count);
+        foreach (var r in dtoReviewers)
         {
             reviewers.Add(new PullRequestReviewer
             {
@@ -495,7 +513,18 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
                 DisplayName = r.DisplayName,
                 Vote = r.Vote,
                 IsRequired = r.IsRequired,
+                IsContainer = r.IsContainer,
             });
+        }
+
+        var dtoLabels = dto.Labels ?? [];
+        var labels = new List<string>(dtoLabels.Count);
+        foreach (var label in dtoLabels)
+        {
+            if (label.Active)
+            {
+                labels.Add(label.Name);
+            }
         }
 
         return new PullRequest
@@ -511,6 +540,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             CreatedDate = dto.CreationDate,
             ClosedDate = dto.ClosedDate,
             Reviewers = reviewers,
+            MergeStatus = dto.MergeStatus,
+            Labels = labels,
             WebUrl = webUrl,
             Description = dto.Description ?? string.Empty,
         };
@@ -521,5 +552,12 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return refName.StartsWith(RefsHeadsPrefix, StringComparison.Ordinal)
             ? refName.Substring(RefsHeadsPrefix.Length)
             : refName;
+    }
+
+    private static string ToRefName(string branch)
+    {
+        return branch.StartsWith("refs/", StringComparison.Ordinal)
+            ? branch
+            : RefsHeadsPrefix + branch;
     }
 }

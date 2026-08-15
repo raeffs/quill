@@ -9,4 +9,6 @@ public class PullRequestReviewer
     public required int Vote { get; init; }
 
     public required bool IsRequired { get; init; }
+
+    public bool IsContainer { get; init; }
 }
