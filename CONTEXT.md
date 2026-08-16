@@ -28,6 +28,11 @@ _Avoid_: trial merge, merge preview
 
 ## Pull request review
 
+**Revision**:
+One recorded state of a pull request's source branch. Opening the pull request
+makes one, and so does every push, rebase or retarget after it.
+_Avoid_: iteration, update, push
+
 **Review thread**:
 A conversation anchored to code. It has a file, usually a line range, and
 comments people wrote.
@@ -46,7 +51,7 @@ line range. A thread with no line range points at the whole file.
 _Avoid_: location, pin, marker
 
 **Original position**:
-The anchor as the reviewer left it. It belongs to the iteration the reviewer
+The anchor as the reviewer left it. It belongs to the revision the reviewer
 commented on, and the file has often changed since.
 _Avoid_: as posted, old line
 
@@ -58,7 +63,7 @@ _Avoid_: new line, tracked position, latest position
 **Position state**:
 How far an agent can trust a current position. It is one of four: current,
 tracked, deleted, or unverified. Under *current* the reviewer commented on the
-latest iteration, so nothing has moved. Under *tracked* Azure DevOps followed
+latest revision, so nothing has moved. Under *tracked* Azure DevOps followed
 the code and found it. Under *deleted* Azure DevOps followed the code and found
 it gone, and the current position marks where it was. Under *unverified* Azure
 DevOps tracked nothing, and the current position repeats the original one.

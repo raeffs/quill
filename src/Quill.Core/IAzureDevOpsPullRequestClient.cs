@@ -15,6 +15,11 @@ public interface IAzureDevOpsPullRequestClient
         string repo,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PullRequestRevision>> GetRevisionsAsync(
+        int prId,
+        string repo,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<int>> GetWorkItemRefsAsync(
         int prId,
         string repo,

@@ -1,6 +1,6 @@
 ---
 name: quill
-description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, or about pull requests — reading, searching, listing, creating, updating, pushing, walking the hierarchy, or reading comments and review threads.
+description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, or about pull requests — reading, searching, listing, creating, updating, pushing, walking the hierarchy, or reading comments, review threads and revisions.
 ---
 
 # Quill — Azure DevOps Server CLI
@@ -35,6 +35,7 @@ Use this table to pick the command. Run its help for the rest.
 | `pr list` | You want to find pull requests — by branch, by author, or the ones waiting on you (`--reviewer @me`). |
 | `pr view` | You want one pull request with its description and its linked work items. |
 | `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
+| `pr revisions` | You want to know what changed since you last reviewed. Lists one row per push, with the commits git needs to diff them. |
 
 ## Prerequisites
 
@@ -108,10 +109,20 @@ These are the things the help output and a successful run do not tell you.
 - `labels` holds active label names only, and is `[]` when a pull request carries none. `mergeStatus` is the Azure DevOps status verbatim, `null` when the server sends none.
 - `author` is `null` on a comment whose identity no longer resolves, for example a deleted user. `modifiedDate` is `null` until someone edits the comment.
 - `startLine` and `endLine` of `pr threads` name the line at the head of the source branch, not the line the reviewer pointed at. `origStartLine`, `origEndLine`, `origStartColumn` and `origEndColumn` name the reviewer's own anchor. Compare the two to see whether the code moved.
-- `positionState` says how far to trust `startLine`. Under `current` the reviewer commented on the latest iteration. Under `tracked` Azure DevOps followed the code and found it. Under `deleted` the code is gone, and `startLine` marks where it was. Under `unverified` Azure DevOps tracked nothing, so open the file before you act. All four keys are `null` on a thread with no file.
+- `positionState` says how far to trust `startLine`. Under `current` the reviewer commented on the latest revision. Under `tracked` Azure DevOps followed the code and found it. Under `deleted` the code is gone, and `startLine` marks where it was. Under `unverified` Azure DevOps tracked nothing, so open the file before you act. All four keys are `null` on a thread with no file.
 - `origFilePath` appears only when the file was renamed after the reviewer commented. It is absent otherwise, not `null`.
 - The columns belong to the original position alone. Azure DevOps drops the character range when it re-tracks an anchor, so a tracked thread reports `origEndColumn: null`.
 - Quill does not read the file to check a line it prints. On `unverified` it reports the stale line rather than no line. The Azure DevOps web UI shows the same stale line, so comparing the two proves nothing.
+- `pr revisions` lists one row per push, newest first. It takes no flags. Every row carries the three commits git needs, because no quill command follows this one.
+- `commonCommit` is the merge base and the only correct diff base for a revision. `targetCommit` is the target branch head at that moment, and the two differ on most revisions. Diffing against `targetCommit` shows you commits the author never wrote.
+- To compare two revisions, always use `range-diff`, never a plain diff between the two `sourceCommit` values. Compare each revision against its own base:
+
+  ```bash
+  git range-diff <commonCommit of older>..<sourceCommit of older> <commonCommit of newer>..<sourceCommit of newer>
+  ```
+
+- An older `sourceCommit` may be missing from your clone. A force push leaves it unreachable from every remote ref, so a plain `git fetch` skips it and git reports `fatal: bad object`. Fetch it by SHA: `git fetch origin <sourceCommit>`. The server serves it.
+- To answer "what changed since I last reviewed", read `pr threads` for the date of your last comment. Take the newest `pr revisions` row created before that date, and `range-diff` it against the newest row of all. Comparing only the rows created after your comment skips the revision you actually read.
 
 ## Exit codes
 

@@ -208,6 +208,34 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return results;
     }
 
+    public async Task<IReadOnlyList<PullRequestRevision>> GetRevisionsAsync(
+        int prId,
+        string repo,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(repo);
+
+        var iterations = await GetIterationsAsync(prId, repo, cancellationToken);
+
+        var results = new List<PullRequestRevision>(iterations.Count);
+        foreach (var iteration in iterations)
+        {
+            results.Add(new PullRequestRevision
+            {
+                Id = iteration.Id,
+                CreatedDate = iteration.CreatedDate,
+                Author = string.IsNullOrEmpty(iteration.Author?.DisplayName) ? null : iteration.Author.DisplayName,
+                SourceCommit = ToCommitId(iteration.SourceRefCommit),
+                TargetCommit = ToCommitId(iteration.TargetRefCommit),
+                CommonCommit = ToCommitId(iteration.CommonRefCommit),
+            });
+        }
+
+        results.Sort((a, b) => b.Id.CompareTo(a.Id));
+        return results;
+    }
+
     public async Task<IReadOnlyList<int>> GetWorkItemRefsAsync(
         int prId,
         string repo,

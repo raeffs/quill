@@ -8,6 +8,7 @@
 - `quill pr list --skip N`, for paging alongside `--limit`.
 - `quill pr list` and `quill pr view` include `mergeStatus`, `labels` and `votes`.
 - `quill pr view` includes `lastMergeSourceCommit` and `lastMergeTargetCommit`.
+- `quill pr revisions`, which lists one row per push to a pull request's source branch, newest first, with the commits git needs to diff two of them.
 
 ### Changed
 

@@ -170,6 +170,43 @@ public class JsonEncodingTests
     }
 
     [Fact]
+    public void PullRequestRevisionResult_EmitsTheSixKeyRow()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PullRequestRevisionResult>
+            {
+                new()
+                {
+                    Id = 3,
+                    CreatedDate = "2026-08-14T08:20:54Z",
+                    Author = "Jane Doe",
+                    SourceCommit = "aaaa",
+                    TargetCommit = "bbbb",
+                    CommonCommit = "cccc",
+                },
+            },
+            CommandHelpers.Context.ListPullRequestRevisionResult);
+
+        json.ShouldBe(
+            """[{"id":3,"createdDate":"2026-08-14T08:20:54Z","author":"Jane Doe","sourceCommit":"aaaa","targetCommit":"bbbb","commonCommit":"cccc"}]""");
+    }
+
+    [Fact]
+    public void PullRequestRevisionResult_NeverEmitsReason()
+    {
+        // The server reports "push" on every revision, including rebases and force pushes.
+        // Emitting it would tell an agent the history was not rewritten when it was.
+        var json = JsonSerializer.Serialize(
+            new List<PullRequestRevisionResult>
+            {
+                new() { Id = 1, CreatedDate = "2026-08-14T08:20:54Z" },
+            },
+            CommandHelpers.Context.ListPullRequestRevisionResult);
+
+        json.ShouldNotContain("reason");
+    }
+
+    [Fact]
     public void CommentResult_KeepsTheWorkItemCommentShape()
     {
         var json = JsonSerializer.Serialize(

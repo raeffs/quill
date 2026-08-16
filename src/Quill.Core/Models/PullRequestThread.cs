@@ -14,7 +14,7 @@ public class PullRequestThread
 
     public string? Side { get; init; }
 
-    /// <summary>The current position: where the commented code sits at the latest iteration.</summary>
+    /// <summary>The current position: where the commented code sits at the latest revision.</summary>
     public int? StartLine { get; init; }
 
     public int? EndLine { get; init; }
