@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build
@@ -17,7 +17,7 @@ jobs:
   test:
     runs-on: docker
     container:
-      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
@@ -26,21 +26,16 @@ jobs:
   format:
     runs-on: docker
     container:
-      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check formatting
         run: dotnet format --verify-no-changes
 
-  # A statement about the tree, not the diff, so nothing about it can be skipped:
-  # a PR that bumps the version changes both files, and one that does not changes
-  # neither. Keeping this true on main means a tag can always be pushed safely.
-  # Its own job because it needs no build and fails in seconds rather than behind
-  # a compile.
   version:
     runs-on: docker
     container:
-      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Version matches changelog
@@ -59,15 +54,10 @@ jobs:
   pack:
     runs-on: docker
     container:
-      image: ghcr.io/catthehacker/ubuntu:dotnet-latest
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Packs with no -p:Version, exactly as the release does: Directory.Build.props
-      # is the source of truth, so PR validation must not rehearse a code path the
-      # release never runs. win-x64 is absent because runs-on: docker is Linux and
-      # cross-OS AOT is unsupported — .github/workflows/release.yml covers it via
-      # its workflow_dispatch dry run.
       - name: Pack meta, any and linux-x64
         shell: bash
         run: |

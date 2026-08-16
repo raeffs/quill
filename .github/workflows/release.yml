@@ -25,6 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
       - name: Assert tag, props and changelog agree
         id: v
         shell: bash
@@ -70,10 +74,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      # No toolchain install step on either runner: the Linux images carry gcc,
-      # ld.bfd and objcopy, and the Windows images carry VC.Tools.x86.x64 plus the
-      # Windows SDK. The commonly cited `apt-get install clang zlib1g-dev` is not
-      # needed — ILC links against the runtime pack's own libz.a.
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
       - name: Pack ${{ matrix.rid }}
         shell: bash
         run: |
@@ -100,6 +104,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
 
       - name: Pack the meta pointer and the any fallback
         shell: bash
