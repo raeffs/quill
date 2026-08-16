@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Raphael Fleischlin</Authors>
     <Copyright>Copyright (c) Raphael Fleischlin</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

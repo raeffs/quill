@@ -1,23 +1,23 @@
 # Changelog
 
-## [Unreleased]
+## [1.1.0]
 
 ### Added
 
-- `quill pr list --source-branch` and `--target-branch`.
-- `quill pr list --skip N`, for paging alongside `--limit`.
-- `quill pr list` and `quill pr view` include `mergeStatus`, `labels` and `votes`.
-- `quill pr view` includes `lastMergeSourceCommit` and `lastMergeTargetCommit`.
-- `quill pr revisions`, which lists one row per push to a pull request's source branch, newest first, with the commits git needs to diff two of them.
+- `quill pr list`: Filter pull requests with `--source-branch` and `--target-branch`.
+- `quill pr list`: Allow paging using `--skip N` alongside `--limit`.
+- `quill pr list / view`: Include `mergeStatus`, `labels` and `votes`.
+- `quill pr view`: Includes `lastMergeSourceCommit` and `lastMergeTargetCommit`.
+- `quill pr revisions`: Lists revisions of a pull request.
 
 ### Changed
 
-- `quill pr list` returns draft pull requests.
-- `quill pr list --reviewer` has no default.
+- `quill pr list`: Returns draft pull requests.
+- `quill pr list`: `--reviewer` no longer has a default.
 
 ### Removed
 
-- `quill pr view` no longer offers `--with-diff-stats`.
+- `quill pr view`: No longer offers `--with-diff-stats`.
 
 ### Fixed
 
