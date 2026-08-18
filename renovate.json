@@ -1,4 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>renovate-bot/renovate-config"]
+  "extends": [
+    "local>renovate-bot/renovate-config",
+    "local>raeffs-dot-dev/dotnet-sdk-runner:versioning"
+  ]
 }
