@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build
@@ -17,7 +17,7 @@ jobs:
   test:
     runs-on: docker
     container:
-      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test
@@ -26,7 +26,7 @@ jobs:
   format:
     runs-on: docker
     container:
-      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check formatting
@@ -35,7 +35,7 @@ jobs:
   version:
     runs-on: docker
     container:
-      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Version matches changelog
@@ -54,7 +54,7 @@ jobs:
   pack:
     runs-on: docker
     container:
-      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-1
+      image: ghcr.io/raeffs/dotnet-sdk-runner:10.0.400-node24-4
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
