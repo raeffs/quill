@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Quill.AzureDevOps.Dto;
 using Quill.Core;
@@ -263,6 +264,109 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         }
 
         return ids;
+    }
+
+    public async Task<PullRequest> CreateAsync(
+        PullRequestCreateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Repo, nameof(request));
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.SourceBranch, nameof(request));
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.Title, nameof(request));
+
+        var targetRefName = string.IsNullOrWhiteSpace(request.TargetBranch)
+            ? await GetDefaultBranchAsync(request.Repo, cancellationToken)
+            : ToRefName(request.TargetBranch);
+
+        var workItemRefs = new List<CreatePullRequestWorkItemRef>(request.WorkItemIds.Count);
+        foreach (var id in request.WorkItemIds)
+        {
+            workItemRefs.Add(new CreatePullRequestWorkItemRef { Id = id.ToString(CultureInfo.InvariantCulture) });
+        }
+
+        var body = new CreatePullRequestBody
+        {
+            SourceRefName = ToRefName(request.SourceBranch),
+            TargetRefName = targetRefName,
+            Title = request.Title,
+            IsDraft = true,
+            Description = string.IsNullOrEmpty(request.Description) ? null : request.Description,
+            WorkItemRefs = workItemRefs.Count == 0 ? null : workItemRefs,
+        };
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(request.Repo)}/pullrequests?supportsIterations=true&api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.CreatePullRequestBody);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync(url, content, cancellationToken);
+        await EnsureSuccessWithServerMessageAsync(response, cancellationToken);
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize created pull request response.");
+
+        return MapToPullRequest(dto);
+    }
+
+    private static async Task EnsureSuccessWithServerMessageAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        var message = ReadServerMessage(body);
+
+        if (message is null)
+        {
+            response.EnsureSuccessStatusCode();
+            return;
+        }
+
+        throw new HttpRequestException(
+            $"{message} ({((int)response.StatusCode).ToString(CultureInfo.InvariantCulture)})",
+            inner: null,
+            response.StatusCode);
+    }
+
+    private static string? ReadServerMessage(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.ApiErrorResponse);
+            return string.IsNullOrWhiteSpace(dto?.Message) ? null : dto.Message.ReplaceLineEndings(" ");
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<string> GetDefaultBranchAsync(string repo, CancellationToken cancellationToken)
+    {
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}?api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.GitRepositoryResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize repository response.");
+
+        return string.IsNullOrEmpty(dto.DefaultBranch)
+            ? throw new InvalidOperationException(
+                $"Repository '{repo}' has no default branch. Pass --target-branch.")
+            : dto.DefaultBranch;
     }
 
     private static string StripLeadingSlash(string path)

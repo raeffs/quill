@@ -229,7 +229,7 @@ public class AzureDevOpsClientBatchTests
 
 internal sealed record FakeResponse(HttpStatusCode Status, string Body, int? RetryAfterSeconds = null);
 
-internal sealed record RecordedRequest(HttpMethod Method, string? Url);
+internal sealed record RecordedRequest(HttpMethod Method, string? Url, string? Body = null);
 
 internal sealed class RecordingHandler : HttpMessageHandler
 {

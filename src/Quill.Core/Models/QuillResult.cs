@@ -367,7 +367,8 @@ public class PullRequestViewResult
     public required string Description { get; init; }
 
     [JsonPropertyName("workItems")]
-    public required IReadOnlyList<PullRequestLinkedWorkItemResult> WorkItems { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<PullRequestLinkedWorkItemResult>? WorkItems { get; init; }
 
     [JsonPropertyName("threads")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

@@ -38,6 +38,27 @@ public class PullRequestViewResultBuilderTests
     }
 
     [Fact]
+    public void Build_NoWorkItems_LeavesTheKeyAbsent()
+    {
+        // Arrange
+        var pr = MakePullRequest([], description: string.Empty);
+
+        // Act
+        var result = PullRequestViewResultBuilder.Build(
+            pr,
+            currentUserId: string.Empty,
+            markdownDescription: string.Empty,
+            workItems: null,
+            threads: null);
+
+        // Assert
+        result.WorkItems.ShouldBeNull();
+        result.Threads.ShouldBeNull();
+        result.MyVote.ShouldBeNull();
+        result.MyIsRequired.ShouldBeNull();
+    }
+
+    [Fact]
     public void Build_UserIsReviewer_PopulatesMyVoteAndMyIsRequired()
     {
         // Arrange

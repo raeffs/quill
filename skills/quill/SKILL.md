@@ -5,7 +5,7 @@ description: Azure DevOps Server CLI for coding agents. Use when the user asks a
 
 # Quill — Azure DevOps Server CLI
 
-Quill reads Azure DevOps Server work items and pull requests as JSON, and writes work items back. To edit a work item, pull it into a markdown file, change the file, and push the file back.
+Quill reads Azure DevOps Server work items and pull requests as JSON, writes work items back, and opens pull requests. To edit a work item, pull it into a markdown file, change the file, and push the file back.
 
 Quill needs the `quill` CLI on PATH. Install it once per machine:
 
@@ -36,10 +36,20 @@ Use this table to pick the command. Run its help for the rest.
 | `pr view` | You want one pull request with its description and its linked work items. |
 | `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
 | `pr revisions` | You want to know what changed since you last reviewed. Lists one row per push, with the commits git needs to diff them. |
+| `pr create` | You finished a branch and want a pull request open on it. Opens a draft. |
 
 ## Prerequisites
 
-- `QUILL_PAT` holds a Personal Access Token. `quill wi` commands need **Work Items: Read & Write**. `quill pr` commands also need **Code: Read**.
+- `QUILL_PAT` holds a Personal Access Token. Each command needs its own scope:
+
+  | Command | PAT scope |
+  |---|---|
+  | every `quill wi` command | Work Items: Read & Write |
+  | `pr list`, `pr view`, `pr threads`, `pr revisions` | Code: Read |
+  | `pr create` | Code: Read & Write |
+
+  `pr view` also reads the linked work items, so it needs Work Items: Read. `pr create` links work items through the pull request and needs no work item scope, whether or not you pass `--work-item`.
+
 - `.quill.json` sits in the current working directory, or in the user profile directory (`$USERPROFILE` on Windows, `$HOME` elsewhere) as a fallback.
 
 ```json
@@ -123,6 +133,15 @@ These are the things the help output and a successful run do not tell you.
 
 - An older `sourceCommit` may be missing from your clone. A force push leaves it unreachable from every remote ref, so a plain `git fetch` skips it and git reports `fatal: bad object`. Fetch it by SHA: `git fetch origin <sourceCommit>`. The server serves it.
 - To answer "what changed since I last reviewed", read `pr threads` for the date of your last comment. Take the newest `pr revisions` row created before that date, and `range-diff` it against the newest row of all. Comparing only the rows created after your comment skips the revision you actually read.
+- `pr create` always opens a draft. There is no `--draft` and no `--publish`. A draft runs no build validation, accepts no votes, and gains no reviewer a branch policy would require. Nothing starts and nobody hears about it until a human publishes it in the web UI.
+- `pr create` takes flags, not a file — except `--description-file`, which takes a path or `-` for stdin. Unlike `wi create`, there is no frontmatter file.
+- The server caps a description at 4000 characters and rejects a longer one with `code: 2`. It does not truncate. Quill passes the server's message through, so read the `error` string before you retry.
+- `--target-branch` is optional. Without it quill reads the repository and uses its default branch, which costs one extra request. Pass the flag to skip it.
+- The output is the `pr view` row without `workItems` and `threads`. Both keys are absent, not `null` — quill did not look, because each costs another request. Call `pr view` for them.
+- `mergeStatus` is `queued` on every `pr create`. The server has not finished the merge attempt yet, and `lastMergeSourceCommit` and `lastMergeTargetCommit` belong to that unfinished attempt. Call `pr view` for a settled merge status.
+- `myVote` and `myIsRequired` are `null` on `pr create`. You are the author, so you are not a reviewer, and a draft gains no policy-required reviewer.
+- A pull request already open on the same branch pair fails with `TF401179` and a non-zero exit. Quill does not check first and does not return the existing one. Recover with `pr list --source-branch <branch>`.
+- `pr create` has no confirmation flag and no allow-list. The PAT scope is the only boundary. Opening a draft is cheap to undo.
 
 ## Exit codes
 

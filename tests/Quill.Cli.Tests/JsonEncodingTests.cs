@@ -122,6 +122,19 @@ public class JsonEncodingTests
     }
 
     [Fact]
+    public void PullRequestViewResult_NullWorkItems_OmitsWorkItemsAndThreads()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeViewResult([], withWorkItems: false),
+            CommandHelpers.Context.PullRequestViewResult);
+
+        json.ShouldNotContain("\"workItems\"");
+        json.ShouldNotContain("\"threads\"");
+        json.ShouldContain("\"myVote\":null");
+        json.ShouldContain("\"myIsRequired\":null");
+    }
+
+    [Fact]
     public void PullRequestViewResult_Reviewers_CarryNamedVoteAndIsContainer()
     {
         var json = JsonSerializer.Serialize(
@@ -261,7 +274,9 @@ public class JsonEncodingTests
         };
     }
 
-    private static PullRequestViewResult MakeViewResult(IReadOnlyList<PullRequestReviewerResult> reviewers)
+    private static PullRequestViewResult MakeViewResult(
+        IReadOnlyList<PullRequestReviewerResult> reviewers,
+        bool withWorkItems = true)
     {
         return new PullRequestViewResult
         {
@@ -291,7 +306,7 @@ public class JsonEncodingTests
             MyVote = null,
             MyIsRequired = null,
             Description = string.Empty,
-            WorkItems = [],
+            WorkItems = withWorkItems ? [] : null,
         };
     }
 }

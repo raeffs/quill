@@ -84,3 +84,17 @@ _Avoid_: waiting, pending, needs work
 A group attached to a pull request as a reviewer. A group casts no vote of its
 own — its members vote as people — so quill counts the members, not the group.
 _Avoid_: team reviewer, group vote
+
+## Draft and publish
+
+**Draft**:
+A pull request Azure DevOps holds back from review. It runs no build validation,
+accepts no votes, and gains no reviewer a branch policy would otherwise require.
+Only a reviewer someone names on it hears about it.
+_Avoid_: WIP, work in progress, unpublished
+
+**Publish**:
+The act that ends a draft. It assigns the reviewers policy requires, evaluates
+the policies, and opens voting. A pull request cannot return to draft without
+discarding every vote it has collected.
+_Avoid_: undraft, open, ready for review

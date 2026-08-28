@@ -9,7 +9,7 @@ public static class PullRequestViewResultBuilder
         PullRequest pullRequest,
         string currentUserId,
         string markdownDescription,
-        IReadOnlyList<PullRequestLinkedWorkItemResult> workItems,
+        IReadOnlyList<PullRequestLinkedWorkItemResult>? workItems,
         IReadOnlyList<PullRequestThreadResult>? threads)
     {
         var matching = pullRequest.Reviewers.FirstOrDefault(

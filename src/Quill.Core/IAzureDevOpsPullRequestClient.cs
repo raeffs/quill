@@ -24,4 +24,8 @@ public interface IAzureDevOpsPullRequestClient
         int prId,
         string repo,
         CancellationToken cancellationToken = default);
+
+    Task<PullRequest> CreateAsync(
+        PullRequestCreateRequest request,
+        CancellationToken cancellationToken = default);
 }
