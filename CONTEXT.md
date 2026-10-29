@@ -18,6 +18,13 @@ does next. It is not a copy of the API response. Row count decides nothing: a
 command that returns many rows emits detail rows when no command follows it.
 _Avoid_: full object, view shape
 
+## Backlog
+
+**Backlog**:
+The work items an agent maintains as markdown files, pulled from the server and
+pushed back. Not the Azure DevOps board view of the same name.
+_Avoid_: sync, workspace, local items
+
 ## Merging
 
 **Merge attempt**:

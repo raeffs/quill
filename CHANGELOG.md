@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Moved from the `wi` group. `quill wi pull`, `quill wi push` and `quill wi create` no longer parse.
+
 ## [1.2.0]
 
 ### Added

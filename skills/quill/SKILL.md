@@ -17,16 +17,16 @@ The install needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs 
 
 ## Finding the right command
 
-Run `quill --help`, `quill wi --help`, or `quill wi <command> --help` for syntax, arguments, flags, and defaults. The help output is complete. Do not guess a flag, and do not expect this file to list one.
+Run `quill --help`, `quill wi --help`, `quill backlog --help`, or `quill <group> <command> --help` for syntax, arguments, flags, and defaults. The help output is complete. Do not guess a flag, and do not expect this file to list one.
 
 Use this table to pick the command. Run its help for the rest.
 
 | Command | Use it when |
 |---|---|
 | `wi view` | You want to read one work item. Nothing is written to disk. |
-| `wi pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
-| `wi push` | You want to send an edited file back to the server. |
-| `wi create` | You want a new Product Backlog Item or Bug, described by a markdown file. |
+| `backlog pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
+| `backlog push` | You want to send an edited file back to the server. |
+| `backlog create` | You want a new Product Backlog Item or Bug, described by a markdown file. |
 | `wi create-task` | You want a new Task under a PBI or Bug. Title only, no file. |
 | `wi list` | You want the answer to "what is assigned to me right now". |
 | `wi search` | You want to find items anywhere in the project by title text or filter. |
@@ -98,8 +98,8 @@ These are the things the help output and a successful run do not tell you.
 
 - `wi view --markdown` and `wi view --with-children` are mutually exclusive. Passing both exits with code 3.
 - `wi search` with no query and no filter exits with code 3. Supply a query or at least one filter.
-- `wi push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
-- `wi create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item` or `Bug`, and a `parentId`. The parent must exist, be assigned to the authenticated user, and be in an allowed state. On success quill rewrites the file with the server-assigned ID.
+- `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
+- `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item` or `Bug`, and a `parentId`. The parent must exist, be assigned to the authenticated user, and be in an allowed state. On success quill rewrites the file with the server-assigned ID.
 - `wi create-task` applies the same parent rules.
 - Quill does not validate state and type filter values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi tree` and the `workItems` array of `pr view` emit error stubs instead of failing the whole call: `{"id": 99999, "error": "unreadable"}` for a 403 or 404 on one item, `{"id": 99999, "error": "batch-failed"}` when a sub-batch fails.
@@ -134,7 +134,7 @@ These are the things the help output and a successful run do not tell you.
 - An older `sourceCommit` may be missing from your clone. A force push leaves it unreachable from every remote ref, so a plain `git fetch` skips it and git reports `fatal: bad object`. Fetch it by SHA: `git fetch origin <sourceCommit>`. The server serves it.
 - To answer "what changed since I last reviewed", read `pr threads` for the date of your last comment. Take the newest `pr revisions` row created before that date, and `range-diff` it against the newest row of all. Comparing only the rows created after your comment skips the revision you actually read.
 - `pr create` always opens a draft. There is no `--draft` and no `--publish`. A draft runs no build validation, accepts no votes, and gains no reviewer a branch policy would require. Nothing starts and nobody hears about it until a human publishes it in the web UI.
-- `pr create` takes flags, not a file — except `--description-file`, which takes a path or `-` for stdin. Unlike `wi create`, there is no frontmatter file.
+- `pr create` takes flags, not a file — except `--description-file`, which takes a path or `-` for stdin. Unlike `backlog create`, there is no frontmatter file.
 - The server caps a description at 4000 characters and rejects a longer one with `code: 2`. It does not truncate. Quill passes the server's message through, so read the `error` string before you retry.
 - `--target-branch` is optional. Without it quill reads the repository and uses its default branch, which costs one extra request. Pass the flag to skip it.
 - The output is the `pr view` row without `workItems` and `threads`. Both keys are absent, not `null` — quill did not look, because each costs another request. Call `pr view` for them.
