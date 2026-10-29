@@ -7,7 +7,7 @@ using Quill.Cli;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 
-namespace Quill.Cli.Commands.Wi;
+namespace Quill.Cli.Commands.Backlog;
 
 internal static class PullCommand
 {

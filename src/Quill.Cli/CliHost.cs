@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using Quill.Cli.Commands.Backlog;
 using Quill.Cli.Commands.Pr;
 using Quill.Cli.Commands.Wi;
 
@@ -18,6 +19,7 @@ internal static class CliHost
     {
         var rootCommand = new RootCommand("Quill — Azure DevOps Server CLI for coding agents");
 
+        rootCommand.Subcommands.Add(BacklogCommand.Create(serviceProvider));
         rootCommand.Subcommands.Add(WorkItemCommand.Create(serviceProvider));
         rootCommand.Subcommands.Add(PrCommand.Create(serviceProvider));
 

@@ -8,7 +8,7 @@ using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
 
-namespace Quill.Cli.Commands.Wi;
+namespace Quill.Cli.Commands.Backlog;
 
 internal static class CreateCommand
 {
