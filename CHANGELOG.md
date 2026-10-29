@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
+## [1.2.0]
+
 ### Added
 
-- `quill pr create`, which opens a pull request as a draft. Takes `--repo`, `--source-branch` and `--title`, plus an optional `--target-branch` that defaults to the repository's default branch, a `--description-file` that reads a path or stdin, and a repeatable `--work-item`.
+- `quill pr create`: Opens a pull request as a draft. Takes `--repo`, `--source-branch` and `--title`, an optional `--target-branch` that defaults to the repository's default branch, a `--description-file` that reads a path or stdin, and a repeatable `--work-item`.
 
 ### Fixed
 
