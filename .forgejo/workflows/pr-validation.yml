@@ -143,7 +143,7 @@ jobs:
 
       # The only check that reaches FrontmatterParser in the native binary: every
       # command needs Azure DevOps, so --version and --help never touch YamlDotNet.
-      # wi push parses frontmatter before it dials, so a network error proves the
+      # backlog push parses frontmatter before it dials, so a network error proves the
       # YAML parsed. A broken static context fails earlier and differently.
       - name: Smoke-run the frontmatter path
         shell: bash
@@ -162,7 +162,7 @@ jobs:
           }
           JSON
           cd "${WORK}"
-          QUILL_PAT=dummy quill wi push item.md > out.json || true
+          QUILL_PAT=dummy quill backlog push item.md > out.json || true
           cat out.json
           grep -q '"code":2' out.json \
             || { echo "::error::frontmatter smoke test did not reach the network error"; exit 1; }
