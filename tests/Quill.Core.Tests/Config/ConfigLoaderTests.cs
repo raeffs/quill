@@ -13,8 +13,7 @@ public class ConfigLoaderTests
           "serverUrl": "https://myserver.com/tfs",
           "collection": "DefaultCollection",
           "project": "MyProject",
-          "allowedStates": ["Active", "New"],
-          "allowedParentStates": ["New", "Approved"]
+          "allowedStates": ["Active", "New"]
         }
         """;
 
@@ -30,7 +29,6 @@ public class ConfigLoaderTests
             config.Collection.ShouldBe("DefaultCollection");
             config.Project.ShouldBe("MyProject");
             config.AllowedStates.ShouldBe(["Active", "New"], ignoreOrder: true);
-            config.AllowedParentStates.ShouldBe(["New", "Approved"], ignoreOrder: true);
         }
         finally
         {
@@ -169,7 +167,7 @@ public class ConfigLoaderTests
     }
 
     [Fact]
-    public void Load_MissingAllowedParentStates_ThrowsInvalidOperationException()
+    public void Load_WithoutAllowedParentStates_Loads()
     {
         var json = """
         {
@@ -186,10 +184,38 @@ public class ConfigLoaderTests
             Directory.CreateDirectory(tempDir);
             File.WriteAllText(Path.Combine(tempDir, ".quill.json"), json);
 
-            var act = () => ConfigLoader.Load(tempDir);
+            var config = ConfigLoader.Load(tempDir);
 
-            Should.Throw<InvalidOperationException>(act)
-                .Message.ShouldContain("allowedParentStates");
+            config.AllowedStates.ShouldBe(["Active"]);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Load_WithLeftoverAllowedParentStates_Loads()
+    {
+        var json = """
+        {
+          "serverUrl": "https://myserver.com/tfs",
+          "collection": "DefaultCollection",
+          "project": "MyProject",
+          "allowedStates": ["Active"],
+          "allowedParentStates": ["New"]
+        }
+        """;
+
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, ".quill.json"), json);
+
+            var config = ConfigLoader.Load(tempDir);
+
+            config.Project.ShouldBe("MyProject");
         }
         finally
         {

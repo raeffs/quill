@@ -24,7 +24,6 @@ public class PushValidatorTests
             Collection = "C",
             Project = "P",
             AllowedStates = ["Active", "New"],
-            AllowedParentStates = ["New"],
         };
 
         var result = PushValidator.Validate(workItem, config, TestConstants.TestUserId);
@@ -50,7 +49,6 @@ public class PushValidatorTests
             Collection = "C",
             Project = "P",
             AllowedStates = ["Active", "New"],
-            AllowedParentStates = ["New"],
         };
 
         var result = PushValidator.Validate(workItem, config, TestConstants.TestUserId);
@@ -76,7 +74,6 @@ public class PushValidatorTests
             Collection = "C",
             Project = "P",
             AllowedStates = ["Active"],
-            AllowedParentStates = ["New"],
         };
 
         var result = PushValidator.Validate(workItem, config, TestConstants.TestUserId);
@@ -102,7 +99,6 @@ public class PushValidatorTests
             Collection = "C",
             Project = "P",
             AllowedStates = ["Active"],
-            AllowedParentStates = ["New"],
         };
 
         var result = PushValidator.Validate(workItem, config, TestConstants.TestUserId);

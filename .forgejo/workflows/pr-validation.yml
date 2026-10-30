@@ -157,8 +157,7 @@ jobs:
             "serverUrl": "https://nonexistent.invalid",
             "collection": "c",
             "project": "p",
-            "allowedStates": ["Active"],
-            "allowedParentStates": ["Active"]
+            "allowedStates": ["Active"]
           }
           JSON
           cd "${WORK}"

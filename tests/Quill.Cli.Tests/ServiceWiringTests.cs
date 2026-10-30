@@ -61,7 +61,6 @@ public class ServiceWiringTests
             Collection = Collection,
             Project = Project,
             AllowedStates = ["Done"],
-            AllowedParentStates = ["Done"],
         }));
         services.AddSingleton<IPatProvider>(new StubPatProvider());
 

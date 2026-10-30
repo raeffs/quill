@@ -14,6 +14,7 @@
 
 - `quill wi view`: No longer offers `--markdown`. Use `quill backlog pull` to get the backlog file format.
 - `quill wi search`: Use `quill wi list --title` instead.
+- `.quill.json`: `allowedParentStates` is no longer read. A config that still has it loads, and the key is ignored.
 
 ## [1.2.0]
 

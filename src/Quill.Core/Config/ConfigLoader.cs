@@ -46,11 +46,6 @@ public static class ConfigLoader
             throw new InvalidOperationException("allowedStates is required in .quill.json");
         }
 
-        if (config.AllowedParentStates is null || config.AllowedParentStates.Count == 0)
-        {
-            throw new InvalidOperationException("allowedParentStates is required in .quill.json");
-        }
-
         return config;
     }
 

@@ -56,12 +56,11 @@ Use this table to pick the command. Run its help for the rest.
   "serverUrl": "https://your-server.com/tfs",
   "collection": "DefaultCollection",
   "project": "YourProject",
-  "allowedStates": ["New", "Active"],
-  "allowedParentStates": ["New", "Approved"]
+  "allowedStates": ["New", "Active"]
 }
 ```
 
-All fields are required. `allowedStates` controls which work items you can push. `allowedParentStates` controls which parent states accept a new PBI or task. Quill validates the assignee against the PAT user.
+All fields are required. `allowedStates` controls which work items you can push. Quill validates the assignee against the PAT user.
 
 Do not check for the config file before you run a command, and do not ask the user for its values. Quill resolves the config itself and reports a clear error when the file is missing from both locations.
 

@@ -46,7 +46,6 @@ public class PushCommandLogicTests
             Collection = TestConstants.Collection,
             Project = TestConstants.Project,
             AllowedStates = ["Active", "New"],
-            AllowedParentStates = ["New", "Approved"],
         };
 
         var validation = PushValidator.Validate(workItem, config, TestConstants.TestUserId);
@@ -78,7 +77,6 @@ public class PushCommandLogicTests
             Collection = TestConstants.Collection,
             Project = TestConstants.Project,
             AllowedStates = ["Active", "New"],
-            AllowedParentStates = ["New", "Approved"],
         };
 
         var validation = PushValidator.Validate(workItem, config, TestConstants.TestUserId);
