@@ -2,25 +2,26 @@
 
 ## [Unreleased]
 
+## [2.0.0]
+
 ### Added
 
-- `quill wi create`: Creates a Product Backlog Item, Bug or Task under a parent and prints it like `quill wi view`. Takes `--type`, `--title` and `--parent`, a `--description-file` that reads a path or stdin, and an `--assignee` that defaults to nobody.
+- `quill wi create`: Creates a Product Backlog Item, Bug or Task under a parent.
 
 ### Changed
 
-- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Moved from the `wi` group. `quill wi pull` and `quill wi push` no longer parse, and `quill wi create` no longer takes a file.
+- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Moved from the `wi` group.
 - `quill wi view`: `--with-children` combines with any other flag.
-- `quill wi list`: Takes `--title` to match title words. `--assignee` no longer defaults to `@me`, and a call without a filter exits with code 3.
-- `quill backlog create`: The parent must fit a fixed type hierarchy. A Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state no longer matters.
+- `quill wi list`: Takes `--title` to match title words. `--assignee` no longer defaults to `@me`.
+- `quill backlog create`: The parent must fit a fixed type hierarchy.
 - `quill backlog create`: Accepts `type: Task`.
-- A command line that does not parse, such as a missing required flag or an unknown command, exits with code 3 rather than 1.
 
 ### Removed
 
-- `quill wi view`: No longer offers `--markdown`. Use `quill backlog pull` to get the backlog file format.
+- `quill wi view`: No longer offers `--markdown`. Use `quill backlog pull` instead.
 - `quill wi search`: Use `quill wi list --title` instead.
-- `.quill.json`: `allowedParentStates` is no longer read. A config that still has it loads, and the key is ignored.
 - `quill wi create-task`: Use `quill wi create --type Task` instead.
+- `.quill.json`: `allowedParentStates` is no longer read.
 
 ## [1.2.0]
 
