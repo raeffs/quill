@@ -12,8 +12,6 @@ namespace Quill.Cli.Commands.Backlog;
 
 internal static class CreateCommand
 {
-    private static readonly string[] AllowedTypes = ["Product Backlog Item", "Bug"];
-
     public static Command Create(IServiceProvider serviceProvider)
     {
         var fileArg = new Argument<string>("file-path") { Description = "Path to the markdown file with frontmatter" };
@@ -77,10 +75,10 @@ internal static class CreateCommand
                 return;
             }
 
-            if (!AllowedTypes.Contains(parsed.Type, StringComparer.OrdinalIgnoreCase))
+            if (!WorkItemHierarchy.ChildTypes.Contains(parsed.Type, StringComparer.OrdinalIgnoreCase))
             {
                 Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = $"Type must be one of: {string.Join(", ", AllowedTypes)}.", Code = 1 }, CommandHelpers.Context.ErrorResult));
+                    new ErrorResult { Error = $"Type must be one of: {string.Join(", ", WorkItemHierarchy.ChildTypes)}.", Code = 1 }, CommandHelpers.Context.ErrorResult));
                 Environment.ExitCode = 1;
                 return;
             }
@@ -99,7 +97,7 @@ internal static class CreateCommand
             var parentWorkItem = await client.GetWorkItemAsync(parsed.ParentId.Value);
             var currentUser = await identityClient.GetCurrentUserAsync();
 
-            var validation = ParentValidator.Validate(parentWorkItem, config, currentUser.Id);
+            var validation = ParentValidator.Validate(parsed.Type, parentWorkItem, currentUser.Id);
 
             if (!validation.IsValid)
             {

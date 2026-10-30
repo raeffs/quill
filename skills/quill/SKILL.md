@@ -26,7 +26,7 @@ Use this table to pick the command. Run its help for the rest.
 | `wi view` | You want to read one work item. Nothing is written to disk. |
 | `backlog pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
 | `backlog push` | You want to send an edited file back to the server. |
-| `backlog create` | You want a new Product Backlog Item or Bug, described by a markdown file. |
+| `backlog create` | You want a new Product Backlog Item, Bug or Task, described by a markdown file. |
 | `wi create-task` | You want a new Task under a PBI or Bug. Title only, no file. |
 | `wi list` | You want to find work items by title text, assignee, state or type. For "what is assigned to me", pass `--assignee @me`. |
 | `wi tree` | You want to orient yourself under an Epic or Feature. Use `--depth 1` for direct children only. |
@@ -98,7 +98,7 @@ These are the things the help output and a successful run do not tell you.
 - A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
-- `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item` or `Bug`, and a `parentId`. The parent must exist, be assigned to the authenticated user, and be in an allowed state. On success quill rewrites the file with the server-assigned ID.
+- `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create-task` applies the same parent rules.
 - Quill does not validate state and type filter values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi tree` and the `workItems` array of `pr view` emit error stubs instead of failing the whole call: `{"id": 99999, "error": "unreadable"}` for a 403 or 404 on one item, `{"id": 99999, "error": "batch-failed"}` when a sub-batch fails.

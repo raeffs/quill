@@ -7,106 +7,91 @@ namespace Quill.Core.Tests.Validation;
 
 public class ParentValidatorTests
 {
-    [Fact]
-    public void Validate_ValidParent_ReturnsSuccess()
+    [Theory]
+    [InlineData("Task", "Product Backlog Item")]
+    [InlineData("Task", "Bug")]
+    [InlineData("Product Backlog Item", "Feature")]
+    [InlineData("Bug", "Feature")]
+    [InlineData("task", "product backlog item")]
+    public void Validate_AllowedParentType_ReturnsSuccess(string childType, string parentType)
     {
-        var parent = new WorkItem
-        {
-            Id = 100,
-            Type = "Product Backlog Item",
-            Title = "Parent",
-            State = "New",
-            AssignedToId = TestConstants.TestUserId,
-        };
-        var config = new QuillConfig
-        {
-            ServerUrl = "https://x",
-            Collection = "C",
-            Project = "P",
-            AllowedStates = ["Active"],
-            AllowedParentStates = ["New", "Active"],
-        };
-
-        var result = ParentValidator.Validate(parent, config, TestConstants.TestUserId);
+        var result = ParentValidator.Validate(childType, Parent(parentType), TestConstants.TestUserId);
 
         result.IsValid.ShouldBeTrue();
         result.Errors.ShouldBeEmpty();
     }
 
-    [Fact]
-    public void Validate_WrongState_ReturnsError()
+    [Theory]
+    [InlineData("Task", "Feature")]
+    [InlineData("Task", "Task")]
+    [InlineData("Product Backlog Item", "Product Backlog Item")]
+    [InlineData("Product Backlog Item", "Bug")]
+    [InlineData("Bug", "Task")]
+    [InlineData("Feature", "Feature")]
+    [InlineData("Epic", "Feature")]
+    public void Validate_DisallowedParentType_ReturnsErrorNamingParentType(string childType, string parentType)
     {
-        var parent = new WorkItem
-        {
-            Id = 100,
-            Type = "Product Backlog Item",
-            Title = "Parent",
-            State = "Closed",
-            AssignedToId = TestConstants.TestUserId,
-        };
-        var config = new QuillConfig
-        {
-            ServerUrl = "https://x",
-            Collection = "C",
-            Project = "P",
-            AllowedStates = ["Active"],
-            AllowedParentStates = ["New"],
-        };
-
-        var result = ParentValidator.Validate(parent, config, TestConstants.TestUserId);
+        var result = ParentValidator.Validate(childType, Parent(parentType), TestConstants.TestUserId);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.Contains("state"));
+        result.Errors.ShouldHaveSingleItem().ShouldContain($"'{parentType}'");
+    }
+
+    [Theory]
+    [InlineData("New")]
+    [InlineData("Closed")]
+    [InlineData("Removed")]
+    public void Validate_ParentInAnyState_ReturnsSuccess(string state)
+    {
+        var result = ParentValidator.Validate("Task", Parent("Product Backlog Item", state), TestConstants.TestUserId);
+
+        result.IsValid.ShouldBeTrue();
     }
 
     [Fact]
     public void Validate_WrongAssignee_ReturnsError()
     {
-        var parent = new WorkItem
-        {
-            Id = 100,
-            Type = "Product Backlog Item",
-            Title = "Parent",
-            State = "New",
-            AssignedToId = "other-user-id",
-        };
-        var config = new QuillConfig
-        {
-            ServerUrl = "https://x",
-            Collection = "C",
-            Project = "P",
-            AllowedStates = ["Active"],
-            AllowedParentStates = ["New"],
-        };
-
-        var result = ParentValidator.Validate(parent, config, TestConstants.TestUserId);
+        var result = ParentValidator.Validate("Task", Parent("Bug", assignedToId: "other-user-id"), TestConstants.TestUserId);
 
         result.IsValid.ShouldBeFalse();
-        result.Errors.ShouldContain(e => e.Contains("assignee"));
+        result.Errors.ShouldHaveSingleItem().ShouldContain("assignee");
     }
 
     [Fact]
     public void Validate_AssigneeComparison_IsCaseInsensitive()
     {
-        var parent = new WorkItem
-        {
-            Id = 100,
-            Type = "Product Backlog Item",
-            Title = "Parent",
-            State = "New",
-            AssignedToId = TestConstants.TestUserId.ToUpperInvariant(),
-        };
-        var config = new QuillConfig
-        {
-            ServerUrl = "https://x",
-            Collection = "C",
-            Project = "P",
-            AllowedStates = ["Active"],
-            AllowedParentStates = ["New"],
-        };
+        var parent = Parent("Bug", assignedToId: TestConstants.TestUserId.ToUpperInvariant());
 
-        var result = ParentValidator.Validate(parent, config, TestConstants.TestUserId);
+        var result = ParentValidator.Validate("Task", parent, TestConstants.TestUserId);
 
         result.IsValid.ShouldBeTrue();
     }
+
+    [Fact]
+    public void Validate_WrongTypeAndWrongAssignee_ReportsBoth()
+    {
+        var result = ParentValidator.Validate("Task", Parent("Feature", assignedToId: "other-user-id"), TestConstants.TestUserId);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.Count.ShouldBe(2);
+        result.Errors.ShouldContain(e => e.Contains("'Feature'"));
+        result.Errors.ShouldContain(e => e.Contains("assignee"));
+    }
+
+    [Fact]
+    public void ValidateType_IgnoresAssignee()
+    {
+        var result = ParentValidator.ValidateType("Task", Parent("Bug", assignedToId: "other-user-id"));
+
+        result.IsValid.ShouldBeTrue();
+    }
+
+    private static WorkItem Parent(string type, string state = "New", string? assignedToId = null) => new()
+    {
+        Id = 100,
+        Type = type,
+        Title = "Parent",
+        State = state,
+        AssignedToId = assignedToId ?? TestConstants.TestUserId,
+    };
 }

@@ -35,14 +35,13 @@ internal static class CreateTaskCommand
     {
         try
         {
-            var config = serviceProvider.GetRequiredService<QuillConfig>();
             var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
             var identityClient = serviceProvider.GetRequiredService<AzureDevOpsIdentityClient>();
 
             var parentWorkItem = await client.GetWorkItemAsync(parentId);
             var currentUser = await identityClient.GetCurrentUserAsync();
 
-            var validation = ParentValidator.Validate(parentWorkItem, config, currentUser.Id);
+            var validation = ParentValidator.Validate("Task", parentWorkItem, currentUser.Id);
 
             if (!validation.IsValid)
             {
