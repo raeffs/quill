@@ -15,11 +15,6 @@ internal static class ViewCommand
     {
         var idArg = new Argument<int>("id") { Description = "The Azure DevOps work item ID to view" };
 
-        var markdownOption = new Option<bool>("--markdown")
-        {
-            Description = "Emit the same markdown document `pull` would write, to stdout.",
-        };
-
         var withChildrenOption = new Option<bool>("--with-children")
         {
             Description = "Append a `children` array with each child's id, title, and state.",
@@ -28,31 +23,24 @@ internal static class ViewCommand
         var command = new Command("view", "Print a work item to stdout without writing to a file")
         {
             idArg,
-            markdownOption,
             withChildrenOption,
         };
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
             var id = parseResult.GetValue(idArg);
-            var markdown = parseResult.GetValue(markdownOption);
             var withChildren = parseResult.GetValue(withChildrenOption);
-            await ExecuteAsync(serviceProvider, id, markdown, withChildren, cancellationToken);
+            await ExecuteAsync(serviceProvider, id, withChildren, cancellationToken);
         });
 
         return command;
     }
 
     private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider, int id, bool markdown, bool withChildren, CancellationToken cancellationToken)
+        IServiceProvider serviceProvider, int id, bool withChildren, CancellationToken cancellationToken)
     {
         try
         {
-            if (markdown && withChildren)
-            {
-                throw new InvalidOperationException("--markdown and --with-children are mutually exclusive.");
-            }
-
             var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.View");
             var config = serviceProvider.GetRequiredService<QuillConfig>();
 
@@ -64,19 +52,6 @@ internal static class ViewCommand
                 ? string.Empty
                 : (await MarkdownConverter.ToMarkdownAsync(
                     workItem.Description, config.ServerUrl, config.Collection, config.Project, client, logger)).TrimEnd();
-
-            if (markdown)
-            {
-                var fileContent = FrontmatterParser.Write(
-                    id: workItem.Id,
-                    type: workItem.Type,
-                    title: workItem.Title,
-                    state: workItem.State,
-                    body: body,
-                    parentId: workItem.ParentId);
-                Console.Write(fileContent);
-                return;
-            }
 
             IReadOnlyList<ChildItem>? children = null;
             if (withChildren)

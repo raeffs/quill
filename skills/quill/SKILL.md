@@ -96,7 +96,6 @@ Write `[link text](#<work-item-id>)` to link to another backlog item. On push, q
 
 These are the things the help output and a successful run do not tell you.
 
-- `wi view --markdown` and `wi view --with-children` are mutually exclusive. Passing both exits with code 3.
 - `wi search` with no query and no filter exits with code 3. Supply a query or at least one filter.
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item` or `Bug`, and a `parentId`. The parent must exist, be assigned to the authenticated user, and be in an allowed state. On success quill rewrites the file with the server-assigned ID.

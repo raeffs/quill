@@ -5,6 +5,11 @@
 ### Changed
 
 - `quill backlog pull`, `quill backlog push`, `quill backlog create`: Moved from the `wi` group. `quill wi pull`, `quill wi push` and `quill wi create` no longer parse.
+- `quill wi view`: `--with-children` combines with any other flag.
+
+### Removed
+
+- `quill wi view`: No longer offers `--markdown`. Use `quill backlog pull` to get the backlog file format.
 
 ## [1.2.0]
 
