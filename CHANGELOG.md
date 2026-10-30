@@ -9,6 +9,7 @@
 - `quill wi list`: Takes `--title` to match title words. `--assignee` no longer defaults to `@me`, and a call without a filter exits with code 3.
 - `quill backlog create`, `quill wi create-task`: The parent must fit a fixed type hierarchy. A Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state no longer matters.
 - `quill backlog create`: Accepts `type: Task`.
+- A command line that does not parse, such as a missing required flag or an unknown command, exits with code 3 rather than 1.
 
 ### Removed
 

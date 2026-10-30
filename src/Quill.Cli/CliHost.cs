@@ -30,4 +30,20 @@ internal static class CliHost
     {
         return BuildRootCommand(serviceProvider).Parse(args, ParserConfiguration);
     }
+
+    public static async Task<int> InvokeAsync(string[] args, IServiceProvider serviceProvider)
+    {
+        var parseResult = Parse(args, serviceProvider);
+
+        // InvokeAsync reports parse failures only, as 1. Quill reports every usage error as 3.
+        // A command that ran and failed reports through Environment.ExitCode, which InvokeAsync does not read.
+        var invokeExitCode = await parseResult.InvokeAsync();
+
+        if (parseResult.Errors.Count > 0)
+        {
+            return 3;
+        }
+
+        return invokeExitCode != 0 ? invokeExitCode : Environment.ExitCode;
+    }
 }
