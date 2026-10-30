@@ -21,4 +21,22 @@ public class WorkItemHierarchyTests
     {
         WorkItemHierarchy.ParentTypesOf(childType).ShouldBe(expected, ignoreOrder: true);
     }
+
+    [Theory]
+    [InlineData("task", "Task")]
+    [InlineData("product backlog item", "Product Backlog Item")]
+    [InlineData("BUG", "Bug")]
+    public void CanonicalChildType_IsCaseInsensitive(string input, string expected)
+    {
+        WorkItemHierarchy.CanonicalChildType(input).ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("Feature")]
+    [InlineData("Epic")]
+    [InlineData("PBI")]
+    public void CanonicalChildType_OutsideHierarchy_ReturnsNull(string input)
+    {
+        WorkItemHierarchy.CanonicalChildType(input).ShouldBeNull();
+    }
 }

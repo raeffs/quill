@@ -65,15 +65,7 @@ internal static class PushCommand
                 return;
             }
 
-            var (rawHtml, linkIds) = await MarkdownConverter.ToHtmlAsync(
-                parsed.Body, config.ServerUrl, config.Collection, config.Project, client, logger);
-
-            var styledHtml = HtmlStyler.ApplyStyles(rawHtml);
-            var sanitizer = new Ganss.Xss.HtmlSanitizer();
-            sanitizer.AllowedAttributes.Add("style");
-            sanitizer.AllowedAttributes.Add("data-vss-mention");
-            sanitizer.AllowedAttributes.Add("data-lang");
-            var html = sanitizer.Sanitize(styledHtml);
+            var (html, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
             await client.UpdateWorkItemFieldsAsync(parsed.Id, workItem.Type, parsed.Title, html);
 

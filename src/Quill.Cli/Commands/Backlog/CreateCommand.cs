@@ -110,15 +110,7 @@ internal static class CreateCommand
 
             var assignee = string.IsNullOrWhiteSpace(assignedTo) ? currentUser.DisplayName : assignedTo;
 
-            var (rawHtml, linkIds) = await MarkdownConverter.ToHtmlAsync(
-                parsed.Body, config.ServerUrl, config.Collection, config.Project, client, logger);
-
-            var styledHtml = HtmlStyler.ApplyStyles(rawHtml);
-            var sanitizer = new Ganss.Xss.HtmlSanitizer();
-            sanitizer.AllowedAttributes.Add("style");
-            sanitizer.AllowedAttributes.Add("data-vss-mention");
-            sanitizer.AllowedAttributes.Add("data-lang");
-            var descriptionHtml = sanitizer.Sanitize(styledHtml);
+            var (descriptionHtml, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
             var newId = await client.CreateWorkItemAsync(
                 parsed.Type,
