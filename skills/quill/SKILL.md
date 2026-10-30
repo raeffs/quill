@@ -1,11 +1,11 @@
 ---
 name: quill
-description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, or about pull requests — reading, searching, listing, creating, updating, pushing, walking the hierarchy, or reading comments, review threads and revisions.
+description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, or about pull requests — reading, listing, creating, updating, pushing, walking the hierarchy, or reading comments, review threads and revisions.
 ---
 
 # Quill — Azure DevOps Server CLI
 
-Quill reads Azure DevOps Server work items and pull requests as JSON, writes work items back, and opens pull requests. To edit a work item, pull it into a markdown file, change the file, and push the file back.
+Quill reads Azure DevOps Server work items and pull requests as JSON, writes work items back, and opens pull requests. To edit a work item, pull it into a markdown file, change the file, and push the file back. Work item commands come in two groups: `backlog` keeps the backlog as markdown files that you pull, edit and push, and `wi` reads and creates work items on demand while you implement.
 
 Quill needs the `quill` CLI on PATH. Install it once per machine:
 
@@ -17,20 +17,32 @@ The install needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs 
 
 ## Finding the right command
 
-Run `quill --help`, `quill wi --help`, `quill backlog --help`, or `quill <group> <command> --help` for syntax, arguments, flags, and defaults. The help output is complete. Do not guess a flag, and do not expect this file to list one.
+Run `quill --help`, `quill backlog --help`, `quill wi --help`, `quill pr --help`, or `quill <group> <command> --help` for syntax, arguments, flags, and defaults. The help output is complete. Do not guess a flag, and do not expect this file to list one.
 
-Use this table to pick the command. Run its help for the rest.
+Pick the group first. Use `backlog` when you maintain the backlog as files: pull an item, edit it, push it back, or create one from a file. Use `wi` when you implement an item and want to read it, find related items, or create one without a file. Use `pr` for pull requests. Then pick the command from the group's table, and run its help for the rest.
+
+### backlog
+
+| Command | Use it when |
+|---|---|
+| `backlog pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
+| `backlog push` | You want to send an edited file back to the server. |
+| `backlog create` | You want a new Product Backlog Item, Bug or Task, described by a markdown file. |
+
+### wi
 
 | Command | Use it when |
 |---|---|
 | `wi view` | You want to read one work item. Nothing is written to disk. |
-| `backlog pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
-| `backlog push` | You want to send an edited file back to the server. |
-| `backlog create` | You want a new Product Backlog Item, Bug or Task, described by a markdown file. |
-| `wi create` | You want a new Product Backlog Item, Bug or Task under a parent, without a file. |
 | `wi list` | You want to find work items by title text, assignee, state or type. For "what is assigned to me", pass `--assignee @me`. |
 | `wi tree` | You want to orient yourself under an Epic or Feature. Use `--depth 1` for direct children only. |
 | `wi comments` | You want the discussion on a work item. |
+| `wi create` | You want a new Product Backlog Item, Bug or Task under a parent, without a file. |
+
+### pr
+
+| Command | Use it when |
+|---|---|
 | `pr list` | You want to find pull requests — by branch, by author, or the ones waiting on you (`--reviewer @me`). |
 | `pr view` | You want one pull request with its description and its linked work items. |
 | `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
@@ -43,7 +55,7 @@ Use this table to pick the command. Run its help for the rest.
 
   | Command | PAT scope |
   |---|---|
-  | every `quill wi` command | Work Items: Read & Write |
+  | every `quill backlog` and `quill wi` command | Work Items: Read & Write |
   | `pr list`, `pr view`, `pr threads`, `pr revisions` | Code: Read |
   | `pr create` | Code: Read & Write |
 
@@ -64,7 +76,9 @@ All fields are required. `allowedStates` controls which work items you can push.
 
 Do not check for the config file before you run a command, and do not ask the user for its values. Quill resolves the config itself and reports a clear error when the file is missing from both locations.
 
-## Markdown file format
+## Backlog file format
+
+`backlog pull` writes this format, and `backlog push` and `backlog create` read it. No other command emits it.
 
 ```markdown
 ---
@@ -94,16 +108,16 @@ Write `[link text](#<work-item-id>)` to link to another backlog item. On push, q
 
 These are the things the help output and a successful run do not tell you.
 
-- A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
-- `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
 - `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user.
-- Quill does not validate state and type filter values against `.quill.json`. A typo returns `[]` rather than an error.
+- A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
+- `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
+- `wi list` does not validate `--state` and `--type` values against `.quill.json`. A typo returns `[]` rather than an error.
+- `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
 - `wi tree` and the `workItems` array of `pr view` emit error stubs instead of failing the whole call: `{"id": 99999, "error": "unreadable"}` for a 403 or 404 on one item, `{"id": 99999, "error": "batch-failed"}` when a sub-batch fails.
 - In `wi tree`, a bare `{"id": 99999}` node means the child was clipped by `--depth`, not that it has no children. A fetched node with no children has `"children": []`.
-- `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
 - `wi tree` walks parent-child relations only. It does not follow `Related` links.
 - `pr list` and `pr view` name votes: `approved`, `approvedWithSuggestions`, `waitingForAuthor`, `rejected`, `noVote`. `myVote` and every `reviewers[].vote` of `pr view` carry one of those names. `myVote` is `null` when the authenticated user is not a reviewer — a different fact from `noVote`. `myIsRequired` is `null` in the same case.
 - The `votes` counts fold `approvedWithSuggestions` into `approved`, because the suggestions live in the threads. They skip container reviewers — a group attached as a reviewer casts no vote of its own, and counting it would inflate `noVote`.
