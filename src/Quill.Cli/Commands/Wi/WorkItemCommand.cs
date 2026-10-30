@@ -11,7 +11,6 @@ internal static class WorkItemCommand
             ViewCommand.Create(serviceProvider),
             CreateTaskCommand.Create(serviceProvider),
             TreeCommand.Create(serviceProvider),
-            SearchCommand.Create(serviceProvider),
             CommentsCommand.Create(serviceProvider),
             ListCommand.Create(serviceProvider),
         };

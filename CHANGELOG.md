@@ -6,10 +6,12 @@
 
 - `quill backlog pull`, `quill backlog push`, `quill backlog create`: Moved from the `wi` group. `quill wi pull`, `quill wi push` and `quill wi create` no longer parse.
 - `quill wi view`: `--with-children` combines with any other flag.
+- `quill wi list`: Takes `--title` to match title words. `--assignee` no longer defaults to `@me`, and a call without a filter exits with code 3.
 
 ### Removed
 
 - `quill wi view`: No longer offers `--markdown`. Use `quill backlog pull` to get the backlog file format.
+- `quill wi search`: Use `quill wi list --title` instead.
 
 ## [1.2.0]
 

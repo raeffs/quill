@@ -28,8 +28,7 @@ Use this table to pick the command. Run its help for the rest.
 | `backlog push` | You want to send an edited file back to the server. |
 | `backlog create` | You want a new Product Backlog Item or Bug, described by a markdown file. |
 | `wi create-task` | You want a new Task under a PBI or Bug. Title only, no file. |
-| `wi list` | You want the answer to "what is assigned to me right now". |
-| `wi search` | You want to find items anywhere in the project by title text or filter. |
+| `wi list` | You want to find work items by title text, assignee, state or type. For "what is assigned to me", pass `--assignee @me`. |
 | `wi tree` | You want to orient yourself under an Epic or Feature. Use `--depth 1` for direct children only. |
 | `wi comments` | You want the discussion on a work item. |
 | `pr list` | You want to find pull requests — by branch, by author, or the ones waiting on you (`--reviewer @me`). |
@@ -96,14 +95,15 @@ Write `[link text](#<work-item-id>)` to link to another backlog item. On push, q
 
 These are the things the help output and a successful run do not tell you.
 
-- `wi search` with no query and no filter exits with code 3. Supply a query or at least one filter.
+- A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
+- `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item` or `Bug`, and a `parentId`. The parent must exist, be assigned to the authenticated user, and be in an allowed state. On success quill rewrites the file with the server-assigned ID.
 - `wi create-task` applies the same parent rules.
 - Quill does not validate state and type filter values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi tree` and the `workItems` array of `pr view` emit error stubs instead of failing the whole call: `{"id": 99999, "error": "unreadable"}` for a 403 or 404 on one item, `{"id": 99999, "error": "batch-failed"}` when a sub-batch fails.
 - In `wi tree`, a bare `{"id": 99999}` node means the child was clipped by `--depth`, not that it has no children. A fetched node with no children has `"children": []`.
-- `wi search` silently omits items that fail to load. Search is a discovery list, not a structural view.
+- `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
 - `wi tree` walks parent-child relations only. It does not follow `Related` links.
 - `pr list` and `pr view` name votes: `approved`, `approvedWithSuggestions`, `waitingForAuthor`, `rejected`, `noVote`. `myVote` and every `reviewers[].vote` of `pr view` carry one of those names. `myVote` is `null` when the authenticated user is not a reviewer — a different fact from `noVote`. `myIsRequired` is `null` in the same case.
 - The `votes` counts fold `approvedWithSuggestions` into `approved`, because the suggestions live in the threads. They skip container reviewers — a group attached as a reviewer casts no vote of its own, and counting it would inflate `noVote`.

@@ -3,20 +3,20 @@ namespace Quill.Core;
 public static class WiqlBuilder
 {
     public static (string Wiql, int Top) Build(
-        string? query,
+        string? title,
         string? assignee,
         IReadOnlyList<string> states,
         IReadOnlyList<string> types,
         int limit)
     {
-        var hasQuery = !string.IsNullOrWhiteSpace(query);
+        var hasTitle = !string.IsNullOrWhiteSpace(title);
         var hasAssignee = !string.IsNullOrWhiteSpace(assignee);
         var hasStates = states is { Count: > 0 };
         var hasTypes = types is { Count: > 0 };
 
-        if (!hasQuery && !hasAssignee && !hasStates && !hasTypes)
+        if (!hasTitle && !hasAssignee && !hasStates && !hasTypes)
         {
-            throw new InvalidOperationException("provide a query or at least one filter");
+            throw new InvalidOperationException("provide at least one filter");
         }
 
         if (limit <= 0)
@@ -26,9 +26,9 @@ public static class WiqlBuilder
 
         var clauses = new List<string>();
 
-        if (hasQuery)
+        if (hasTitle)
         {
-            clauses.Add($"[System.Title] CONTAINS WORDS '{Escape(query!)}'");
+            clauses.Add($"[System.Title] CONTAINS WORDS '{Escape(title!)}'");
         }
 
         if (hasAssignee)

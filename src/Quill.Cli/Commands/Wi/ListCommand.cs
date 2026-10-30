@@ -10,10 +10,14 @@ internal static class ListCommand
 {
     public static Command Create(IServiceProvider serviceProvider)
     {
+        var titleOption = new Option<string?>("--title")
+        {
+            Description = "Free text, matched against the work item title via WIQL CONTAINS WORDS.",
+        };
+
         var assigneeOption = new Option<string?>("--assignee")
         {
-            Description = "Assignee filter. Accepts @me or a display name. Defaults to @me when omitted.",
-            DefaultValueFactory = _ => "@me",
+            Description = "Assignee filter. Accepts @me or a display name.",
         };
 
         var stateOption = new Option<string[]>("--state")
@@ -34,8 +38,9 @@ internal static class ListCommand
             DefaultValueFactory = _ => 50,
         };
 
-        var command = new Command("list", "List work items assigned to me (or another assignee) and print matches as a JSON array")
+        var command = new Command("list", "Query work items via WIQL and print matches as a JSON array")
         {
+            titleOption,
             assigneeOption,
             stateOption,
             typeOption,
@@ -44,11 +49,12 @@ internal static class ListCommand
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
+            var title = parseResult.GetValue(titleOption);
             var assignee = parseResult.GetValue(assigneeOption);
             var states = parseResult.GetValue(stateOption) ?? [];
             var types = parseResult.GetValue(typeOption) ?? [];
             var limit = parseResult.GetValue(limitOption);
-            await ExecuteAsync(serviceProvider, assignee, states, types, limit, cancellationToken);
+            await ExecuteAsync(serviceProvider, title, assignee, states, types, limit, cancellationToken);
         });
 
         return command;
@@ -56,6 +62,7 @@ internal static class ListCommand
 
     private static async Task ExecuteAsync(
         IServiceProvider serviceProvider,
+        string? title,
         string? assignee,
         IReadOnlyList<string> states,
         IReadOnlyList<string> types,
@@ -64,7 +71,7 @@ internal static class ListCommand
     {
         try
         {
-            var (wiql, top) = WiqlBuilder.Build(null, assignee, states, types, limit);
+            var (wiql, top) = WiqlBuilder.Build(title, assignee, states, types, limit);
 
             var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
 

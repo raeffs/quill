@@ -8,8 +8,10 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithNoInputs_Throws()
     {
-        Should.Throw<InvalidOperationException>(() =>
+        var ex = Should.Throw<InvalidOperationException>(() =>
             WiqlBuilder.Build(null, null, [], [], 50));
+
+        ex.Message.ShouldBe("provide at least one filter");
     }
 
     [Fact]
@@ -27,7 +29,7 @@ public class WiqlBuilderTests
     }
 
     [Fact]
-    public void Build_WithQueryOnly_UsesContainsWordsOnTitle()
+    public void Build_WithTitleOnly_UsesContainsWordsOnTitle()
     {
         var (wiql, top) = WiqlBuilder.Build("login validation", null, [], [], 50);
 
@@ -70,7 +72,7 @@ public class WiqlBuilderTests
     }
 
     [Fact]
-    public void Build_WithQueryContainingSingleQuote_DoublesIt()
+    public void Build_WithTitleContainingSingleQuote_DoublesIt()
     {
         var (wiql, _) = WiqlBuilder.Build("can't do", null, [], [], 50);
 
