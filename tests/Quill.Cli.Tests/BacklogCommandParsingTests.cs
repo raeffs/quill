@@ -48,15 +48,6 @@ public class BacklogCommandParsingTests
     }
 
     [Fact]
-    public void Parse_WiCreateTask_StillParses()
-    {
-        var parseResult = CliHost.Parse(["wi", "create-task", "7", "Write tests"], TestServices.Empty);
-
-        parseResult.Errors.ShouldBeEmpty();
-        parseResult.CommandResult.Command.Name.ShouldBe("create-task");
-    }
-
-    [Fact]
     public void Root_HasBacklogWiAndPrGroups()
     {
         var root = CliHost.BuildRootCommand(TestServices.Empty);

@@ -9,7 +9,7 @@ internal static class WorkItemCommand
         var command = new Command("wi", "Work item commands")
         {
             ViewCommand.Create(serviceProvider),
-            CreateTaskCommand.Create(serviceProvider),
+            CreateCommand.Create(serviceProvider),
             TreeCommand.Create(serviceProvider),
             CommentsCommand.Create(serviceProvider),
             ListCommand.Create(serviceProvider),
