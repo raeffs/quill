@@ -1,9 +1,10 @@
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Quill.Core.Markdown;
 
-public record ParsedMarkdownFile(int Id, string? Type, string Title, string? State, string Body, int? ParentId = null);
+public record ParsedMarkdownFile(int Id, string? Type, string Title, string? State, string Body, int? ParentId = null, IReadOnlyList<string>? Tags = null);
 
 public static class FrontmatterParser
 {
@@ -40,7 +41,15 @@ public static class FrontmatterParser
         var yamlContent = string.Join('\n', lines[1..endIndex]);
         var body = string.Join('\n', lines[(endIndex + 1)..]).TrimStart('\r', '\n');
 
-        var frontmatter = Deserializer.Deserialize<Frontmatter>(yamlContent);
+        Frontmatter? frontmatter;
+        try
+        {
+            frontmatter = Deserializer.Deserialize<Frontmatter>(yamlContent);
+        }
+        catch (YamlException ex)
+        {
+            throw new InvalidOperationException($"Invalid frontmatter: {ex.Message}", ex);
+        }
 
         // Id is nullable precisely so this stays distinguishable from `id: 0`,
         // which is what a file awaiting creation carries.
@@ -56,10 +65,11 @@ public static class FrontmatterParser
             title,
             frontmatter.State,
             body,
-            ParentId: frontmatter.ParentId);
+            ParentId: frontmatter.ParentId,
+            Tags: frontmatter.Tags is null ? null : WorkItemTags.Normalize(frontmatter.Tags));
     }
 
-    public static string Write(int id, string type, string title, string state, string body, int? parentId = null)
+    public static string Write(int id, string type, string title, string state, string body, int? parentId = null, IReadOnlyList<string>? tags = null)
     {
         var frontmatter = new Frontmatter
         {
@@ -68,6 +78,7 @@ public static class FrontmatterParser
             Title = title,
             State = state,
             ParentId = parentId,
+            Tags = tags is null ? null : [.. tags],
         };
 
         var yaml = Serializer.Serialize(frontmatter).TrimEnd();

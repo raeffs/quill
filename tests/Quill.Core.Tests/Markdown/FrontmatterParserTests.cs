@@ -256,4 +256,89 @@ public class FrontmatterParserTests
         parsed.State.ShouldBe("New");
         parsed.Body.Trim().ShouldBe("Line 1\n\nLine 2");
     }
+
+    [Fact]
+    public void Parse_NoTagsKey_TagsAreNull()
+    {
+        FrontmatterParser.Parse(FileWith(string.Empty)).Tags.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Parse_EmptyTags_TagsAreEmpty()
+    {
+        var tags = FrontmatterParser.Parse(FileWith("tags: []")).Tags;
+
+        tags.ShouldNotBeNull();
+        tags.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Parse_TagsKeyWithoutValue_TagsAreNull()
+    {
+        FrontmatterParser.Parse(FileWith("tags:")).Tags.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Parse_Tags_AreNormalized()
+    {
+        FrontmatterParser.Parse(FileWith("tags: [\" a \", a, Foo, foo]")).Tags.ShouldBe(["a", "Foo", "foo"]);
+    }
+
+    [Fact]
+    public void Parse_ScalarLikeTags_KeptAsStrings()
+    {
+        FrontmatterParser.Parse(FileWith("tags: [2024, true]")).Tags.ShouldBe(["2024", "true"]);
+    }
+
+    [Theory]
+    [InlineData("tags: [\"a;b\"]")]
+    [InlineData("tags: [\"a,b\"]")]
+    [InlineData("tags: [\"\"]")]
+    [InlineData("tags: [~]")]
+    public void Parse_InvalidTag_ThrowsInvalidOperationException(string line)
+    {
+        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(FileWith(line)));
+    }
+
+    [Theory]
+    [InlineData("tags: a")]
+    [InlineData("tags: a; b")]
+    [InlineData("tags: [[a]]")]
+    [InlineData("tags: {a: b}")]
+    public void Parse_ScalarTags_ThrowsInvalidOperationException(string line)
+    {
+        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(FileWith(line)));
+    }
+
+    [Fact]
+    public void Parse_NonIntegerId_ThrowsInvalidOperationException()
+    {
+        var content = "---\nid: abc\ntitle: T\n---\n\nBody\n";
+
+        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(content));
+    }
+
+    [Fact]
+    public void Write_NoTags_OmitsKey()
+    {
+        FrontmatterParser.Write(1, "Task", "T", "New", "Body").ShouldNotContain("tags");
+    }
+
+    [Fact]
+    public void Write_EmptyTags_WritesEmptyList()
+    {
+        FrontmatterParser.Write(1, "Task", "T", "New", "Body", tags: []).ShouldContain("tags: []");
+    }
+
+    [Fact]
+    public void WriteThenParse_AwkwardTags_RoundTrip()
+    {
+        string[] tags = ["a: b", "2024", "#x", "Ünï cödé"];
+
+        var written = FrontmatterParser.Write(1, "Task", "T", "New", "Body", tags: tags);
+
+        FrontmatterParser.Parse(written).Tags.ShouldBe(tags);
+    }
+
+    private static string FileWith(string line) => $"---\nid: 1\ntitle: T\n{line}\n---\n\nBody\n";
 }
