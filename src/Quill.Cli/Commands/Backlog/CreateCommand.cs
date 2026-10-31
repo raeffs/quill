@@ -112,13 +112,13 @@ internal static class CreateCommand
 
             var (descriptionHtml, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
-            var newId = await client.CreateWorkItemAsync(
+            var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch(
                 parsed.Type,
                 parsed.Title,
                 parsed.ParentId.Value,
-                assignee,
-                string.IsNullOrEmpty(descriptionHtml) ? null : descriptionHtml,
-                parentWorkItem.IterationPath);
+                AssignedToId: assignee,
+                DescriptionHtml: string.IsNullOrEmpty(descriptionHtml) ? null : descriptionHtml,
+                IterationPath: parentWorkItem.IterationPath));
 
             foreach (var targetId in linkIds)
             {

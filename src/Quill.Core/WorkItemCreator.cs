@@ -26,8 +26,13 @@ public static class WorkItemCreator
             descriptionHtml = string.IsNullOrEmpty(html) ? null : html;
         }
 
-        var newId = await client.CreateWorkItemAsync(
-            request.Type, request.Title, request.ParentId, request.Assignee, descriptionHtml, parent.IterationPath);
+        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch(
+            request.Type,
+            request.Title,
+            request.ParentId,
+            AssignedToId: request.Assignee,
+            DescriptionHtml: descriptionHtml,
+            IterationPath: parent.IterationPath));
 
         foreach (var targetId in linkIds)
         {

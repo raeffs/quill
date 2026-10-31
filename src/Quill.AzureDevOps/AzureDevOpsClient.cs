@@ -131,14 +131,14 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         await PatchWorkItemAsync(sourceId, operations);
     }
 
-    public async Task<int> CreateWorkItemAsync(string type, string title, int parentId, string? assignedToId = null, string? descriptionHtml = null, string? iterationPath = null)
+    public async Task<int> CreateWorkItemAsync(WorkItemCreatePatch patch)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(parentId);
-        var url = $"{_baseUrl}/${type}?api-version={AzureDevOpsConstants.ApiVersion}";
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(patch.ParentId, nameof(patch));
+        var url = $"{_baseUrl}/${patch.Type}?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var operations = new List<JsonPatchOperation>
         {
-            new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(title) },
+            new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(patch.Title) },
             new()
             {
                 Op = "add",
@@ -147,25 +147,25 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
                     new RelationValue
                     {
                         Rel = AzureDevOpsConstants.HierarchyReverseLinkType,
-                        Url = $"{_collectionUrl}/_apis/wit/workitems/{parentId}",
+                        Url = $"{_collectionUrl}/_apis/wit/workitems/{patch.ParentId}",
                     },
                     AzureDevOpsJsonContext.Default.RelationValue),
             },
         };
 
-        if (assignedToId is not null)
+        if (patch.AssignedToId is not null)
         {
-            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldAssignedTo}", Value = JsonValue.Create(assignedToId) });
+            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldAssignedTo}", Value = JsonValue.Create(patch.AssignedToId) });
         }
 
-        if (!string.IsNullOrEmpty(descriptionHtml))
+        if (!string.IsNullOrEmpty(patch.DescriptionHtml))
         {
-            operations.Add(new() { Op = "add", Path = $"/fields/{DescriptionFieldFor(type)}", Value = JsonValue.Create(descriptionHtml) });
+            operations.Add(new() { Op = "add", Path = $"/fields/{DescriptionFieldFor(patch.Type)}", Value = JsonValue.Create(patch.DescriptionHtml) });
         }
 
-        if (!string.IsNullOrEmpty(iterationPath))
+        if (!string.IsNullOrEmpty(patch.IterationPath))
         {
-            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldIterationPath}", Value = JsonValue.Create(iterationPath) });
+            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldIterationPath}", Value = JsonValue.Create(patch.IterationPath) });
         }
 
         var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);

@@ -7,7 +7,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
     private readonly Dictionary<int, WorkItem> _workItems = [];
     private int _nextId = 1000;
 
-    public CreateWorkItemCall? CreateCall { get; private set; }
+    public WorkItemCreatePatch? CreateCall { get; private set; }
 
     public void Add(WorkItem workItem) => _workItems[workItem.Id] = workItem;
 
@@ -16,22 +16,22 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
             ? Task.FromResult(workItem)
             : throw new HttpRequestException($"Work item {id} not found.");
 
-    public Task<int> CreateWorkItemAsync(string type, string title, int parentId, string? assignedToId = null, string? descriptionHtml = null, string? iterationPath = null)
+    public Task<int> CreateWorkItemAsync(WorkItemCreatePatch patch)
     {
-        CreateCall = new CreateWorkItemCall(type, title, parentId, assignedToId, descriptionHtml, iterationPath);
+        CreateCall = patch;
 
         var id = _nextId++;
         _workItems[id] = new WorkItem
         {
             Id = id,
-            Type = type,
-            Title = title,
+            Type = patch.Type,
+            Title = patch.Title,
             State = "New",
             AssignedToId = string.Empty,
-            AssignedToDisplayName = assignedToId ?? string.Empty,
-            Description = descriptionHtml ?? string.Empty,
-            IterationPath = iterationPath ?? string.Empty,
-            ParentId = parentId,
+            AssignedToDisplayName = patch.AssignedToId ?? string.Empty,
+            Description = patch.DescriptionHtml ?? string.Empty,
+            IterationPath = patch.IterationPath ?? string.Empty,
+            ParentId = patch.ParentId,
         };
 
         return Task.FromResult(id);

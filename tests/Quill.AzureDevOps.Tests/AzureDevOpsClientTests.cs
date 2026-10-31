@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -345,7 +346,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        var newId = await client.CreateWorkItemAsync("Bug", "New bug", 100, "44892788-c082-4795-a323-8cc6daaaaba2");
+        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Bug", "New bug", 100, "44892788-c082-4795-a323-8cc6daaaaba2"));
 
         newId.ShouldBe(999);
         handler.LastRequest.ShouldNotBeNull();
@@ -371,7 +372,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        var newId = await client.CreateWorkItemAsync("Task", "New task", 100);
+        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "New task", 100));
 
         newId.ShouldBe(999);
         handler.LastRequestBody.ShouldNotBeNull();
@@ -390,7 +391,7 @@ public class AzureDevOpsClientTests
 
         // Act
         var newId = await client.CreateWorkItemAsync(
-            "Product Backlog Item", "New PBI", 100, assignedToId: null, descriptionHtml: "<p>Body text</p>");
+            new WorkItemCreatePatch("Product Backlog Item", "New PBI", 100, AssignedToId: null, DescriptionHtml: "<p>Body text</p>"));
 
         // Assert
         newId.ShouldBe(999);
@@ -412,7 +413,7 @@ public class AzureDevOpsClientTests
 
         // Act
         var newId = await client.CreateWorkItemAsync(
-            "Bug", "New bug", 100, assignedToId: null, descriptionHtml: "<p>Body text</p>");
+            new WorkItemCreatePatch("Bug", "New bug", 100, AssignedToId: null, DescriptionHtml: "<p>Body text</p>"));
 
         // Assert
         newId.ShouldBe(999);
@@ -431,7 +432,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.CreateWorkItemAsync("Task", "New task", 100);
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "New task", 100));
 
         handler.LastRequestBody.ShouldNotBeNull();
         handler.LastRequestBody.ShouldNotContain("System.Description");
@@ -506,7 +507,7 @@ public class AzureDevOpsClientTests
 
         // Act
         await client.CreateWorkItemAsync(
-            "Task", "Sprint task", 100, assignedToId: null, descriptionHtml: null, iterationPath: "MyProject\\Sprint 42");
+            new WorkItemCreatePatch("Task", "Sprint task", 100, AssignedToId: null, DescriptionHtml: null, IterationPath: "MyProject\\Sprint 42"));
 
         // Assert
         handler.LastRequestBody.ShouldNotBeNull();
@@ -554,7 +555,7 @@ public class AzureDevOpsClientTests
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        await client.CreateWorkItemAsync("Task", "No-iteration task", 100);
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "No-iteration task", 100));
 
         // Assert
         handler.LastRequestBody.ShouldNotBeNull();
@@ -568,7 +569,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.CreateWorkItemAsync("Task", "T", 100, "A", "Body", "P\\I");
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, "A", "Body", "P\\I"));
 
         handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}},{"op":"add","path":"/fields/System.AssignedTo","value":"A"},{"op":"add","path":"/fields/System.Description","value":"Body"},{"op":"add","path":"/fields/System.IterationPath","value":"P\\I"}]""");
     }
@@ -580,7 +581,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.CreateWorkItemAsync("Task", "T", 100, null, string.Empty, string.Empty);
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, null, string.Empty, string.Empty));
 
         handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}}]""");
     }
