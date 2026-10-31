@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.AzureDevOps;
 using Quill.Cli;
+using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
@@ -30,8 +31,22 @@ internal static class PushCommand
         return command;
     }
 
-    internal static IReadOnlyList<string> UpdatedFieldsFor(ParsedMarkdownFile parsed) =>
-        parsed.Tags is null ? ["title", "description"] : ["title", "description", "tags"];
+    internal static IReadOnlyList<string> UpdatedFieldsFor(ParsedMarkdownFile parsed, bool predecessorsChanged)
+    {
+        var fields = new List<string> { "title", "description" };
+
+        if (parsed.Tags is not null)
+        {
+            fields.Add("tags");
+        }
+
+        if (predecessorsChanged)
+        {
+            fields.Add("predecessors");
+        }
+
+        return fields;
+    }
 
     private static async Task ExecuteAsync(IServiceProvider serviceProvider, string filePath)
     {
@@ -70,7 +85,15 @@ internal static class PushCommand
 
             var (html, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
-            await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(parsed.Id, workItem.Type, parsed.Title, html) { Tags = parsed.Tags });
+            var predecessorChange = WorkItemPredecessors.Diff(workItem.Predecessors, parsed.Predecessors);
+
+            await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(parsed.Id, workItem.Type, parsed.Title, html)
+            {
+                Tags = parsed.Tags,
+                Rev = workItem.Rev,
+                RemoveRelationIndexes = predecessorChange.RemoveRelationIndexes,
+                AddRelations = [.. predecessorChange.Add.Select(id => new WorkItemRelation { RelationType = AzureDevOpsConstants.PredecessorLinkType, TargetId = id })],
+            });
 
             var existingRelatedIds = workItem.Relations
                 .Where(r => string.Equals(r.RelationType, AzureDevOpsConstants.RelatedLinkType, StringComparison.Ordinal))
@@ -88,7 +111,7 @@ internal static class PushCommand
                 {
                     Id = parsed.Id,
                     Title = parsed.Title,
-                    UpdatedFields = UpdatedFieldsFor(parsed),
+                    UpdatedFields = UpdatedFieldsFor(parsed, predecessorChange.HasChanges),
                     RelationsAdded = newRelations,
                 },
                 CommandHelpers.Context.PushResult));

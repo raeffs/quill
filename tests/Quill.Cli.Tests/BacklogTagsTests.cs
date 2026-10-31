@@ -37,7 +37,7 @@ public sealed class BacklogTagsTests : IDisposable
     {
         var parsed = FrontmatterParser.Parse($"---\nid: 1\ntitle: T\n{line}\n---\n\nBody\n");
 
-        PushCommand.UpdatedFieldsFor(parsed).ShouldBe(["title", "description", "tags"]);
+        PushCommand.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description", "tags"]);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class BacklogTagsTests : IDisposable
     {
         var parsed = FrontmatterParser.Parse("---\nid: 1\ntitle: T\n---\n\nBody\n");
 
-        PushCommand.UpdatedFieldsFor(parsed).ShouldBe(["title", "description"]);
+        PushCommand.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description"]);
     }
 
     [Theory]

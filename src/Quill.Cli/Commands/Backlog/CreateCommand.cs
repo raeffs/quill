@@ -120,7 +120,8 @@ internal static class CreateCommand
                 DescriptionHtml: string.IsNullOrEmpty(descriptionHtml) ? null : descriptionHtml,
                 IterationPath: parentWorkItem.IterationPath,
                 AreaPath: parentWorkItem.AreaPath,
-                Tags: parsed.Tags));
+                Tags: parsed.Tags,
+                Predecessors: parsed.Predecessors));
 
             foreach (var targetId in linkIds)
             {
@@ -134,7 +135,8 @@ internal static class CreateCommand
                 state: "New",
                 body: parsed.Body.TrimEnd(),
                 parentId: parsed.ParentId,
-                tags: parsed.Tags ?? []);
+                tags: parsed.Tags ?? [],
+                predecessors: parsed.Predecessors ?? []);
 
             await File.WriteAllTextAsync(filePath, updatedContent);
 

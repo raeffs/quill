@@ -25,6 +25,11 @@ The work items an agent maintains as markdown files, pulled from the server and
 pushed back. Not the Azure DevOps board view of the same name.
 _Avoid_: sync, workspace, local items
 
+**Predecessor**:
+A work item that must be done before this one can start. Quill records the link
+only on the item that waits.
+_Avoid_: blocker, dependency
+
 ## Merging
 
 **Merge attempt**:
