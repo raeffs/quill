@@ -32,6 +32,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
             Description = patch.DescriptionHtml ?? string.Empty,
             IterationPath = patch.IterationPath ?? string.Empty,
             ParentId = patch.ParentId,
+            Tags = patch.Tags ?? [],
         };
 
         return Task.FromResult(id);
@@ -51,6 +52,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
             Description = source.Description,
             IterationPath = source.IterationPath,
             ParentId = source.ParentId,
+            Tags = source.Tags,
             Relations = [.. source.Relations, new WorkItemRelation { RelationType = "System.LinkTypes.Related", TargetId = targetId }],
         };
 

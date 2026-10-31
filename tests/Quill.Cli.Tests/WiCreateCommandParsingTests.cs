@@ -25,6 +25,7 @@ public class WiCreateCommandParsingTests
         parseResult.GetValue<int>("--parent").ShouldBe(42);
         parseResult.GetValue<string?>("--description-file").ShouldBeNull();
         parseResult.GetValue<string?>("--assignee").ShouldBeNull();
+        parseResult.GetValue<string[]>("--tag").ShouldBeEmpty();
     }
 
     [Theory]
@@ -84,6 +85,21 @@ public class WiCreateCommandParsingTests
         parseResult.Errors.ShouldBeEmpty();
         parseResult.GetValue<string?>("--description-file").ShouldBe("-");
         parseResult.GetValue<string?>("--assignee").ShouldBe("Jane Doe");
+    }
+
+    [Fact]
+    public void Parse_TagRepeated_IsRead()
+    {
+        var parseResult = CliHost.Parse([.. Args("Task"), "--tag", "a", "--tag", "b"], TestServices.Empty);
+
+        parseResult.Errors.ShouldBeEmpty();
+        parseResult.GetValue<string[]>("--tag").ShouldBe(["a", "b"]);
+    }
+
+    [Fact]
+    public void Parse_TagWithTwoValues_IsParseError()
+    {
+        CliHost.Parse([.. Args("Task"), "--tag", "a", "b"], TestServices.Empty).Errors.ShouldNotBeEmpty();
     }
 
     [Fact]

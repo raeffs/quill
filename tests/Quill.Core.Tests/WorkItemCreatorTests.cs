@@ -155,8 +155,42 @@ public class WorkItemCreatorTests
         client.CreateCall.ShouldBeNull();
     }
 
-    private static WorkItemCreateRequest Request(string type, string? description = null, string? assignee = null) =>
-        new(type, "Write the importer", ParentId, description, assignee);
+    [Fact]
+    public async Task CreateAsync_WithTags_SendsTags()
+    {
+        var client = Seed();
+
+        await WorkItemCreator.CreateAsync(client, Config, Request("Task", tags: ["a", "b"]));
+
+        client.CreateCall.ShouldNotBeNull().Tags.ShouldBe(["a", "b"]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithTagsAndDescriptionLink_RowCarriesTags()
+    {
+        var client = Seed();
+
+        var outcome = await WorkItemCreator.CreateAsync(
+            client, Config, Request("Task", description: "See [the bug](#123).", tags: ["a", "b"]));
+
+        var created = outcome.Created.ShouldNotBeNull();
+        created.Tags.ShouldBe(["a", "b"]);
+        created.RelatedIds.ShouldBe([123]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_NoTags_RowHasEmptyTags()
+    {
+        var client = Seed();
+
+        var outcome = await WorkItemCreator.CreateAsync(client, Config, Request("Task"));
+
+        outcome.Created.ShouldNotBeNull().Tags.ShouldBeEmpty();
+    }
+
+    private static WorkItemCreateRequest Request(
+        string type, string? description = null, string? assignee = null, IReadOnlyList<string>? tags = null) =>
+        new(type, "Write the importer", ParentId, description, assignee, tags);
 
     private static FakeAzureDevOpsClient Seed(string parentState = "Active", string parentType = "Product Backlog Item")
     {

@@ -51,6 +51,12 @@ internal static class CreateCommand
             Description = "Name of the user to assign the work item to. Defaults to unassigned.",
         };
 
+        var tagOption = new Option<string[]>("--tag")
+        {
+            Description = "Tag for the new work item. Repeat for more than one.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+
         var command = new Command("create", "Create a work item under a parent and print it to stdout as JSON")
         {
             typeOption,
@@ -58,6 +64,7 @@ internal static class CreateCommand
             parentOption,
             descriptionFileOption,
             assigneeOption,
+            tagOption,
         };
 
         command.SetAction(async (parseResult, cancellationToken) =>
@@ -69,6 +76,7 @@ internal static class CreateCommand
                 parseResult.GetValue(parentOption),
                 parseResult.GetValue(descriptionFileOption),
                 parseResult.GetValue(assigneeOption),
+                parseResult.GetValue(tagOption) ?? [],
                 cancellationToken);
         });
 
@@ -82,10 +90,13 @@ internal static class CreateCommand
         int parentId,
         string? descriptionFile,
         string? assignee,
+        IReadOnlyList<string> tags,
         CancellationToken cancellationToken)
     {
         try
         {
+            var normalizedTags = WorkItemTags.Normalize(tags);
+
             var description = await ReadDescriptionAsync(descriptionFile, cancellationToken);
             if (description is null && descriptionFile is not null)
             {
@@ -101,7 +112,7 @@ internal static class CreateCommand
             var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
 
             var outcome = await WorkItemCreator.CreateAsync(
-                client, config, new WorkItemCreateRequest(type, title, parentId, description, assignee), logger);
+                client, config, new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags), logger);
 
             if (outcome.Created is null)
             {
