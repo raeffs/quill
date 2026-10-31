@@ -12,6 +12,7 @@ public class JsonPatchOperation
     public required string Path { get; init; }
 
     [JsonPropertyName("value")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public JsonNode? Value { get; init; }
 }
 

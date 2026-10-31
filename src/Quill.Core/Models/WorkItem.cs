@@ -22,9 +22,13 @@ public class WorkItem
 
     public IReadOnlyList<string> Tags { get; init; } = [];
 
+    public int Rev { get; init; }
+
     public int? ParentId { get; init; }
 
     public IReadOnlyList<WorkItemRelation> Relations { get; init; } = [];
+
+    public IReadOnlyList<WorkItemPredecessor> Predecessors { get; init; } = [];
 
     public IReadOnlyList<int> ChildIds { get; init; } = [];
 }

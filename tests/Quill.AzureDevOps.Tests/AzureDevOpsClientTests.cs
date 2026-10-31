@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -719,6 +720,159 @@ public class AzureDevOpsClientTests
 
         handler.RequestCount.ShouldBe(1);
         handler.LastRequestBody.ShouldBe($$$"""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/Microsoft.VSTS.TCM.ReproSteps","value":"Body"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Dependency-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/200"}}]""");
+    }
+
+    [Fact]
+    public async Task GetWorkItemAsync_MixedRelations_KeepsServerIndexes()
+    {
+        var json = $$"""
+        {
+            "id": 1,
+            "rev": 7,
+            "fields": { "System.Title": "T", "System.State": "New", "System.WorkItemType": "Task" },
+            "relations": [
+                { "rel": "System.LinkTypes.Hierarchy-Reverse", "url": "{{TestConstants.ServerUrl}}/_apis/wit/workItems/50" },
+                { "rel": "System.LinkTypes.Dependency-Reverse", "url": "{{TestConstants.ServerUrl}}/_apis/wit/workItems/2" },
+                { "rel": "System.LinkTypes.Related", "url": "{{TestConstants.ServerUrl}}/_apis/wit/workItems/5" },
+                { "rel": "System.LinkTypes.Dependency-Forward", "url": "{{TestConstants.ServerUrl}}/_apis/wit/workItems/9" },
+                { "rel": "System.LinkTypes.Dependency-Reverse", "url": "{{TestConstants.ServerUrl}}/_apis/wit/workItems/3" },
+                { "rel": "AttachedFile", "url": "{{TestConstants.ServerUrl}}/_apis/wit/attachments/abc-def" }
+            ]
+        }
+        """;
+        using var handler = new FakeHttpHandler(json, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var workItem = await client.GetWorkItemAsync(1);
+
+        workItem.Predecessors.ShouldBe([new WorkItemPredecessor(2, 1), new WorkItemPredecessor(3, 4)]);
+        workItem.Rev.ShouldBe(7);
+        workItem.Relations.ShouldHaveSingleItem().TargetId.ShouldBe(5);
+    }
+
+    [Fact]
+    public async Task GetWorkItemAsync_NoRelations_ReturnsEmptyPredecessors()
+    {
+        var workItem = await GetWorkItemWithFields(string.Empty);
+
+        workItem.Predecessors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_WithRemovals_SendsExactPatch()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Bug", "T", "Body")
+        {
+            Rev = 7,
+            RemoveRelationIndexes = [4, 1],
+            AddRelations = [new WorkItemRelation { RelationType = "System.LinkTypes.Dependency-Reverse", TargetId = 200 }],
+        });
+
+        handler.RequestCount.ShouldBe(1);
+        handler.LastRequestBody.ShouldBe($$$"""[{"op":"test","path":"/rev","value":7},{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/Microsoft.VSTS.TCM.ReproSteps","value":"Body"},{"op":"remove","path":"/relations/4"},{"op":"remove","path":"/relations/1"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Dependency-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/200"}}]""");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_WithoutRemovals_SendsNoTestOperation()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body") { Rev = 7 });
+
+        handler.LastRequestBody.ShouldNotBeNull().ShouldNotContain("/rev");
+    }
+
+    [Fact]
+    public async Task CreateWorkItem_WithPredecessors_SendsAddRelations()
+    {
+        using var handler = new FakeHttpHandler("""{"id":1}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Predecessors: [10, 11]));
+
+        handler.RequestCount.ShouldBe(1);
+        var prefix = $"{TestConstants.ServerUrl}/{TestConstants.Collection}/_apis/wit/workitems/";
+        handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{prefix}}}100"}},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Dependency-Reverse","url":"{{{prefix}}}10"}},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Dependency-Reverse","url":"{{{prefix}}}11"}}]""");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CreateWorkItem_EmptyOrNullPredecessors_SendsNoLinkOperation(bool empty)
+    {
+        using var handler = new FakeHttpHandler("""{"id":1}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Predecessors: empty ? [] : null));
+
+        handler.LastRequestBody.ShouldNotBeNull().ShouldNotContain("Dependency");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.PreconditionFailed)]
+    public async Task UpdateWorkItem_ServerRejects_ThrowsWithServerMessage(HttpStatusCode status)
+    {
+        using var handler = new FakeHttpHandler("""{"message":"TF401232: cycle"}""", status);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var ex = await Should.ThrowAsync<WorkItemRejectedException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
+
+        ex.Message.ShouldContain("TF401232");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.PreconditionFailed)]
+    public async Task CreateWorkItem_ServerRejects_ThrowsWithServerMessage(HttpStatusCode status)
+    {
+        using var handler = new FakeHttpHandler("""{"message":"TF401232: cycle"}""", status);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var ex = await Should.ThrowAsync<WorkItemRejectedException>(() => client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100)));
+
+        ex.Message.ShouldContain("TF401232");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_RejectionWithoutJsonBody_ThrowsWithStatus()
+    {
+        using var handler = new FakeHttpHandler("oops", HttpStatusCode.BadRequest);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var ex = await Should.ThrowAsync<WorkItemRejectedException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
+
+        ex.Message.ShouldContain("400");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task UpdateWorkItem_OtherFailures_ThrowPlainHttpRequestException(HttpStatusCode status)
+    {
+        using var handler = new FakeHttpHandler("""{"message":"no"}""", status);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var ex = await Should.ThrowAsync<HttpRequestException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
+
+        ex.ShouldNotBeOfType<WorkItemRejectedException>();
     }
 
     [Fact]

@@ -320,7 +320,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        var message = ReadServerMessage(body);
+        var message = ServerErrorMessage.Read(body);
 
         if (message is null)
         {
@@ -332,24 +332,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             $"{message} ({((int)response.StatusCode).ToString(CultureInfo.InvariantCulture)})",
             inner: null,
             response.StatusCode);
-    }
-
-    private static string? ReadServerMessage(string body)
-    {
-        if (string.IsNullOrWhiteSpace(body))
-        {
-            return null;
-        }
-
-        try
-        {
-            var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.ApiErrorResponse);
-            return string.IsNullOrWhiteSpace(dto?.Message) ? null : dto.Message.ReplaceLineEndings(" ");
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
     }
 
     private async Task<string> GetDefaultBranchAsync(string repo, CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -100,16 +101,28 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
     public async Task UpdateWorkItemAsync(WorkItemUpdatePatch patch)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(patch.Id, nameof(patch));
-        var operations = new List<JsonPatchOperation>
+        var operations = new List<JsonPatchOperation>();
+
+        // A removal addresses a relation by index, so a changed item must fail
+        // here rather than lose whichever link now sits at that index.
+        if (patch.RemoveRelationIndexes.Count > 0)
         {
-            new () { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(patch.Title) },
-            new () { Op = "replace", Path = $"/fields/{DescriptionFieldFor(patch.Type)}", Value = JsonValue.Create(patch.DescriptionHtml) },
-        };
+            operations.Add(new() { Op = "test", Path = "/rev", Value = JsonValue.Create(patch.Rev) });
+        }
+
+        operations.Add(new() { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(patch.Title) });
+        operations.Add(new() { Op = "replace", Path = $"/fields/{DescriptionFieldFor(patch.Type)}", Value = JsonValue.Create(patch.DescriptionHtml) });
 
         if (patch.Tags is not null)
         {
             operations.Add(new() { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTags}", Value = JsonValue.Create(WorkItemTags.Join(patch.Tags)) });
         }
+
+        operations.AddRange(patch.RemoveRelationIndexes.Select(index => new JsonPatchOperation
+        {
+            Op = "remove",
+            Path = $"/relations/{index.ToString(CultureInfo.InvariantCulture)}",
+        }));
 
         operations.AddRange(patch.AddRelations.Select(r => RelationOperation(r.RelationType, r.TargetId)));
 
@@ -160,11 +173,16 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldTags}", Value = JsonValue.Create(WorkItemTags.Join(patch.Tags)) });
         }
 
+        if (patch.Predecessors is not null)
+        {
+            operations.AddRange(patch.Predecessors.Select(id => RelationOperation(AzureDevOpsConstants.PredecessorLinkType, id)));
+        }
+
         var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
         using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
 
         var response = await _httpClient.PatchAsync(url, content);
-        response.EnsureSuccessStatusCode();
+        await EnsureWriteSucceededAsync(response);
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return doc.RootElement.GetProperty("id").GetInt32();
@@ -281,7 +299,28 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
 
         var response = await _httpClient.PatchAsync(url, content);
-        response.EnsureSuccessStatusCode();
+        await EnsureWriteSucceededAsync(response);
+    }
+
+    // Auth, throttling and 5xx stay plain HTTP failures: the server did not
+    // judge the write. Any other 4xx is its verdict on what was sent.
+    private static async Task EnsureWriteSucceededAsync(HttpResponseMessage response)
+    {
+        var status = (int)response.StatusCode;
+        if (status is < 400 or >= 500
+            or (int)HttpStatusCode.Unauthorized
+            or (int)HttpStatusCode.Forbidden
+            or (int)HttpStatusCode.TooManyRequests)
+        {
+            response.EnsureSuccessStatusCode();
+            return;
+        }
+
+        var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync());
+        var statusText = status.ToString(CultureInfo.InvariantCulture);
+
+        throw new WorkItemRejectedException(
+            message is null ? $"The server rejected the work item write ({statusText})" : $"{message} ({statusText})");
     }
 
     private async Task<List<WorkItem>?> FetchChunkAsync(IReadOnlyList<int> chunk, CancellationToken cancellationToken)
@@ -375,6 +414,17 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             }
         }
 
+        var predecessors = new List<WorkItemPredecessor>();
+        for (var index = 0; index < (dto.Relations?.Count ?? 0); index++)
+        {
+            var rel = dto.Relations![index];
+            if (string.Equals(rel.Rel, AzureDevOpsConstants.PredecessorLinkType, StringComparison.Ordinal)
+                && int.TryParse(rel.Url.Split('/')[^1], CultureInfo.InvariantCulture, out var predecessorId))
+            {
+                predecessors.Add(new WorkItemPredecessor(predecessorId, index));
+            }
+        }
+
         var relations = new List<WorkItemRelation>();
         if (dto.Relations is not null)
         {
@@ -425,6 +475,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         return new WorkItem
         {
             Id = dto.Id,
+            Rev = dto.Rev,
             Type = type,
             Title = GetStringField(fields, AzureDevOpsConstants.FieldTitle),
             State = GetStringField(fields, AzureDevOpsConstants.FieldState),
@@ -437,6 +488,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             ParentId = parentId,
             Relations = relations,
             ChildIds = childIds,
+            Predecessors = predecessors,
         };
     }
 

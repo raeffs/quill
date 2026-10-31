@@ -8,6 +8,9 @@ public class WorkItemResponse
     [JsonPropertyName("id")]
     public int Id { get; init; }
 
+    [JsonPropertyName("rev")]
+    public int Rev { get; init; }
+
     [JsonPropertyName("fields")]
     public IReadOnlyDictionary<string, JsonElement> Fields { get; init; } = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
