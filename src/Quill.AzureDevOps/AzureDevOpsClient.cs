@@ -97,36 +97,23 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         return MapToWorkItem(dto);
     }
 
-    public async Task UpdateWorkItemFieldsAsync(int id, string type, string title, string descriptionHtml)
+    public async Task UpdateWorkItemAsync(WorkItemUpdatePatch patch)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(patch.Id, nameof(patch));
         var operations = new List<JsonPatchOperation>
         {
-            new () { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(title) },
-            new () { Op = "replace", Path = $"/fields/{DescriptionFieldFor(type)}", Value = JsonValue.Create(descriptionHtml) },
+            new () { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(patch.Title) },
+            new () { Op = "replace", Path = $"/fields/{DescriptionFieldFor(patch.Type)}", Value = JsonValue.Create(patch.DescriptionHtml) },
         };
+        operations.AddRange(patch.AddRelations.Select(r => RelationOperation(r.RelationType, r.TargetId)));
 
-        await PatchWorkItemAsync(id, operations);
+        await PatchWorkItemAsync(patch.Id, operations);
     }
 
     public async Task AddRelationAsync(int sourceId, int targetId)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sourceId);
-        var operations = new List<JsonPatchOperation>
-        {
-            new ()
-            {
-                Op = "add",
-                Path = "/relations/-",
-                Value = JsonSerializer.SerializeToNode(
-                    new RelationValue
-                    {
-                        Rel = AzureDevOpsConstants.RelatedLinkType,
-                        Url = $"{_collectionUrl}/_apis/wit/workitems/{targetId}",
-                    },
-                    AzureDevOpsJsonContext.Default.RelationValue),
-            },
-        };
+        var operations = new List<JsonPatchOperation> { RelationOperation(AzureDevOpsConstants.RelatedLinkType, targetId) };
 
         await PatchWorkItemAsync(sourceId, operations);
     }
@@ -139,18 +126,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         var operations = new List<JsonPatchOperation>
         {
             new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(patch.Title) },
-            new()
-            {
-                Op = "add",
-                Path = "/relations/-",
-                Value = JsonSerializer.SerializeToNode(
-                    new RelationValue
-                    {
-                        Rel = AzureDevOpsConstants.HierarchyReverseLinkType,
-                        Url = $"{_collectionUrl}/_apis/wit/workitems/{patch.ParentId}",
-                    },
-                    AzureDevOpsJsonContext.Default.RelationValue),
-            },
+            RelationOperation(AzureDevOpsConstants.HierarchyReverseLinkType, patch.ParentId),
         };
 
         if (patch.AssignedToId is not null)
@@ -268,6 +244,19 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 
         return TimeSpan.Zero;
     }
+
+    private JsonPatchOperation RelationOperation(string rel, int targetId) => new()
+    {
+        Op = "add",
+        Path = "/relations/-",
+        Value = JsonSerializer.SerializeToNode(
+            new RelationValue
+            {
+                Rel = rel,
+                Url = $"{_collectionUrl}/_apis/wit/workitems/{targetId}",
+            },
+            AzureDevOpsJsonContext.Default.RelationValue),
+    };
 
     private async Task PatchWorkItemAsync(int id, List<JsonPatchOperation> operations)
     {

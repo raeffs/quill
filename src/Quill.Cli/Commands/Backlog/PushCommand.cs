@@ -67,7 +67,7 @@ internal static class PushCommand
 
             var (html, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
-            await client.UpdateWorkItemFieldsAsync(parsed.Id, workItem.Type, parsed.Title, html);
+            await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(parsed.Id, workItem.Type, parsed.Title, html));
 
             var existingRelatedIds = workItem.Relations
                 .Where(r => string.Equals(r.RelationType, AzureDevOpsConstants.RelatedLinkType, StringComparison.Ordinal))

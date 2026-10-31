@@ -195,13 +195,13 @@ public class AzureDevOpsClientTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public async Task UpdateWorkItemFieldsAsync_InvalidId_ThrowsArgumentOutOfRangeException(int id)
+    public async Task UpdateWorkItemAsync_InvalidId_ThrowsArgumentOutOfRangeException(int id)
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        Func<Task> act = () => client.UpdateWorkItemFieldsAsync(id, "Product Backlog Item", "title", "<p>desc</p>");
+        Func<Task> act = () => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(id, "Product Backlog Item", "title", "<p>desc</p>"));
 
         await Should.ThrowAsync<ArgumentOutOfRangeException>(act);
     }
@@ -221,7 +221,7 @@ public class AzureDevOpsClientTests
     }
 
     [Fact]
-    public async Task UpdateWorkItemFieldsAsync_NonBug_PatchesSystemDescription()
+    public async Task UpdateWorkItemAsync_NonBug_PatchesSystemDescription()
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
@@ -229,7 +229,7 @@ public class AzureDevOpsClientTests
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        await client.UpdateWorkItemFieldsAsync(123, "Product Backlog Item", "New Title", "<p>New Description</p>");
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Product Backlog Item", "New Title", "<p>New Description</p>"));
 
         // Assert
         handler.LastRequest.ShouldNotBeNull();
@@ -245,7 +245,7 @@ public class AzureDevOpsClientTests
     }
 
     [Fact]
-    public async Task UpdateWorkItemFieldsAsync_Bug_PatchesReproSteps()
+    public async Task UpdateWorkItemAsync_Bug_PatchesReproSteps()
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
@@ -253,7 +253,7 @@ public class AzureDevOpsClientTests
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        await client.UpdateWorkItemFieldsAsync(123, "Bug", "New Title", "<p>New Description</p>");
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Bug", "New Title", "<p>New Description</p>"));
 
         // Assert
         handler.LastRequestBody.ShouldNotBeNull();
@@ -593,7 +593,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.UpdateWorkItemFieldsAsync(123, "Task", "T", "Body");
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body"));
 
         handler.LastRequestBody.ShouldBe("""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/System.Description","value":"Body"}]""");
     }
@@ -605,9 +605,25 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.UpdateWorkItemFieldsAsync(123, "Task", "T", string.Empty);
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", string.Empty));
 
         handler.LastRequestBody.ShouldBe("""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/System.Description","value":""}]""");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_WithAddRelations_SendsOnePatch()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Bug", "T", "Body")
+        {
+            AddRelations = [new WorkItemRelation { RelationType = "System.LinkTypes.Dependency-Reverse", TargetId = 200 }],
+        });
+
+        handler.RequestCount.ShouldBe(1);
+        handler.LastRequestBody.ShouldBe($$$"""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/Microsoft.VSTS.TCM.ReproSteps","value":"Body"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Dependency-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/200"}}]""");
     }
 }
 

@@ -6,7 +6,7 @@ public interface IAzureDevOpsClient
 {
     Task<WorkItem> GetWorkItemAsync(int id);
 
-    Task UpdateWorkItemFieldsAsync(int id, string type, string title, string descriptionHtml);
+    Task UpdateWorkItemAsync(WorkItemUpdatePatch patch);
 
     Task AddRelationAsync(int sourceId, int targetId);
 

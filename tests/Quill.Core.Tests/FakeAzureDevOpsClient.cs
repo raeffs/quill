@@ -57,7 +57,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
         return Task.CompletedTask;
     }
 
-    public Task UpdateWorkItemFieldsAsync(int id, string type, string title, string descriptionHtml) =>
+    public Task UpdateWorkItemAsync(WorkItemUpdatePatch patch) =>
         throw new NotSupportedException();
 
     public Task<IReadOnlyList<WorkItemComment>> GetCommentsAsync(int id, int? limit = null, CancellationToken cancellationToken = default) =>
