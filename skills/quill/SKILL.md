@@ -87,6 +87,7 @@ type: Product Backlog Item
 title: The work item title
 state: Active
 parentId: 67890
+tags: [backend, tech-debt]
 ---
 
 Description content goes here in markdown.
@@ -101,6 +102,7 @@ Link to another work item: [Product Backlog Item: Other Item](#67890)
 | `title` | Work item title. Pushed to the server. Required for create. |
 | `state` | Work item state. Read-only. Written on pull. |
 | `parentId` | Parent work item ID. Required for create. Written on pull when a parent exists. |
+| `tags` | Tags, as a YAML list. Round-trip: written on pull, sent on push and create. On push a list replaces all tags, `[]` removes them all, and no key leaves them alone. On create no key and `[]` both mean no tags. A tag must not contain `;` or `,`; a bad value exits 3. |
 
 Write `[link text](#<work-item-id>)` to link to another backlog item. On push, quill replaces the link text with `{Type} {Id}: {Title}` from the server, creates a `Related` relation, and turns the link into a URL. On pull, quill converts links back to `[{Type}: {Title}](#<id>)`.
 

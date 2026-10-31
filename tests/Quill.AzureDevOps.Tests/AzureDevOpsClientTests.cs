@@ -720,6 +720,109 @@ public class AzureDevOpsClientTests
         handler.RequestCount.ShouldBe(1);
         handler.LastRequestBody.ShouldBe($$$"""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/Microsoft.VSTS.TCM.ReproSteps","value":"Body"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Dependency-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/200"}}]""");
     }
+
+    [Fact]
+    public async Task GetWorkItemAsync_WithTags_SplitsTags()
+    {
+        var workItem = await GetWorkItemWithFields(""" "System.Tags": "a; b", """);
+
+        workItem.Tags.ShouldBe(["a", "b"]);
+    }
+
+    [Fact]
+    public async Task GetWorkItemAsync_WithoutTags_ReturnsEmptyTags()
+    {
+        var workItem = await GetWorkItemWithFields(string.Empty);
+
+        workItem.Tags.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_WithTags_SendsReplaceInSamePatch()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body") { Tags = ["a", "b"] });
+
+        handler.RequestCount.ShouldBe(1);
+        handler.LastRequestBody.ShouldBe("""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/System.Description","value":"Body"},{"op":"replace","path":"/fields/System.Tags","value":"a; b"}]""");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_EmptyTags_SendsReplaceWithEmptyValue()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body") { Tags = [] });
+
+        handler.LastRequestBody.ShouldBe("""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/System.Description","value":"Body"},{"op":"replace","path":"/fields/System.Tags","value":""}]""");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_NullTags_SendsNoTagsOperation()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body"));
+
+        handler.LastRequestBody.ShouldNotBeNull();
+        handler.LastRequestBody.ShouldNotContain("System.Tags");
+    }
+
+    [Fact]
+    public async Task CreateWorkItem_WithTags_SendsAddOperation()
+    {
+        using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Tags: ["a", "b"]));
+
+        handler.LastRequestBody.ShouldNotBeNull();
+        handler.LastRequestBody.ShouldContain("""{"op":"add","path":"/fields/System.Tags","value":"a; b"}""");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CreateWorkItem_EmptyOrNullTags_SendsNoTagsOperation(bool empty)
+    {
+        using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Tags: empty ? [] : null));
+
+        handler.LastRequestBody.ShouldNotBeNull();
+        handler.LastRequestBody.ShouldNotContain("System.Tags");
+    }
+
+    private static async Task<WorkItem> GetWorkItemWithFields(string extraFields)
+    {
+        var rawApiJson = $$"""
+        {
+            "id": 321,
+            "fields": {
+                {{extraFields}}
+                "System.WorkItemType": "Task",
+                "System.Title": "T",
+                "System.State": "New"
+            },
+            "relations": []
+        }
+        """;
+        using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        return await client.GetWorkItemAsync(321);
+    }
 }
 
 internal class FakeHttpHandler(string responseBody, HttpStatusCode statusCode) : HttpMessageHandler

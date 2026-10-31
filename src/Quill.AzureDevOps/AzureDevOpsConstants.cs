@@ -13,5 +13,6 @@ public static class AzureDevOpsConstants
     public const string FieldAssignedTo = "System.AssignedTo";
     public const string FieldIterationPath = "System.IterationPath";
     public const string FieldAreaPath = "System.AreaPath";
+    public const string FieldTags = "System.Tags";
     public const string HierarchyReverseLinkType = "System.LinkTypes.Hierarchy-Reverse";
 }

@@ -7,4 +7,5 @@ public sealed record WorkItemCreatePatch(
     string? AssignedToId = null,
     string? DescriptionHtml = null,
     string? IterationPath = null,
-    string? AreaPath = null);
+    string? AreaPath = null,
+    IReadOnlyList<string>? Tags = null);

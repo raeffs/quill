@@ -5,6 +5,7 @@
 ### Added
 
 - `quill backlog create`, `quill wi create`: Create a Feature under an Epic.
+- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Round-trip `tags` through the frontmatter.
 
 ### Changed
 

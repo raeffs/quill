@@ -30,6 +30,9 @@ internal static class PushCommand
         return command;
     }
 
+    internal static IReadOnlyList<string> UpdatedFieldsFor(ParsedMarkdownFile parsed) =>
+        parsed.Tags is null ? ["title", "description"] : ["title", "description", "tags"];
+
     private static async Task ExecuteAsync(IServiceProvider serviceProvider, string filePath)
     {
         try
@@ -67,7 +70,7 @@ internal static class PushCommand
 
             var (html, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
-            await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(parsed.Id, workItem.Type, parsed.Title, html));
+            await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(parsed.Id, workItem.Type, parsed.Title, html) { Tags = parsed.Tags });
 
             var existingRelatedIds = workItem.Relations
                 .Where(r => string.Equals(r.RelationType, AzureDevOpsConstants.RelatedLinkType, StringComparison.Ordinal))
@@ -85,7 +88,7 @@ internal static class PushCommand
                 {
                     Id = parsed.Id,
                     Title = parsed.Title,
-                    UpdatedFields = ["title", "description"],
+                    UpdatedFields = UpdatedFieldsFor(parsed),
                     RelationsAdded = newRelations,
                 },
                 CommandHelpers.Context.PushResult));

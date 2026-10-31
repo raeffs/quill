@@ -105,6 +105,12 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             new () { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTitle}", Value = JsonValue.Create(patch.Title) },
             new () { Op = "replace", Path = $"/fields/{DescriptionFieldFor(patch.Type)}", Value = JsonValue.Create(patch.DescriptionHtml) },
         };
+
+        if (patch.Tags is not null)
+        {
+            operations.Add(new() { Op = "replace", Path = $"/fields/{AzureDevOpsConstants.FieldTags}", Value = JsonValue.Create(WorkItemTags.Join(patch.Tags)) });
+        }
+
         operations.AddRange(patch.AddRelations.Select(r => RelationOperation(r.RelationType, r.TargetId)));
 
         await PatchWorkItemAsync(patch.Id, operations);
@@ -147,6 +153,11 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         if (!string.IsNullOrEmpty(patch.AreaPath))
         {
             operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldAreaPath}", Value = JsonValue.Create(patch.AreaPath) });
+        }
+
+        if (patch.Tags is { Count: > 0 })
+        {
+            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldTags}", Value = JsonValue.Create(WorkItemTags.Join(patch.Tags)) });
         }
 
         var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
@@ -422,6 +433,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             Description = GetStringField(fields, DescriptionFieldFor(type)),
             IterationPath = GetStringField(fields, AzureDevOpsConstants.FieldIterationPath),
             AreaPath = GetStringField(fields, AzureDevOpsConstants.FieldAreaPath),
+            Tags = WorkItemTags.Split(GetStringField(fields, AzureDevOpsConstants.FieldTags)),
             ParentId = parentId,
             Relations = relations,
             ChildIds = childIds,

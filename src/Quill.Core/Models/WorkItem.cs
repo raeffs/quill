@@ -20,6 +20,8 @@ public class WorkItem
 
     public string AreaPath { get; init; } = string.Empty;
 
+    public IReadOnlyList<string> Tags { get; init; } = [];
+
     public int? ParentId { get; init; }
 
     public IReadOnlyList<WorkItemRelation> Relations { get; init; } = [];

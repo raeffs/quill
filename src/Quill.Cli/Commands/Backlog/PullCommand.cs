@@ -54,7 +54,8 @@ internal static class PullCommand
                 title: workItem.Title,
                 state: workItem.State,
                 body: markdownBody.TrimEnd(),
-                parentId: workItem.ParentId);
+                parentId: workItem.ParentId,
+                tags: workItem.Tags);
 
             var directory = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(directory))
