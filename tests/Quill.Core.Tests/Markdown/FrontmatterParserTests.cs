@@ -348,5 +348,70 @@ public class FrontmatterParserTests
         FrontmatterParser.Parse(written).Tags.ShouldBe(tags);
     }
 
+    [Fact]
+    public void Parse_NoPredecessorsKey_IsNull()
+    {
+        FrontmatterParser.Parse("---\nid: 1\ntitle: T\n---\n\nBody\n").Predecessors.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Parse_EmptyPredecessors_IsEmpty()
+    {
+        var predecessors = FrontmatterParser.Parse("---\nid: 1\ntitle: T\npredecessors: []\n---\n\nBody\n").Predecessors;
+
+        predecessors.ShouldNotBeNull();
+        predecessors.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Parse_PredecessorsKeyWithoutValue_IsNull()
+    {
+        FrontmatterParser.Parse("---\nid: 1\ntitle: T\npredecessors:\n---\n\nBody\n").Predecessors.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Parse_Predecessors_ReturnsIds()
+    {
+        FrontmatterParser.Parse("---\nid: 1\ntitle: T\npredecessors: [10, 11]\n---\n\nBody\n").Predecessors.ShouldBe([10, 11]);
+    }
+
+    [Theory]
+    [InlineData("[0]")]
+    [InlineData("[-1]")]
+    [InlineData("[1, 1]")]
+    [InlineData("[~]")]
+    [InlineData("[1.5]")]
+    [InlineData("[true]")]
+    [InlineData("[abc]")]
+    [InlineData("[99999999999]")]
+    [InlineData("[[1]]")]
+    [InlineData("5")]
+    [InlineData("{a: 1}")]
+    public void Parse_InvalidPredecessors_ThrowsInvalidOperationException(string value)
+    {
+        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse($"---\nid: 1\ntitle: T\npredecessors: {value}\n---\n\nBody\n"));
+    }
+
+    [Fact]
+    public void Write_NoPredecessors_OmitsKey()
+    {
+        FrontmatterParser.Write(1, "Task", "T", "New", "Body").ShouldNotContain("predecessors");
+    }
+
+    [Fact]
+    public void Write_EmptyPredecessors_WritesEmptyList()
+    {
+        FrontmatterParser.Write(1, "Task", "T", "New", "Body", predecessors: []).ShouldContain("predecessors: []");
+    }
+
+    [Fact]
+    public void WriteThenParse_Predecessors_RoundTrip()
+    {
+        var parsed = FrontmatterParser.Parse(FrontmatterParser.Write(1, "Task", "T", "New", "Body", tags: ["a"], predecessors: [10, 11]));
+
+        parsed.Tags.ShouldBe(["a"]);
+        parsed.Predecessors.ShouldBe([10, 11]);
+    }
+
     private static string FileWith(string line) => $"---\nid: 1\ntitle: T\n{line}\n---\n\nBody\n";
 }

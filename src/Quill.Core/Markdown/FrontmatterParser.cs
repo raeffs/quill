@@ -4,7 +4,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Quill.Core.Markdown;
 
-public record ParsedMarkdownFile(int Id, string? Type, string Title, string? State, string Body, int? ParentId = null, IReadOnlyList<string>? Tags = null);
+public record ParsedMarkdownFile(int Id, string? Type, string Title, string? State, string Body, int? ParentId = null, IReadOnlyList<string>? Tags = null, IReadOnlyList<int>? Predecessors = null);
 
 public static class FrontmatterParser
 {
@@ -66,10 +66,11 @@ public static class FrontmatterParser
             frontmatter.State,
             body,
             ParentId: frontmatter.ParentId,
-            Tags: frontmatter.Tags is null ? null : WorkItemTags.Normalize(frontmatter.Tags));
+            Tags: frontmatter.Tags is null ? null : WorkItemTags.Normalize(frontmatter.Tags),
+            Predecessors: frontmatter.Predecessors is null ? null : WorkItemPredecessors.Validate(frontmatter.Predecessors));
     }
 
-    public static string Write(int id, string type, string title, string state, string body, int? parentId = null, IReadOnlyList<string>? tags = null)
+    public static string Write(int id, string type, string title, string state, string body, int? parentId = null, IReadOnlyList<string>? tags = null, IReadOnlyList<int>? predecessors = null)
     {
         var frontmatter = new Frontmatter
         {
@@ -79,6 +80,7 @@ public static class FrontmatterParser
             State = state,
             ParentId = parentId,
             Tags = tags is null ? null : [.. tags],
+            Predecessors = predecessors is null ? null : [.. predecessors],
         };
 
         var yaml = Serializer.Serialize(frontmatter).TrimEnd();

@@ -1,7 +1,7 @@
 namespace Quill.Core.Markdown;
 
 /// <summary>
-/// The six frontmatter fields Quill models. Deliberately a typed class, not a
+/// The seven frontmatter fields Quill models. Deliberately a typed class, not a
 /// dictionary: the YamlDotNet static context cannot serialize generic BCL
 /// collections, and the reflective builder that can is not AOT-safe.
 /// See docs/adr/0003-typed-frontmatter-for-native-aot.md.
@@ -24,5 +24,7 @@ public sealed class Frontmatter
 
 #pragma warning disable CA1002, CA2227, MA0016 // The static deserializer needs a settable List<T>; see FrontmatterYamlContext
     public List<string>? Tags { get; set; }
+
+    public List<int>? Predecessors { get; set; }
 #pragma warning restore CA1002, CA2227, MA0016
 }
