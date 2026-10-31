@@ -64,6 +64,9 @@ public class ViewResult
     [JsonPropertyName("relatedIds")]
     public required IReadOnlyList<int> RelatedIds { get; init; }
 
+    [JsonPropertyName("tags")]
+    public required IReadOnlyList<string> Tags { get; init; }
+
     [JsonPropertyName("children")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<ChildItem>? Children { get; init; }

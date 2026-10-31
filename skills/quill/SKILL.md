@@ -119,6 +119,7 @@ These are the things the help output and a successful run do not tell you.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `wi list` does not validate `--state` and `--type` values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
+- `wi view` and `wi create` always print `tags` as an array, `[]` when the item has none. `wi list` rows do not carry `tags`, so call `wi view` for them.
 - `wi tree` and the `workItems` array of `pr view` emit error stubs instead of failing the whole call: `{"id": 99999, "error": "unreadable"}` for a 403 or 404 on one item, `{"id": 99999, "error": "batch-failed"}` when a sub-batch fails.
 - In `wi tree`, a bare `{"id": 99999}` node means the child was clipped by `--depth`, not that it has no children. A fetched node with no children has `"children": []`.
 - `wi tree` walks parent-child relations only. It does not follow `Related` links.

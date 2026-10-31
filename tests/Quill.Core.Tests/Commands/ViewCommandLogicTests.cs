@@ -20,6 +20,7 @@ public class ViewCommandLogicTests
             AssignedToDisplayName = "Jane Doe",
             Description = "<p>ignored here</p>",
             ParentId = 67890,
+            Tags = ["a", "b"],
             Relations =
             [
                 new WorkItemRelation { RelationType = "System.LinkTypes.Related", TargetId = 201 },
@@ -38,6 +39,7 @@ public class ViewCommandLogicTests
         result.ParentId.ShouldBe(67890);
         result.Description.ShouldBe("<markdown body>");
         result.RelatedIds.ShouldBe([201, 202]);
+        result.Tags.ShouldBe(["a", "b"]);
         result.Children.ShouldBeNull();
     }
 
@@ -64,10 +66,11 @@ public class ViewCommandLogicTests
         result.ParentId.ShouldBeNull();
         result.Description.ShouldBe(string.Empty);
         result.RelatedIds.ShouldBeEmpty();
+        result.Tags.ShouldBeEmpty();
     }
 
     [Fact]
-    public void BuildViewResult_Serialized_HasEightKeysAndNullsEmitted()
+    public void BuildViewResult_Serialized_HasNineKeysAndNullsEmitted()
     {
         var workItem = new WorkItem
         {
@@ -88,10 +91,11 @@ public class ViewCommandLogicTests
 
         using var doc = JsonDocument.Parse(json);
         var names = doc.RootElement.EnumerateObject().Select(p => p.Name).ToArray();
-        names.ShouldBe(["id", "type", "title", "state", "assignedTo", "parentId", "description", "relatedIds"]);
+        names.ShouldBe(["id", "type", "title", "state", "assignedTo", "parentId", "description", "relatedIds", "tags"]);
         doc.RootElement.GetProperty("assignedTo").ValueKind.ShouldBe(JsonValueKind.Null);
         doc.RootElement.GetProperty("parentId").ValueKind.ShouldBe(JsonValueKind.Null);
         doc.RootElement.GetProperty("relatedIds").GetArrayLength().ShouldBe(0);
+        doc.RootElement.GetProperty("tags").GetArrayLength().ShouldBe(0);
     }
 
     [Fact]

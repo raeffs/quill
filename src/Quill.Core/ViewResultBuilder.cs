@@ -16,6 +16,7 @@ public static class ViewResultBuilder
             ParentId = workItem.ParentId,
             Description = markdownBody,
             RelatedIds = workItem.Relations.Select(r => r.TargetId).ToList(),
+            Tags = workItem.Tags,
             Children = children,
         };
     }
