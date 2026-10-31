@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `quill backlog create`, `quill wi create`: Create a Feature under an Epic.
+
 ## [2.0.0]
 
 ### Added

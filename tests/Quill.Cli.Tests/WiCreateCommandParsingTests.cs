@@ -55,20 +55,21 @@ public class WiCreateCommandParsingTests
     [InlineData("task")]
     [InlineData("product backlog item")]
     [InlineData("BUG")]
+    [InlineData("Feature")]
+    [InlineData("feature")]
     public void Parse_TypeInAnyCase_IsAccepted(string type)
     {
         CliHost.Parse(Args(type), TestServices.Empty).Errors.ShouldBeEmpty();
     }
 
     [Theory]
-    [InlineData("Feature")]
     [InlineData("Epic")]
     [InlineData("PBI")]
     public void Parse_TypeOutsideHierarchy_IsParseError(string type)
     {
         var parseResult = CliHost.Parse(Args(type), TestServices.Empty);
 
-        parseResult.Errors.ShouldHaveSingleItem().Message.ShouldContain("Product Backlog Item, Bug, Task");
+        parseResult.Errors.ShouldHaveSingleItem().Message.ShouldContain("Feature, Product Backlog Item, Bug, Task");
     }
 
     [Fact]

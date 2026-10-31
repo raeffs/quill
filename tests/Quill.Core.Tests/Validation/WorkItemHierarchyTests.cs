@@ -6,16 +6,16 @@ namespace Quill.Core.Tests.Validation;
 public class WorkItemHierarchyTests
 {
     [Fact]
-    public void ChildTypes_AreThePbiBugAndTask()
+    public void ChildTypes_AreFeaturePbiBugAndTask()
     {
-        WorkItemHierarchy.ChildTypes.ShouldBe(["Product Backlog Item", "Bug", "Task"]);
+        WorkItemHierarchy.ChildTypes.ShouldBe(["Feature", "Product Backlog Item", "Bug", "Task"]);
     }
 
     [Theory]
     [InlineData("Task", new[] { "Product Backlog Item", "Bug" })]
     [InlineData("Product Backlog Item", new[] { "Feature" })]
     [InlineData("bug", new[] { "Feature" })]
-    [InlineData("Feature", new string[0])]
+    [InlineData("Feature", new[] { "Epic" })]
     [InlineData("Epic", new string[0])]
     public void ParentTypesOf_ReturnsTheFixedHierarchy(string childType, string[] expected)
     {
@@ -26,13 +26,13 @@ public class WorkItemHierarchyTests
     [InlineData("task", "Task")]
     [InlineData("product backlog item", "Product Backlog Item")]
     [InlineData("BUG", "Bug")]
+    [InlineData("feature", "Feature")]
     public void CanonicalChildType_IsCaseInsensitive(string input, string expected)
     {
         WorkItemHierarchy.CanonicalChildType(input).ShouldBe(expected);
     }
 
     [Theory]
-    [InlineData("Feature")]
     [InlineData("Epic")]
     [InlineData("PBI")]
     public void CanonicalChildType_OutsideHierarchy_ReturnsNull(string input)

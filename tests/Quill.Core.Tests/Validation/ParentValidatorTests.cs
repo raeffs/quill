@@ -13,6 +13,8 @@ public class ParentValidatorTests
     [InlineData("Product Backlog Item", "Feature")]
     [InlineData("Bug", "Feature")]
     [InlineData("task", "product backlog item")]
+    [InlineData("Feature", "Epic")]
+    [InlineData("feature", "epic")]
     public void Validate_AllowedParentType_ReturnsSuccess(string childType, string parentType)
     {
         var result = ParentValidator.Validate(childType, Parent(parentType), TestConstants.TestUserId);
@@ -29,6 +31,11 @@ public class ParentValidatorTests
     [InlineData("Bug", "Task")]
     [InlineData("Feature", "Feature")]
     [InlineData("Epic", "Feature")]
+    [InlineData("Feature", "Product Backlog Item")]
+    [InlineData("Feature", "Task")]
+    [InlineData("Product Backlog Item", "Epic")]
+    [InlineData("Bug", "Epic")]
+    [InlineData("Task", "Epic")]
     public void Validate_DisallowedParentType_ReturnsErrorNamingParentType(string childType, string parentType)
     {
         var result = ParentValidator.Validate(childType, Parent(parentType), TestConstants.TestUserId);
@@ -52,6 +59,15 @@ public class ParentValidatorTests
     public void Validate_WrongAssignee_ReturnsError()
     {
         var result = ParentValidator.Validate("Task", Parent("Bug", assignedToId: "other-user-id"), TestConstants.TestUserId);
+
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldHaveSingleItem().ShouldContain("assignee");
+    }
+
+    [Fact]
+    public void Validate_FeatureUnderEpicAssignedToSomeoneElse_ReturnsError()
+    {
+        var result = ParentValidator.Validate("Feature", Parent("Epic", assignedToId: "other-user-id"), TestConstants.TestUserId);
 
         result.IsValid.ShouldBeFalse();
         result.Errors.ShouldHaveSingleItem().ShouldContain("assignee");

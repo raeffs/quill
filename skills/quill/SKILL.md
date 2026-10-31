@@ -27,7 +27,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 |---|---|
 | `backlog pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
 | `backlog push` | You want to send an edited file back to the server. |
-| `backlog create` | You want a new Product Backlog Item, Bug or Task, described by a markdown file. |
+| `backlog create` | You want a new Feature, Product Backlog Item, Bug or Task, described by a markdown file. |
 
 ### wi
 
@@ -37,7 +37,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `wi list` | You want to find work items by title text, assignee, state or type. For "what is assigned to me", pass `--assignee @me`. |
 | `wi tree` | You want to orient yourself under an Epic or Feature. Use `--depth 1` for direct children only. |
 | `wi comments` | You want the discussion on a work item. |
-| `wi create` | You want a new Product Backlog Item, Bug or Task under a parent, without a file. |
+| `wi create` | You want a new Feature, Product Backlog Item, Bug or Task under a parent, without a file. |
 
 ### pr
 
@@ -109,7 +109,7 @@ Write `[link text](#<work-item-id>)` to link to another backlog item. On push, q
 These are the things the help output and a successful run do not tell you.
 
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
-- `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
+- `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Feature`, `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Feature needs an Epic parent, a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
 - `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user.
 - A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.

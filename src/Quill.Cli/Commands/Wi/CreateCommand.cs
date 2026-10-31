@@ -51,7 +51,7 @@ internal static class CreateCommand
             Description = "Name of the user to assign the work item to. Defaults to unassigned.",
         };
 
-        var command = new Command("create", "Create a Product Backlog Item, Bug or Task under a parent and print it to stdout as JSON")
+        var command = new Command("create", "Create a work item under a parent and print it to stdout as JSON")
         {
             typeOption,
             titleOption,

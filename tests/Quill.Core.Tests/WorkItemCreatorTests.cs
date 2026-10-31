@@ -114,16 +114,41 @@ public class WorkItemCreatorTests
         created.Children.ShouldBeNull();
     }
 
+    [Fact]
+    public async Task CreateAsync_FeatureUnderEpic_CreatesUnassignedWithEpicIterationPath()
+    {
+        var client = Seed(parentType: "Epic");
+
+        var outcome = await WorkItemCreator.CreateAsync(client, Config, Request("Feature"));
+
+        outcome.Validation.IsValid.ShouldBeTrue();
+        outcome.Created.ShouldNotBeNull().Type.ShouldBe("Feature");
+        var call = client.CreateCall.ShouldNotBeNull();
+        call.AssignedToId.ShouldBeNull();
+        call.IterationPath.ShouldBe(ParentIterationPath);
+    }
+
+    [Fact]
+    public async Task CreateAsync_FeatureUnderNonEpic_ReturnsErrorAndCreatesNothing()
+    {
+        var client = Seed();
+
+        var outcome = await WorkItemCreator.CreateAsync(client, Config, Request("Feature"));
+
+        outcome.Validation.Errors.ShouldHaveSingleItem().ShouldContain("'Product Backlog Item'");
+        client.CreateCall.ShouldBeNull();
+    }
+
     private static WorkItemCreateRequest Request(string type, string? description = null, string? assignee = null) =>
         new(type, "Write the importer", ParentId, description, assignee);
 
-    private static FakeAzureDevOpsClient Seed(string parentState = "Active")
+    private static FakeAzureDevOpsClient Seed(string parentState = "Active", string parentType = "Product Backlog Item")
     {
         var client = new FakeAzureDevOpsClient();
         client.Add(new WorkItem
         {
             Id = ParentId,
-            Type = "Product Backlog Item",
+            Type = parentType,
             Title = "The parent",
             State = parentState,
             AssignedToId = "other-user-id",
