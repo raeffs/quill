@@ -9,17 +9,9 @@ public static class FrontmatterParser
 {
     private const string Delimiter = "---";
 
-    private static readonly IDeserializer Deserializer =
-        new StaticDeserializerBuilder(new FrontmatterYamlContext())
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .IgnoreUnmatchedProperties()
-            .Build();
+    private static readonly IDeserializer Deserializer = BuildDeserializer(new FrontmatterYamlContext());
 
-    private static readonly ISerializer Serializer =
-        new StaticSerializerBuilder(new FrontmatterYamlContext())
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
-            .Build();
+    private static readonly ISerializer Serializer = BuildSerializer(new FrontmatterYamlContext());
 
     public static ParsedMarkdownFile Parse(string content)
     {
@@ -82,4 +74,18 @@ public static class FrontmatterParser
 
         return $"---\n{yaml}\n---\n\n{body}\n";
     }
+
+    internal static IDeserializer BuildDeserializer(StaticContext context) =>
+        new StaticDeserializerBuilder(context)
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .IgnoreUnmatchedProperties()
+            .Build();
+
+    // OmitNull, not OmitDefaults: an empty list is not null, so `tags: []` is
+    // still written and stays distinct from an absent key (ADR 0008).
+    internal static ISerializer BuildSerializer(StaticContext context) =>
+        new StaticSerializerBuilder(context)
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
+            .Build();
 }
