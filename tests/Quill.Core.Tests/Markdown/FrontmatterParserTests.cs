@@ -311,6 +311,14 @@ public class FrontmatterParserTests
     }
 
     [Fact]
+    public void Parse_ScalarTags_ErrorNamesTheFileLine()
+    {
+        var ex = Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(FileWith("tags: a")));
+
+        ex.Message.ShouldContain("line 4");
+    }
+
+    [Fact]
     public void Parse_NonIntegerId_ThrowsInvalidOperationException()
     {
         var content = "---\nid: abc\ntitle: T\n---\n\nBody\n";
@@ -333,7 +341,7 @@ public class FrontmatterParserTests
     [Fact]
     public void WriteThenParse_AwkwardTags_RoundTrip()
     {
-        string[] tags = ["a: b", "2024", "#x", "Ünï cödé"];
+        string[] tags = ["a: b", "2024", "#x", "Ünï cödé", "null", "Null", "NULL", "~"];
 
         var written = FrontmatterParser.Write(1, "Task", "T", "New", "Body", tags: tags);
 

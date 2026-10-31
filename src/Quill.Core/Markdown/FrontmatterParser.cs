@@ -48,7 +48,7 @@ public static class FrontmatterParser
         }
         catch (YamlException ex)
         {
-            throw new InvalidOperationException($"Invalid frontmatter: {ex.Message}", ex);
+            throw new InvalidOperationException($"Invalid frontmatter at line {ex.Start.Line + 1}: {ex.InnerException?.Message ?? ex.Message}", ex);
         }
 
         // Id is nullable precisely so this stays distinguishable from `id: 0`,
@@ -98,5 +98,6 @@ public static class FrontmatterParser
         new StaticSerializerBuilder(context)
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
+            .WithQuotingNecessaryStrings()
             .Build();
 }
