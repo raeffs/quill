@@ -848,6 +848,18 @@ public class AzureDevOpsClientTests
     }
 
     [Fact]
+    public async Task UpdateWorkItem_CycleReportedAs500_ThrowsWithServerMessage()
+    {
+        using var handler = new FakeHttpHandler("""{"message":"TF201035: Adding a Predecessor link between work items 1 and 2 would result in a circular relationship."}""", HttpStatusCode.InternalServerError);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var ex = await Should.ThrowAsync<WorkItemRejectedException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
+
+        ex.Message.ShouldContain("circular relationship");
+    }
+
+    [Fact]
     public async Task UpdateWorkItem_RejectionWithoutJsonBody_ThrowsWithStatus()
     {
         using var handler = new FakeHttpHandler("oops", HttpStatusCode.BadRequest);

@@ -13,6 +13,7 @@ namespace Quill.AzureDevOps;
 public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 {
     private const int BatchChunkSize = 200;
+    private const string CircularLinkErrorCode = "TF201035";
 
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
@@ -303,20 +304,27 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
     }
 
     // Auth, throttling and 5xx stay plain HTTP failures: the server did not
-    // judge the write. Any other 4xx is its verdict on what was sent.
+    // judge the write. Any other 4xx is its verdict on what was sent. So is a
+    // cycle, which the server reports as a 500 carrying TF201035.
     private static async Task EnsureWriteSucceededAsync(HttpResponseMessage response)
     {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
         var status = (int)response.StatusCode;
-        if (status is < 400 or >= 500
+        var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync());
+        var isCycle = message?.StartsWith(CircularLinkErrorCode, StringComparison.Ordinal) == true;
+
+        if (!isCycle && status is < 400 or >= 500
             or (int)HttpStatusCode.Unauthorized
             or (int)HttpStatusCode.Forbidden
             or (int)HttpStatusCode.TooManyRequests)
         {
             response.EnsureSuccessStatusCode();
-            return;
         }
 
-        var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync());
         var statusText = status.ToString(CultureInfo.InvariantCulture);
 
         throw new WorkItemRejectedException(
