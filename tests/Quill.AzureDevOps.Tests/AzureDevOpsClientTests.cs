@@ -560,17 +560,67 @@ public class AzureDevOpsClientTests
         handler.LastRequestBody.ShouldNotBeNull();
         handler.LastRequestBody.ShouldNotContain("System.IterationPath");
     }
+
+    [Fact]
+    public async Task CreateWorkItem_AllValues_SendsExactPatch()
+    {
+        using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.CreateWorkItemAsync("Task", "T", 100, "A", "Body", "P\\I");
+
+        handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}},{"op":"add","path":"/fields/System.AssignedTo","value":"A"},{"op":"add","path":"/fields/System.Description","value":"Body"},{"op":"add","path":"/fields/System.IterationPath","value":"P\\I"}]""");
+    }
+
+    [Fact]
+    public async Task CreateWorkItem_EmptyOptionalValues_OmitsOperations()
+    {
+        using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.CreateWorkItemAsync("Task", "T", 100, null, string.Empty, string.Empty);
+
+        handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}}]""");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_SendsExactPatch()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemFieldsAsync(123, "Task", "T", "Body");
+
+        handler.LastRequestBody.ShouldBe("""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/System.Description","value":"Body"}]""");
+    }
+
+    [Fact]
+    public async Task UpdateWorkItem_EmptyDescription_StillSendsReplace()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.UpdateWorkItemFieldsAsync(123, "Task", "T", string.Empty);
+
+        handler.LastRequestBody.ShouldBe("""[{"op":"replace","path":"/fields/System.Title","value":"T"},{"op":"replace","path":"/fields/System.Description","value":""}]""");
+    }
 }
 
 internal class FakeHttpHandler(string responseBody, HttpStatusCode statusCode) : HttpMessageHandler
 {
     public HttpRequestMessage? LastRequest { get; private set; }
     public string? LastRequestBody { get; private set; }
+    public int RequestCount { get; private set; }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
         LastRequest = request;
+        RequestCount++;
         if (request.Content is not null)
         {
             LastRequestBody = await request.Content.ReadAsStringAsync(cancellationToken);
