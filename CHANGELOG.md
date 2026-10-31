@@ -6,6 +6,10 @@
 
 - `quill backlog create`, `quill wi create`: Create a Feature under an Epic.
 
+### Changed
+
+- `quill backlog create`, `quill wi create`: A new work item takes its parent's area path.
+
 ## [2.0.0]
 
 ### Added

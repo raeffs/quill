@@ -8,6 +8,7 @@ public class WorkItemCreatorTests
 {
     private const int ParentId = 10;
     private const string ParentIterationPath = @"Proj\Sprint 7";
+    private const string ParentAreaPath = @"Proj\Team A";
 
     private static readonly QuillConfig Config = new()
     {
@@ -73,6 +74,21 @@ public class WorkItemCreatorTests
         await WorkItemCreator.CreateAsync(client, Config, Request("Task"));
 
         client.CreateCall.ShouldNotBeNull().IterationPath.ShouldBe(ParentIterationPath);
+    }
+
+    [Theory]
+    [InlineData("Feature", "Epic")]
+    [InlineData("Product Backlog Item", "Feature")]
+    [InlineData("Bug", "Feature")]
+    [InlineData("Task", "Product Backlog Item")]
+    [InlineData("Task", "Bug")]
+    public async Task CreateAsync_UsesParentAreaPath(string type, string parentType)
+    {
+        var client = Seed(parentType: parentType);
+
+        await WorkItemCreator.CreateAsync(client, Config, Request(type));
+
+        client.CreateCall.ShouldNotBeNull().AreaPath.ShouldBe(ParentAreaPath);
     }
 
     [Fact]
@@ -153,6 +169,7 @@ public class WorkItemCreatorTests
             State = parentState,
             AssignedToId = "other-user-id",
             IterationPath = ParentIterationPath,
+            AreaPath = ParentAreaPath,
         });
         client.Add(new WorkItem
         {

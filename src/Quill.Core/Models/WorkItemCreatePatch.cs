@@ -6,4 +6,5 @@ public sealed record WorkItemCreatePatch(
     int ParentId,
     string? AssignedToId = null,
     string? DescriptionHtml = null,
-    string? IterationPath = null);
+    string? IterationPath = null,
+    string? AreaPath = null);

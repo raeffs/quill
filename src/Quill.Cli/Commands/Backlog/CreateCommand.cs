@@ -118,7 +118,8 @@ internal static class CreateCommand
                 parsed.ParentId.Value,
                 AssignedToId: assignee,
                 DescriptionHtml: string.IsNullOrEmpty(descriptionHtml) ? null : descriptionHtml,
-                IterationPath: parentWorkItem.IterationPath));
+                IterationPath: parentWorkItem.IterationPath,
+                AreaPath: parentWorkItem.AreaPath));
 
             foreach (var targetId in linkIds)
             {

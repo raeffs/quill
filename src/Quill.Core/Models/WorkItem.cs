@@ -18,6 +18,8 @@ public class WorkItem
 
     public string IterationPath { get; init; } = string.Empty;
 
+    public string AreaPath { get; init; } = string.Empty;
+
     public int? ParentId { get; init; }
 
     public IReadOnlyList<WorkItemRelation> Relations { get; init; } = [];

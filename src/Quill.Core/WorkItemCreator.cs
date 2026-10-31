@@ -32,7 +32,8 @@ public static class WorkItemCreator
             request.ParentId,
             AssignedToId: request.Assignee,
             DescriptionHtml: descriptionHtml,
-            IterationPath: parent.IterationPath));
+            IterationPath: parent.IterationPath,
+            AreaPath: parent.AreaPath));
 
         foreach (var targetId in linkIds)
         {

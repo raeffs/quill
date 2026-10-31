@@ -144,6 +144,11 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldIterationPath}", Value = JsonValue.Create(patch.IterationPath) });
         }
 
+        if (!string.IsNullOrEmpty(patch.AreaPath))
+        {
+            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldAreaPath}", Value = JsonValue.Create(patch.AreaPath) });
+        }
+
         var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
         using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
 
@@ -416,6 +421,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             AssignedToDisplayName = assignedToDisplayName,
             Description = GetStringField(fields, DescriptionFieldFor(type)),
             IterationPath = GetStringField(fields, AzureDevOpsConstants.FieldIterationPath),
+            AreaPath = GetStringField(fields, AzureDevOpsConstants.FieldAreaPath),
             ParentId = parentId,
             Relations = relations,
             ChildIds = childIds,

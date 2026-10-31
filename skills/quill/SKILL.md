@@ -112,6 +112,7 @@ These are the things the help output and a successful run do not tell you.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Feature`, `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Feature needs an Epic parent, a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
 - `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user.
+- `backlog create` and `wi create` give the new item its parent's area and iteration.
 - A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `wi list` does not validate `--state` and `--type` values against `.quill.json`. A typo returns `[]` rather than an error.

@@ -563,15 +563,110 @@ public class AzureDevOpsClientTests
     }
 
     [Fact]
+    public async Task GetWorkItemAsync_WithAreaPath_ReturnsAreaPath()
+    {
+        // Arrange
+        var rawApiJson = """
+        {
+            "id": 321,
+            "fields": {
+                "System.WorkItemType": "Product Backlog Item",
+                "System.Title": "Item in area",
+                "System.State": "Approved",
+                "System.Description": "",
+                "System.AreaPath": "MyProject\\Team A"
+            },
+            "relations": []
+        }
+        """;
+
+        using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var workItem = await client.GetWorkItemAsync(321);
+
+        // Assert
+        workItem.AreaPath.ShouldBe("MyProject\\Team A");
+    }
+
+    [Fact]
+    public async Task GetWorkItemAsync_WithoutAreaPath_ReturnsEmptyAreaPath()
+    {
+        // Arrange
+        var rawApiJson = """
+        {
+            "id": 321,
+            "fields": {
+                "System.WorkItemType": "Product Backlog Item",
+                "System.Title": "Item without area",
+                "System.State": "Approved",
+                "System.Description": ""
+            },
+            "relations": []
+        }
+        """;
+
+        using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var workItem = await client.GetWorkItemAsync(321);
+
+        // Assert
+        workItem.AreaPath.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateWorkItemAsync_WithAreaPath_IncludesAreaPathPatchOp()
+    {
+        // Arrange
+        var responseJson = """{"id": 999, "fields": {}}""";
+
+        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        await client.CreateWorkItemAsync(
+            new WorkItemCreatePatch("Task", "Area task", 100, AreaPath: "MyProject\\Team A"));
+
+        // Assert
+        handler.LastRequestBody.ShouldNotBeNull();
+        handler.LastRequestBody.ShouldContain("System.AreaPath");
+        handler.LastRequestBody.ShouldContain("Team A");
+    }
+
+    [Fact]
+    public async Task CreateWorkItemAsync_WithoutAreaPath_OmitsAreaPathPatchOp()
+    {
+        // Arrange
+        var responseJson = """{"id": 999, "fields": {}}""";
+
+        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "No-area task", 100));
+
+        // Assert
+        handler.LastRequestBody.ShouldNotBeNull();
+        handler.LastRequestBody.ShouldNotContain("System.AreaPath");
+    }
+
+    [Fact]
     public async Task CreateWorkItem_AllValues_SendsExactPatch()
     {
         using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, "A", "Body", "P\\I"));
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, "A", "Body", "P\\I", "P\\A"));
 
-        handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}},{"op":"add","path":"/fields/System.AssignedTo","value":"A"},{"op":"add","path":"/fields/System.Description","value":"Body"},{"op":"add","path":"/fields/System.IterationPath","value":"P\\I"}]""");
+        handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}},{"op":"add","path":"/fields/System.AssignedTo","value":"A"},{"op":"add","path":"/fields/System.Description","value":"Body"},{"op":"add","path":"/fields/System.IterationPath","value":"P\\I"},{"op":"add","path":"/fields/System.AreaPath","value":"P\\A"}]""");
     }
 
     [Fact]
@@ -581,7 +676,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, null, string.Empty, string.Empty));
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, null, string.Empty, string.Empty, string.Empty));
 
         handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}}]""");
     }
