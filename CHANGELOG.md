@@ -2,20 +2,18 @@
 
 ## [Unreleased]
 
+## [2.1.0]
+
 ### Added
 
 - `quill backlog create`, `quill wi create`: Create a Feature under an Epic.
-- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Round-trip `tags` through the frontmatter.
-- `quill wi create`: Takes a repeatable `--tag`.
-- `quill wi view`, `quill wi create`: Print `tags`.
-- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Round-trip `predecessors` through the frontmatter.
-- `quill wi create`: Takes a repeatable `--predecessor`.
-- `quill wi view`, `quill wi create`: Print `predecessors`.
+- `quill backlog pull`, `quill backlog push`, `quill backlog create`: Support for `tags` and `predecessors` in the frontmatter.
+- `quill wi create`: Takes a repeatable `--tag` and `--predecessor`.
+- `quill wi view`, `quill wi create`: Print `tags` and `predecessors`.
 
 ### Changed
 
 - `quill backlog create`, `quill wi create`: A new work item takes its parent's area path.
-- `quill backlog push`, `quill backlog create`, `quill wi create`: The server rejecting a work item write exits 1 with the server's message.
 
 ## [2.0.0]
 
