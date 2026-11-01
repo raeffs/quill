@@ -9,6 +9,8 @@
 - `quill wi create`: Takes a repeatable `--tag`.
 - `quill wi view`, `quill wi create`: Print `tags`.
 - `quill backlog pull`, `quill backlog push`, `quill backlog create`: Round-trip `predecessors` through the frontmatter.
+- `quill wi create`: Takes a repeatable `--predecessor`.
+- `quill wi view`, `quill wi create`: Print `predecessors`.
 
 ### Changed
 

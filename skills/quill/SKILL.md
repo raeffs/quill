@@ -117,6 +117,7 @@ These are the things the help output and a successful run do not tell you.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
 - `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user.
 - `wi create` takes a repeatable `--tag`, one value per flag. A tag must not contain `;` or `,` or be empty, and a bad value exits 3 before any request.
+- `wi create` takes a repeatable `--predecessor`, one ID per flag. A value that is not a positive integer, or a repeated ID, exits 3 before any request. The server rejects missing targets and cycles, which exits 1 and creates nothing.
 - `backlog create` and `wi create` give the new item its parent's area and iteration.
 - A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.

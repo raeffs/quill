@@ -188,9 +188,46 @@ public class WorkItemCreatorTests
         outcome.Created.ShouldNotBeNull().Tags.ShouldBeEmpty();
     }
 
+    [Fact]
+    public async Task CreateAsync_WithPredecessors_SendsLinksInTheCreatePatch()
+    {
+        var client = Seed();
+
+        await WorkItemCreator.CreateAsync(client, Config, Request("Task", predecessors: [10, 11]));
+
+        client.CreateCall.ShouldNotBeNull().Predecessors.ShouldBe([10, 11]);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithPredecessorsAndDescriptionLink_RowCarriesPredecessors()
+    {
+        var client = Seed();
+
+        var outcome = await WorkItemCreator.CreateAsync(
+            client, Config, Request("Task", description: "See [the bug](#123).", predecessors: [10, 11]));
+
+        var created = outcome.Created.ShouldNotBeNull();
+        created.Predecessors.ShouldBe([10, 11]);
+        created.RelatedIds.ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateAsync_NoPredecessors_RowHasEmptyPredecessors()
+    {
+        var client = Seed();
+
+        var outcome = await WorkItemCreator.CreateAsync(client, Config, Request("Task"));
+
+        outcome.Created.ShouldNotBeNull().Predecessors.ShouldBeEmpty();
+    }
+
     private static WorkItemCreateRequest Request(
-        string type, string? description = null, string? assignee = null, IReadOnlyList<string>? tags = null) =>
-        new(type, "Write the importer", ParentId, description, assignee, tags);
+        string type,
+        string? description = null,
+        string? assignee = null,
+        IReadOnlyList<string>? tags = null,
+        IReadOnlyList<int>? predecessors = null) =>
+        new(type, "Write the importer", ParentId, description, assignee, tags, predecessors);
 
     private static FakeAzureDevOpsClient Seed(string parentState = "Active", string parentType = "Product Backlog Item")
     {

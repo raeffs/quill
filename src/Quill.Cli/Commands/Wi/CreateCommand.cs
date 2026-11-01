@@ -57,6 +57,12 @@ internal static class CreateCommand
             AllowMultipleArgumentsPerToken = false,
         };
 
+        var predecessorOption = new Option<int[]>("--predecessor")
+        {
+            Description = "ID of a work item that must be done before this one. Repeat for more than one.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+
         var command = new Command("create", "Create a work item under a parent and print it to stdout as JSON")
         {
             typeOption,
@@ -65,6 +71,7 @@ internal static class CreateCommand
             descriptionFileOption,
             assigneeOption,
             tagOption,
+            predecessorOption,
         };
 
         command.SetAction(async (parseResult, cancellationToken) =>
@@ -77,6 +84,7 @@ internal static class CreateCommand
                 parseResult.GetValue(descriptionFileOption),
                 parseResult.GetValue(assigneeOption),
                 parseResult.GetValue(tagOption) ?? [],
+                parseResult.GetValue(predecessorOption) ?? [],
                 cancellationToken);
         });
 
@@ -91,11 +99,13 @@ internal static class CreateCommand
         string? descriptionFile,
         string? assignee,
         IReadOnlyList<string> tags,
+        IReadOnlyList<int> predecessors,
         CancellationToken cancellationToken)
     {
         try
         {
             var normalizedTags = WorkItemTags.Normalize(tags);
+            var validatedPredecessors = WorkItemPredecessors.Validate(predecessors);
 
             var description = await ReadDescriptionAsync(descriptionFile, cancellationToken);
             if (description is null && descriptionFile is not null)
@@ -112,7 +122,7 @@ internal static class CreateCommand
             var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
 
             var outcome = await WorkItemCreator.CreateAsync(
-                client, config, new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags), logger);
+                client, config, new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags, validatedPredecessors), logger);
 
             if (outcome.Created is null)
             {

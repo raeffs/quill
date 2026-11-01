@@ -33,6 +33,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
             IterationPath = patch.IterationPath ?? string.Empty,
             ParentId = patch.ParentId,
             Tags = patch.Tags ?? [],
+            Predecessors = (patch.Predecessors ?? []).Select((id, index) => new WorkItemPredecessor(id, index)).ToList(),
         };
 
         return Task.FromResult(id);
@@ -53,6 +54,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
             IterationPath = source.IterationPath,
             ParentId = source.ParentId,
             Tags = source.Tags,
+            Predecessors = source.Predecessors,
             Relations = [.. source.Relations, new WorkItemRelation { RelationType = "System.LinkTypes.Related", TargetId = targetId }],
         };
 
