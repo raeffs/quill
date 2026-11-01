@@ -14,6 +14,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 {
     private const int BatchChunkSize = 200;
     private const string CircularLinkErrorCode = "TF201035";
+    private const string SelfLinkErrorCode = "TF201033";
 
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
@@ -304,8 +305,8 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
     }
 
     // Auth, throttling and 5xx stay plain HTTP failures: the server did not
-    // judge the write. Any other 4xx is its verdict on what was sent. So is a
-    // cycle, which the server reports as a 500 carrying TF201035.
+    // judge the write. Any other 4xx is its verdict on what was sent. So are a
+    // cycle and a self-link, which the server reports as a 500 with a TF code.
     private static async Task EnsureWriteSucceededAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
@@ -315,9 +316,11 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 
         var status = (int)response.StatusCode;
         var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync());
-        var isCycle = message?.StartsWith(CircularLinkErrorCode, StringComparison.Ordinal) == true;
+        var isLinkRule = message is not null
+            && (message.StartsWith(CircularLinkErrorCode, StringComparison.Ordinal)
+                || message.StartsWith(SelfLinkErrorCode, StringComparison.Ordinal));
 
-        if (!isCycle && status is < 400 or >= 500
+        if (!isLinkRule && status is < 400 or >= 500
             or (int)HttpStatusCode.Unauthorized
             or (int)HttpStatusCode.Forbidden
             or (int)HttpStatusCode.TooManyRequests)

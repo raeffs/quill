@@ -847,16 +847,18 @@ public class AzureDevOpsClientTests
         ex.Message.ShouldContain("TF401232");
     }
 
-    [Fact]
-    public async Task UpdateWorkItem_CycleReportedAs500_ThrowsWithServerMessage()
+    [Theory]
+    [InlineData("TF201035: Adding a Predecessor link between work items 1 and 2 would result in a circular relationship.")]
+    [InlineData("TF201033: A work item cannot be linked to itself.")]
+    public async Task UpdateWorkItem_LinkRuleReportedAs500_ThrowsWithServerMessage(string message)
     {
-        using var handler = new FakeHttpHandler("""{"message":"TF201035: Adding a Predecessor link between work items 1 and 2 would result in a circular relationship."}""", HttpStatusCode.InternalServerError);
+        using var handler = new FakeHttpHandler($$"""{"message":"{{message}}"}""", HttpStatusCode.InternalServerError);
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var ex = await Should.ThrowAsync<WorkItemRejectedException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
 
-        ex.Message.ShouldContain("circular relationship");
+        ex.Message.ShouldContain(message);
     }
 
     [Fact]
