@@ -41,6 +41,16 @@ public class JsonEncodingTests
     }
 
     [Fact]
+    public void SearchResult_HasNoPredecessorsKey()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<SearchResult> { new() { Id = 1, Title = "t", State = "New", Type = "Task" } },
+            CommandHelpers.Context.ListSearchResult);
+
+        json.ShouldNotContain("predecessors");
+    }
+
+    [Fact]
     public void PullRequestResult_EmitsTheTriageRow()
     {
         var json = JsonSerializer.Serialize(

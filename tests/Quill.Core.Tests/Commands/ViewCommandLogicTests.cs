@@ -21,6 +21,7 @@ public class ViewCommandLogicTests
             Description = "<p>ignored here</p>",
             ParentId = 67890,
             Tags = ["a", "b"],
+            Predecessors = [new WorkItemPredecessor(10, 0), new WorkItemPredecessor(11, 3)],
             Relations =
             [
                 new WorkItemRelation { RelationType = "System.LinkTypes.Related", TargetId = 201 },
@@ -40,6 +41,7 @@ public class ViewCommandLogicTests
         result.Description.ShouldBe("<markdown body>");
         result.RelatedIds.ShouldBe([201, 202]);
         result.Tags.ShouldBe(["a", "b"]);
+        result.Predecessors.ShouldBe([10, 11]);
         result.Children.ShouldBeNull();
     }
 
@@ -67,10 +69,11 @@ public class ViewCommandLogicTests
         result.Description.ShouldBe(string.Empty);
         result.RelatedIds.ShouldBeEmpty();
         result.Tags.ShouldBeEmpty();
+        result.Predecessors.ShouldBeEmpty();
     }
 
     [Fact]
-    public void BuildViewResult_Serialized_HasNineKeysAndNullsEmitted()
+    public void BuildViewResult_Serialized_HasTenKeysAndNullsEmitted()
     {
         var workItem = new WorkItem
         {
@@ -91,11 +94,12 @@ public class ViewCommandLogicTests
 
         using var doc = JsonDocument.Parse(json);
         var names = doc.RootElement.EnumerateObject().Select(p => p.Name).ToArray();
-        names.ShouldBe(["id", "type", "title", "state", "assignedTo", "parentId", "description", "relatedIds", "tags"]);
+        names.ShouldBe(["id", "type", "title", "state", "assignedTo", "parentId", "description", "relatedIds", "tags", "predecessors"]);
         doc.RootElement.GetProperty("assignedTo").ValueKind.ShouldBe(JsonValueKind.Null);
         doc.RootElement.GetProperty("parentId").ValueKind.ShouldBe(JsonValueKind.Null);
         doc.RootElement.GetProperty("relatedIds").GetArrayLength().ShouldBe(0);
         doc.RootElement.GetProperty("tags").GetArrayLength().ShouldBe(0);
+        doc.RootElement.GetProperty("predecessors").GetArrayLength().ShouldBe(0);
     }
 
     [Fact]
