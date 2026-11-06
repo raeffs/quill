@@ -13,13 +13,14 @@ public class ServiceWiringTests
     private const string Project = "PROJ";
 
     [Fact]
-    public void AddQuillServices_ResolvesAllThreeTypedClients()
+    public void AddQuillServices_ResolvesEveryTypedClient()
     {
         using var provider = BuildProvider(handler: null);
 
         provider.GetRequiredService<AzureDevOpsClient>().ShouldNotBeNull();
         provider.GetRequiredService<AzureDevOpsPullRequestClient>().ShouldNotBeNull();
         provider.GetRequiredService<AzureDevOpsIdentityClient>().ShouldNotBeNull();
+        provider.GetRequiredService<AzureDevOpsBuildClient>().ShouldNotBeNull();
     }
 
     [Fact]
@@ -49,6 +50,19 @@ public class ServiceWiringTests
         handler.LastRequestUri.AbsoluteUri.ShouldContain($"/{Collection}/{Project}/_apis/git/pullrequests/1");
     }
 
+    [Fact]
+    public async Task BuildClient_MapsConfigToConstructorArgsInOrder()
+    {
+        using var handler = new CapturingHandler();
+        using var provider = BuildProvider(handler);
+
+        var client = provider.GetRequiredService<AzureDevOpsBuildClient>();
+        await Should.ThrowAsync<HttpRequestException>(() => client.GetRunAsync(1));
+
+        handler.LastRequestUri.ShouldNotBeNull();
+        handler.LastRequestUri.AbsoluteUri.ShouldContain($"/{Collection}/{Project}/_apis/build/builds/1");
+    }
+
     private static ServiceProvider BuildProvider(CapturingHandler? handler)
     {
         var services = new ServiceCollection();
@@ -72,6 +86,7 @@ public class ServiceWiringTests
             services.AddHttpClient(nameof(AzureDevOpsClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
             services.AddHttpClient(nameof(AzureDevOpsPullRequestClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
             services.AddHttpClient(nameof(AzureDevOpsIdentityClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
+            services.AddHttpClient(nameof(AzureDevOpsBuildClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
         }
 
         return services.BuildServiceProvider();

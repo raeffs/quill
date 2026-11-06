@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using Quill.Core;
 using Shouldly;
 
@@ -34,6 +36,18 @@ public sealed class HandleErrorTests : IDisposable
     {
         CommandHelpers.HandleError(new HttpRequestException("down"));
 
+        Environment.ExitCode.ShouldBe(2);
+    }
+
+    [Fact]
+    public void HandleError_Unauthorized_EmitsOnlyErrorAndCode()
+    {
+        CommandHelpers.HandleError(new HttpRequestException(
+            "Response status code does not indicate success: 401 (Unauthorized).", null, HttpStatusCode.Unauthorized));
+
+        using var document = JsonDocument.Parse(_output.ToString());
+        document.RootElement.EnumerateObject().Select(p => p.Name).ShouldBe(["error", "code"]);
+        document.RootElement.GetProperty("code").GetInt32().ShouldBe(2);
         Environment.ExitCode.ShouldBe(2);
     }
 }

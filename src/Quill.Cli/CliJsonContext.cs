@@ -15,6 +15,7 @@ namespace Quill.Cli;
 [JsonSerializable(typeof(List<PullRequestRevisionResult>))]
 [JsonSerializable(typeof(List<PullRequestThreadResult>))]
 [JsonSerializable(typeof(PullRequestViewResult))]
+[JsonSerializable(typeof(PipelineRunResult))]
 [JsonSerializable(typeof(TreeNode))]
 internal sealed partial class CliJsonContext : JsonSerializerContext
 {

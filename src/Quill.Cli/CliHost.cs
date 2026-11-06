@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using Quill.Cli.Commands.Backlog;
+using Quill.Cli.Commands.Pipeline;
 using Quill.Cli.Commands.Pr;
 using Quill.Cli.Commands.Wi;
 
@@ -22,6 +23,7 @@ internal static class CliHost
         rootCommand.Subcommands.Add(BacklogCommand.Create(serviceProvider));
         rootCommand.Subcommands.Add(WorkItemCommand.Create(serviceProvider));
         rootCommand.Subcommands.Add(PrCommand.Create(serviceProvider));
+        rootCommand.Subcommands.Add(PipelineCommand.Create(serviceProvider));
 
         return rootCommand;
     }

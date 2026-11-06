@@ -39,6 +39,14 @@ internal static class ServiceCollectionExtensions
                 return new AzureDevOpsPullRequestClient(httpClient, config.ServerUrl, config.Collection, config.Project);
             });
 
+        services.AddHttpClient<AzureDevOpsBuildClient>()
+            .ConfigureQuillHttpClient()
+            .AddTypedClient((httpClient, serviceProvider) =>
+            {
+                var config = serviceProvider.GetRequiredService<QuillConfig>();
+                return new AzureDevOpsBuildClient(httpClient, config.ServerUrl, config.Collection, config.Project);
+            });
+
         services.AddHttpClient<AzureDevOpsIdentityClient>()
             .ConfigureQuillHttpClient()
             .AddTypedClient((httpClient, serviceProvider) =>

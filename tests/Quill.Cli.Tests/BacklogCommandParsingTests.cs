@@ -48,10 +48,10 @@ public class BacklogCommandParsingTests
     }
 
     [Fact]
-    public void Root_HasBacklogWiAndPrGroups()
+    public void Root_HasBacklogPipelinePrAndWiGroups()
     {
         var root = CliHost.BuildRootCommand(TestServices.Empty);
 
-        root.Subcommands.Select(c => c.Name).ShouldBe(["backlog", "pr", "wi"], ignoreOrder: true);
+        root.Subcommands.Select(c => c.Name).ShouldBe(["backlog", "pipeline", "pr", "wi"], ignoreOrder: true);
     }
 }
