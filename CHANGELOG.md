@@ -4,6 +4,7 @@
 
 ### Added
 
+- `quill pipeline list`: Lists pipelines as JSON, filtered by name or folder.
 - `quill pipeline view`: Prints one pipeline run as JSON.
 
 ## [2.1.0]
