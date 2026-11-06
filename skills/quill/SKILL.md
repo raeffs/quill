@@ -50,6 +50,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | Command | Use it when |
 |---|---|
 | `pipeline list` | You want a pipeline's ID. Filter by `--name` or `--folder`. |
+| `pipeline runs` | You want a run's ID: the newest runs of a pipeline, a branch, or the failed ones. |
 | `pipeline view` | You want one run. |
 
 ## Gotchas
@@ -66,6 +67,7 @@ These are the things the help output and a successful run do not tell you.
 - A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `pipeline list` and `pipeline runs` have no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
+- Quill never reads the working copy, so no `--branch` means "the pipeline's default branch" on `pipeline trigger` and "every branch" on `pipeline runs`. Run git yourself: `--branch "$(git rev-parse --abbrev-ref HEAD)"` in bash, `--branch (git rev-parse --abbrev-ref HEAD)` in PowerShell.
 - `wi list` does not validate `--state` and `--type` values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
 - `wi view` and `wi create` always print `tags` as an array, `[]` when the item has none. `wi list` rows do not carry `tags`, so call `wi view` for them.

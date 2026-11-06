@@ -5,6 +5,7 @@
 ### Added
 
 - `quill pipeline list`: Lists pipelines as JSON, filtered by name or folder.
+- `quill pipeline runs`: Lists pipeline runs as JSON, newest first, filtered by pipeline, branch, status, result or reason.
 - `quill pipeline view`: Prints one pipeline run as JSON.
 
 ## [2.1.0]
