@@ -42,6 +42,7 @@ public class PipelineTestsCommandParsingTests
         var parseResult = CliHost.Parse([.. Prefix, .. flags], TestServices.Empty);
 
         parseResult.Errors.ShouldNotBeEmpty();
+        parseResult.Errors.ShouldContain(error => error.Message == "--outcome, --limit and --skip need --with-results.");
     }
 
     [Theory]

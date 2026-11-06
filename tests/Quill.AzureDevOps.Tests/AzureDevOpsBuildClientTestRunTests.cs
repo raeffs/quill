@@ -20,7 +20,7 @@ public class AzureDevOpsBuildClientTestRunTests
     private const string ResultList = """
         {"count":2,"value":[
         {"testCaseTitle":"Adds two numbers","automatedTestName":"Contoso.Tests.Calculator.Add","automatedTestStorage":"Contoso.Tests.dll","outcome":"Failed","errorMessage":"Expected 4 but was 5.","stackTrace":"at Contoso.Tests.Calculator.Add()","durationInMs":2.5,"failingSince":{"date":"2026-11-06T10:05:36.48Z","build":{"id":4199}}},
-        {"testCaseTitle":"Subtracts two numbers","automatedTestName":"Contoso.Tests.Calculator.Subtract","automatedTestStorage":"Contoso.Tests.dll","outcome":"Passed"}
+        {"testCaseTitle":"Subtracts two numbers","automatedTestName":"Contoso.Tests.Calculator.Subtract","automatedTestStorage":"Contoso.Tests.dll","outcome":"Passed","durationInMs":356.0}
         ]}
         """;
 
@@ -191,7 +191,7 @@ public class AzureDevOpsBuildClientTestRunTests
     }
 
     [Fact]
-    public async Task ListTestResultsAsync_PassedResult_LeavesFailureFieldsNull()
+    public async Task ListTestResultsAsync_PassedResult_KeepsDurationAndLeavesFailureFieldsNull()
     {
         using var handler = new SequenceHttpHandler((HttpStatusCode.OK, ResultList));
         using var httpClient = CreateHttpClient(handler);
@@ -207,7 +207,7 @@ public class AzureDevOpsBuildClientTestRunTests
         passed.Outcome.ShouldBe("Passed");
         passed.Message.ShouldBeNull();
         passed.StackTrace.ShouldBeNull();
-        passed.DurationInMs.ShouldBeNull();
+        passed.DurationInMs.ShouldBe(356.0);
         passed.FailingSince.ShouldBeNull();
         passed.FailingSinceRunId.ShouldBeNull();
     }
