@@ -467,3 +467,75 @@ public class PipelineRunResult
     [JsonPropertyName("url")]
     public required string Url { get; init; }
 }
+
+public class PipelineStageResult
+{
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("displayName")]
+    public required string DisplayName { get; init; }
+
+    [JsonPropertyName("state")]
+    public required string State { get; init; }
+
+    [JsonPropertyName("result")]
+    public string? Result { get; init; }
+
+    [JsonPropertyName("jobs")]
+    public required IReadOnlyList<PipelineJobResult> Jobs { get; init; }
+}
+
+public class PipelineJobResult
+{
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("state")]
+    public required string State { get; init; }
+
+    [JsonPropertyName("result")]
+    public string? Result { get; init; }
+
+    [JsonPropertyName("logId")]
+    public int? LogId { get; init; }
+
+    [JsonPropertyName("tasks")]
+    public required IReadOnlyList<PipelineTaskResult> Tasks { get; init; }
+}
+
+public class PipelineTaskResult
+{
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("state")]
+    public required string State { get; init; }
+
+    [JsonPropertyName("result")]
+    public string? Result { get; init; }
+
+    [JsonPropertyName("logId")]
+    public int? LogId { get; init; }
+
+    [JsonPropertyName("errorCount")]
+    public required int ErrorCount { get; init; }
+
+    [JsonPropertyName("warningCount")]
+    public required int WarningCount { get; init; }
+
+    [JsonPropertyName("issues")]
+    public required IReadOnlyList<PipelineIssueResult> Issues { get; init; }
+}
+
+public class PipelineIssueResult
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; init; }
+
+    [JsonPropertyName("message")]
+    public required string Message { get; init; }
+
+    [JsonPropertyName("line")]
+    public int? Line { get; init; }
+}
