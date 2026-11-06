@@ -11,6 +11,8 @@
 - `quill pipeline log`: Prints a pipeline log as JSON: all of it, a line range, or the last lines.
 - `quill pipeline trigger`: Queues a pipeline run with a branch, template parameters and stages to skip, and prints the run as JSON.
 - `quill pipeline wait`: Waits until a pipeline run completes, or until `--timeout` passes, and prints the run as JSON.
+- `quill pipeline cancel`: Cancels a pipeline run and prints the run as JSON.
+- `quill pipeline retry`: Reruns the failed jobs of a pipeline run and prints the run as JSON.
 
 ## [2.1.0]
 

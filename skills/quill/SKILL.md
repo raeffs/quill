@@ -55,6 +55,8 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pipeline log` | You want the log of a job or task. Take `logId` from `pipeline view --with-stages`. Add `--start-line` and `--end-line` for a range, or `--tail` for the last lines. |
 | `pipeline trigger` | You pushed a branch and want a run on it. Prints the run; follow with `pipeline wait`. |
 | `pipeline wait` | You want to block until a run completes and read its result. |
+| `pipeline cancel` | You want to stop a run you no longer need. |
+| `pipeline retry` | A run failed and you suspect it is flaky. Reruns the failed jobs on the same run ID. |
 
 ## Gotchas
 
@@ -74,6 +76,7 @@ These are the things the help output and a successful run do not tell you.
 - `--parameter` sends every value as a string. Object and list parameters are not supported. A parameter or stage name the YAML does not declare is a server rejection, exit 1.
 - `pipeline wait` polls every 10 seconds and gives up after `--timeout` seconds, 600 by default. The last poll can end up to 30 seconds after `--timeout`, so set your harness timeout at least 40 seconds above it: a harness kill leaves you with no output. On timeout the row's `status` still reads `inProgress` and the exit code is 0; call `pipeline wait` again with the same ID.
 - A completed run exits 0 whatever its `result`. Read `result`, not the exit code.
+- `pipeline retry` reruns the failed jobs and the jobs downstream of them as a new attempt on the same run ID. The returned row reads `notStarted` until an agent picks up the jobs. Follow with `pipeline wait <runId>`. Retry on a run still in progress is a server rejection, exit 1.
 - To diagnose a failure, run `pipeline view <runId> --with-stages`, select the tasks with `.stages[].jobs[].tasks[] | select(.result == "failed")`, and read their `issues` first. Each issue's `line` is the `##[error]` line in that task's log; the cause sits above it. Then open `pipeline log <runId> <logId> --start-line <line minus some lines> --end-line <line>`.
 - `pipeline log` counts lines from 1, and both ends of a range are inclusive. `startLine` and `endLine` are the numbers of the first and last line printed, so `lines[i]` is line `startLine + i`. A range past the end prints `lines: []` with both keys `null`. `--tail` sends one extra request.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
@@ -130,6 +133,6 @@ These are the things the help output and a successful run do not tell you.
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Validation failure (wrong state or assignee), or the server rejected a work item write or a pipeline run |
+| 1 | Validation failure (wrong state or assignee), or the server rejected a work item write or a pipeline trigger, cancel or retry |
 | 2 | API error (network, auth, server) |
 | 3 | Configuration or argument error |
