@@ -21,6 +21,7 @@ public class AzureDevOpsBuildClientTests
 
     private const string PipelineBase =
         $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/definitions";
+
     private const string RunList = """
         {"count":2,"value":[{"id":121549,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/23085/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121549"}}},{"id":121548,"buildNumber":"20261106.2","status":"inProgress","reason":"manual","sourceBranch":"refs/heads/main","sourceVersion":"9b8c7d6","queueTime":"2026-11-06T07:30:00Z","startTime":"2026-11-06T07:30:10Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121548"}}}]}
         """;
@@ -252,7 +253,7 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Fact]
-    public async Task ListRunsAsync_NoFilter_SendsTopAndApiVersionOnly()
+    public async Task ListRunsAsync_NoFilter_SendsTopApiVersionAndQueryOrderOnly()
     {
         var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Top = 50 });
 
