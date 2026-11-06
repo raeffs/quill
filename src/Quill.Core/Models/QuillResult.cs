@@ -466,6 +466,10 @@ public class PipelineRunResult
 
     [JsonPropertyName("url")]
     public required string Url { get; init; }
+
+    [JsonPropertyName("stages")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<PipelineStageResult>? Stages { get; init; }
 }
 
 public class PipelineStageResult

@@ -96,7 +96,7 @@ internal static class RunsCommand
             var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
 
             var runs = await buildClient.ListRunsAsync(query, cancellationToken);
-            var results = runs.Select(PipelineRunResultBuilder.Build).ToList();
+            var results = runs.Select(run => PipelineRunResultBuilder.Build(run)).ToList();
 
             Console.WriteLine(JsonSerializer.Serialize(results, CommandHelpers.Context.ListPipelineRunResult));
         }

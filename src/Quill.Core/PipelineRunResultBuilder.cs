@@ -7,7 +7,7 @@ public static class PipelineRunResultBuilder
 {
     private const string RefsHeadsPrefix = "refs/heads/";
 
-    public static PipelineRunResult Build(PipelineRun run)
+    public static PipelineRunResult Build(PipelineRun run, IReadOnlyList<PipelineStageResult>? stages = null)
     {
         return new PipelineRunResult
         {
@@ -25,6 +25,7 @@ public static class PipelineRunResultBuilder
             StartTime = run.StartTime is null ? null : FormatIsoUtc(run.StartTime.Value),
             FinishTime = run.FinishTime is null ? null : FormatIsoUtc(run.FinishTime.Value),
             Url = run.WebUrl,
+            Stages = stages,
         };
     }
 

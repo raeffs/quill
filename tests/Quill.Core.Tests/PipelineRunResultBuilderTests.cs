@@ -99,6 +99,24 @@ public class PipelineRunResultBuilderTests
         result.Reason.ShouldBe(reason);
     }
 
+    [Fact]
+    public void Build_WithoutStages_LeavesStagesNull()
+    {
+        var result = PipelineRunResultBuilder.Build(MakeRun());
+
+        result.Stages.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Build_WithStages_PassesThemThrough()
+    {
+        IReadOnlyList<PipelineStageResult> stages = [];
+
+        var result = PipelineRunResultBuilder.Build(MakeRun(), stages);
+
+        result.Stages.ShouldBeSameAs(stages);
+    }
+
     private static PipelineRun MakeRun(
         string status = "completed",
         string? result = "failed",

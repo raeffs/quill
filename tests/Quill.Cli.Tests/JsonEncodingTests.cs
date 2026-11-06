@@ -184,6 +184,84 @@ public class JsonEncodingTests
     }
 
     [Fact]
+    public void PipelineRunResult_WithoutStages_HasNoStagesKey()
+    {
+        var json = JsonSerializer.Serialize(MakeRunRow(null), CommandHelpers.Context.PipelineRunResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.TryGetProperty("stages", out _).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void PipelineRunResult_WithStages_EmitsTheTreeWithExactKeys()
+    {
+        var stages = new List<PipelineStageResult>
+        {
+            new()
+            {
+                DisplayName = "Build",
+                State = "completed",
+                Jobs =
+                [
+                    new PipelineJobResult
+                    {
+                        Name = "Compile",
+                        State = "completed",
+                        Tasks =
+                        [
+                            new PipelineTaskResult
+                            {
+                                Name = "Run script",
+                                State = "completed",
+                                Result = "failed",
+                                LogId = 7,
+                                ErrorCount = 1,
+                                WarningCount = 0,
+                                Issues = [new PipelineIssueResult { Type = "error", Message = "boom" }],
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        var json = JsonSerializer.Serialize(MakeRunRow(stages), CommandHelpers.Context.PipelineRunResult);
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        root.EnumerateObject().Select(p => p.Name).ShouldBe(
+        [
+            "id", "pipelineId", "pipelineName", "buildNumber", "status", "result", "reason",
+            "sourceBranch", "sourceVersion", "requestedFor", "queueTime", "startTime", "finishTime", "url",
+            "stages",
+        ]);
+        var stage = root.GetProperty("stages")[0];
+        stage.EnumerateObject().Select(p => p.Name).ShouldBe(["name", "displayName", "state", "result", "jobs"]);
+        stage.GetProperty("name").ValueKind.ShouldBe(JsonValueKind.Null);
+        var job = stage.GetProperty("jobs")[0];
+        job.EnumerateObject().Select(p => p.Name).ShouldBe(["name", "state", "result", "logId", "tasks"]);
+        job.GetProperty("logId").ValueKind.ShouldBe(JsonValueKind.Null);
+        var task = job.GetProperty("tasks")[0];
+        task.EnumerateObject().Select(p => p.Name).ShouldBe(
+            ["name", "state", "result", "logId", "errorCount", "warningCount", "issues"]);
+        var issue = task.GetProperty("issues")[0];
+        issue.EnumerateObject().Select(p => p.Name).ShouldBe(["type", "message", "line"]);
+        issue.GetProperty("line").ValueKind.ShouldBe(JsonValueKind.Null);
+        json.ShouldNotContain("parentId");
+    }
+
+    [Fact]
+    public void PipelineRunResult_WithEmptyStages_EmitsEmptyArray()
+    {
+        var json = JsonSerializer.Serialize(MakeRunRow([]), CommandHelpers.Context.PipelineRunResult);
+
+        using var document = JsonDocument.Parse(json);
+        var stages = document.RootElement.GetProperty("stages");
+        stages.ValueKind.ShouldBe(JsonValueKind.Array);
+        stages.GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
     public void PipelineRunResultList_EmitsABareArrayOfRunRows()
     {
         var json = JsonSerializer.Serialize(
@@ -422,6 +500,25 @@ public class JsonEncodingTests
             MyIsRequired = null,
             Description = string.Empty,
             WorkItems = withWorkItems ? [] : null,
+        };
+    }
+
+    private static PipelineRunResult MakeRunRow(IReadOnlyList<PipelineStageResult>? stages)
+    {
+        return new PipelineRunResult
+        {
+            Id = 121549,
+            PipelineId = 7,
+            PipelineName = "CI",
+            BuildNumber = "20260101.1",
+            Status = "inProgress",
+            Reason = "manual",
+            SourceBranch = "refs/heads/main",
+            SourceVersion = "abc123",
+            RequestedFor = "Jane Doe",
+            QueueTime = "2026-01-01T10:00:00Z",
+            Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+            Stages = stages,
         };
     }
 }

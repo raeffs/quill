@@ -22,15 +22,22 @@ internal static class ViewCommand
             }
         });
 
+        var withStagesOption = new Option<bool>("--with-stages")
+        {
+            Description = "Append a `stages` array with the run's stages, jobs, tasks and the issues each task reported.",
+        };
+
         var command = new Command("view", "Print a pipeline run to stdout as JSON")
         {
             runIdArg,
+            withStagesOption,
         };
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
             var runId = parseResult.GetValue(runIdArg);
-            await ExecuteAsync(serviceProvider, runId, cancellationToken);
+            var withStages = parseResult.GetValue(withStagesOption);
+            await ExecuteAsync(serviceProvider, runId, withStages, cancellationToken);
         });
 
         return command;
@@ -39,6 +46,7 @@ internal static class ViewCommand
     private static async Task ExecuteAsync(
         IServiceProvider serviceProvider,
         int runId,
+        bool withStages,
         CancellationToken cancellationToken)
     {
         try
@@ -46,7 +54,14 @@ internal static class ViewCommand
             var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
 
             var run = await buildClient.GetRunAsync(runId, cancellationToken);
-            var result = PipelineRunResultBuilder.Build(run);
+            IReadOnlyList<PipelineStageResult>? stages = null;
+            if (withStages)
+            {
+                var records = await buildClient.GetTimelineAsync(runId, cancellationToken);
+                stages = PipelineStageTreeBuilder.Build(records);
+            }
+
+            var result = PipelineRunResultBuilder.Build(run, stages);
 
             Console.WriteLine(JsonSerializer.Serialize(result, CommandHelpers.Context.PipelineRunResult));
         }

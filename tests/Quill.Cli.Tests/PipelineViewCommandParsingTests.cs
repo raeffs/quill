@@ -38,4 +38,22 @@ public class PipelineViewCommandParsingTests
 
         parseResult.Errors.ShouldNotBeEmpty();
     }
+
+    [Fact]
+    public void Parse_WithStages_NoErrors()
+    {
+        var parseResult = CliHost.Parse(["pipeline", "view", "121549", "--with-stages"], TestServices.Empty);
+
+        parseResult.Errors.ShouldBeEmpty();
+        parseResult.GetValue<bool>("--with-stages").ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Parse_WithoutWithStages_DefaultsToFalse()
+    {
+        var parseResult = CliHost.Parse(["pipeline", "view", "121549"], TestServices.Empty);
+
+        parseResult.Errors.ShouldBeEmpty();
+        parseResult.GetValue<bool>("--with-stages").ShouldBeFalse();
+    }
 }
