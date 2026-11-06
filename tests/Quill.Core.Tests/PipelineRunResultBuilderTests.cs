@@ -17,26 +17,26 @@ public class PipelineRunResultBuilderTests
         var result = PipelineRunResultBuilder.Build(run);
 
         // Assert
-        result.Id.ShouldBe(121549);
+        result.Id.ShouldBe(4201);
         result.PipelineId.ShouldBe(42);
-        result.PipelineName.ShouldBe("G6 PR Validation Pipeline");
+        result.PipelineName.ShouldBe("Contoso PR Validation");
         result.BuildNumber.ShouldBe("20261106.3");
         result.Status.ShouldBe("completed");
         result.Result.ShouldBe("failed");
         result.Reason.ShouldBe("pullRequest");
         result.SourceBranch.ShouldBe("main");
         result.SourceVersion.ShouldBe("3f2a9c1");
-        result.RequestedFor.ShouldBe("Raphael Fleischlin");
+        result.RequestedFor.ShouldBe("Jane Doe");
         result.QueueTime.ShouldBe("2026-11-06T07:58:01Z");
         result.StartTime.ShouldBe("2026-11-06T07:58:20Z");
         result.FinishTime.ShouldBe("2026-11-06T08:02:11Z");
-        result.Url.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=121549");
+        result.Url.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=4201");
     }
 
     [Theory]
     [InlineData("refs/heads/main", "main")]
     [InlineData("refs/heads/feature/pipelines", "feature/pipelines")]
-    [InlineData("refs/pull/23085/merge", "refs/pull/23085/merge")]
+    [InlineData("refs/pull/815/merge", "refs/pull/815/merge")]
     [InlineData("refs/tags/v2.1.0", "refs/tags/v2.1.0")]
     public void Build_SourceBranch_StripsOnlyRefsHeads(string raw, string expected)
     {
@@ -56,20 +56,20 @@ public class PipelineRunResultBuilderTests
         // Arrange
         var run = new PipelineRun
         {
-            Id = 121549,
+            Id = 4201,
             PipelineId = 42,
-            PipelineName = "G6 PR Validation Pipeline",
+            PipelineName = "Contoso PR Validation",
             BuildNumber = "20261106.3",
             Status = "notStarted",
             Result = null,
             Reason = "pullRequest",
             SourceBranch = "refs/heads/main",
             SourceVersion = "3f2a9c1",
-            RequestedFor = "Raphael Fleischlin",
+            RequestedFor = "Jane Doe",
             QueueTime = DateTimeOffset.Parse("2026-11-06T08:58:01+01:00", CultureInfo.InvariantCulture),
             StartTime = null,
             FinishTime = null,
-            WebUrl = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+            WebUrl = "https://devops.example.com/COL/PROJ/_build/results?buildId=4201",
         };
 
         // Act
@@ -125,20 +125,20 @@ public class PipelineRunResultBuilderTests
     {
         return new PipelineRun
         {
-            Id = 121549,
+            Id = 4201,
             PipelineId = 42,
-            PipelineName = "G6 PR Validation Pipeline",
+            PipelineName = "Contoso PR Validation",
             BuildNumber = "20261106.3",
             Status = status,
             Result = result,
             Reason = reason,
             SourceBranch = sourceBranch,
             SourceVersion = "3f2a9c1",
-            RequestedFor = "Raphael Fleischlin",
+            RequestedFor = "Jane Doe",
             QueueTime = DateTimeOffset.Parse("2026-11-06T08:58:01+01:00", CultureInfo.InvariantCulture),
             StartTime = DateTimeOffset.Parse("2026-11-06T07:58:20Z", CultureInfo.InvariantCulture),
             FinishTime = DateTimeOffset.Parse("2026-11-06T08:02:11Z", CultureInfo.InvariantCulture),
-            WebUrl = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+            WebUrl = "https://devops.example.com/COL/PROJ/_build/results?buildId=4201",
         };
     }
 }

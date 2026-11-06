@@ -19,7 +19,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         "sourceRefName": "refs/heads/feature/importer",
         "targetRefName": "refs/heads/main",
         "creationDate": "2026-08-28T10:00:00Z",
-        "createdBy": {"displayName": "Raphael Fleischlin"},
+        "createdBy": {"displayName": "Jane Doe"},
         "repository": {"name": "importer"},
         "reviewers": [],
         "labels": [],
@@ -127,7 +127,7 @@ public class AzureDevOpsPullRequestClientCreateTests
                 TargetBranch = "main",
                 Title = "Add the importer",
                 Description = "## Why\n\nBecause.",
-                WorkItemIds = [63480, 63481],
+                WorkItemIds = [2001, 2002],
             },
             TestContext.Current.CancellationToken);
 
@@ -137,7 +137,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         root.GetProperty("description").GetString().ShouldBe("## Why\n\nBecause.");
         root.GetProperty("workItemRefs").EnumerateArray()
             .Select(e => e.GetProperty("id").GetString())
-            .ShouldBe(["63480", "63481"]);
+            .ShouldBe(["2001", "2002"]);
     }
 
     [Fact]

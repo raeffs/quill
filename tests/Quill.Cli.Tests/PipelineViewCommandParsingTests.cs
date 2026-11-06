@@ -7,10 +7,10 @@ public class PipelineViewCommandParsingTests
     [Fact]
     public void Parse_RunId_NoErrors()
     {
-        var parseResult = CliHost.Parse(["pipeline", "view", "121549"], TestServices.Empty);
+        var parseResult = CliHost.Parse(["pipeline", "view", "4201"], TestServices.Empty);
 
         parseResult.Errors.ShouldBeEmpty();
-        parseResult.GetValue<int>("runId").ShouldBe(121549);
+        parseResult.GetValue<int>("runId").ShouldBe(4201);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class PipelineViewCommandParsingTests
     [Fact]
     public void Parse_WithStages_NoErrors()
     {
-        var parseResult = CliHost.Parse(["pipeline", "view", "121549", "--with-stages"], TestServices.Empty);
+        var parseResult = CliHost.Parse(["pipeline", "view", "4201", "--with-stages"], TestServices.Empty);
 
         parseResult.Errors.ShouldBeEmpty();
         parseResult.GetValue<bool>("--with-stages").ShouldBeTrue();
@@ -51,7 +51,7 @@ public class PipelineViewCommandParsingTests
     [Fact]
     public void Parse_WithoutWithStages_DefaultsToFalse()
     {
-        var parseResult = CliHost.Parse(["pipeline", "view", "121549"], TestServices.Empty);
+        var parseResult = CliHost.Parse(["pipeline", "view", "4201"], TestServices.Empty);
 
         parseResult.Errors.ShouldBeEmpty();
         parseResult.GetValue<bool>("--with-stages").ShouldBeFalse();

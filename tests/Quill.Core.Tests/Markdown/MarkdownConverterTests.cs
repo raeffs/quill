@@ -127,23 +127,23 @@ public class MarkdownConverterTests
     [Fact]
     public async Task ToHtmlAsync_WithNestedBracketsInLinkText_RewritesLinkAndCollectsId()
     {
-        var markdown = "- Depends on: [Product Backlog Item: [API-13] GET /files/{id}/versions - List File Versions](#58069)";
+        var markdown = "- Depends on: [Product Backlog Item: [ABC-1] GET /items/{id} - Get Item](#1234)";
 
         var (html, linkIds) = await MarkdownConverter.ToHtmlAsync(markdown, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         html.ShouldContain(
-            """href="https://myserver.com/tfs/DefaultCollection/MyProject/_workitems/edit/58069""");
-        linkIds.ShouldBe([58069], ignoreOrder: true);
+            """href="https://myserver.com/tfs/DefaultCollection/MyProject/_workitems/edit/1234""");
+        linkIds.ShouldBe([1234], ignoreOrder: true);
     }
 
     [Fact]
     public async Task ToMarkdownAsync_WithNestedBracketsInLinkText_RewritesToHashLink()
     {
-        var html = """<p><a href="https://myserver.com/tfs/DefaultCollection/MyProject/_workitems/edit/58069">Product Backlog Item: [API-13] GET /files/{id}/versions - List File Versions</a></p>""";
+        var html = """<p><a href="https://myserver.com/tfs/DefaultCollection/MyProject/_workitems/edit/1234">Product Backlog Item: [ABC-1] GET /items/{id} - Get Item</a></p>""";
 
         var markdown = await MarkdownConverter.ToMarkdownAsync(html, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        markdown.ShouldContain("[#58069](#58069)");
+        markdown.ShouldContain("[#1234](#1234)");
     }
 
     [Fact]
@@ -180,18 +180,18 @@ public class MarkdownConverterTests
     [Fact]
     public async Task ToMarkdownAsync_DecodesHtmlEntitiesInInlineContent()
     {
-        var html = "<p>Folders can be nested (e.g., <code>Zuzug</code> &gt; <code>aus den USA</code>).</p>";
+        var html = "<p>Folders can be nested (e.g., <code>Inbox</code> &gt; <code>Archive</code>).</p>";
 
         var markdown = await MarkdownConverter.ToMarkdownAsync(html, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        markdown.ShouldContain("`Zuzug` > `aus den USA`");
+        markdown.ShouldContain("`Inbox` > `Archive`");
         markdown.ShouldNotContain("&gt;");
     }
 
     [Fact]
     public async Task RoundTrip_SpaceAfterBoldDroppedByAzureDevOps()
     {
-        var originalMarkdown = "- **`Neue Datei` button** - opens the Upload File modal";
+        var originalMarkdown = "- **`New File` button** - opens the Upload File modal";
 
         var (html, _) = await MarkdownConverter.ToHtmlAsync(originalMarkdown, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
         var azDoHtml = html.Replace("</strong> - ", "</strong>- ", StringComparison.Ordinal);
@@ -199,13 +199,13 @@ public class MarkdownConverterTests
         var result = await MarkdownConverter.ToMarkdownAsync(azDoHtml, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // The space is lost because AzDO stripped it from the HTML — not a bug in our converter
-        result.ShouldContain("**`Neue Datei` button**- opens the Upload File modal");
+        result.ShouldContain("**`New File` button**- opens the Upload File modal");
     }
 
     [Fact]
     public async Task ToMarkdownAsync_WithGuidProjectUrl_RewritesToHashLink()
     {
-        var html = """<p><a href="https://myserver.com/tfs/DefaultCollection/05c52ca9-c1e3-485f-bda7-f8efa1689e87/_workitems/edit/456">Product Backlog Item 456: Some Title</a></p>""";
+        var html = """<p><a href="https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_workitems/edit/456">Product Backlog Item 456: Some Title</a></p>""";
 
         var markdown = await MarkdownConverter.ToMarkdownAsync(html, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 

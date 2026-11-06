@@ -52,7 +52,7 @@
       "log": {
         "id": 3,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/3"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/3"
       },
       "task": null,
       "attempt": 1,
@@ -84,7 +84,7 @@
       "log": {
         "id": 14,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/14"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/14"
       },
       "task": null,
       "attempt": 1,
@@ -115,7 +115,7 @@
       "log": {
         "id": 4,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/4"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/4"
       },
       "task": null,
       "attempt": 1,
@@ -146,7 +146,7 @@
       "log": {
         "id": 5,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/5"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/5"
       },
       "task": null,
       "attempt": 1,
@@ -230,7 +230,7 @@
       "log": {
         "id": 17,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/17"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/17"
       },
       "task": null,
       "attempt": 1,
@@ -262,7 +262,7 @@
       "log": {
         "id": 119,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/119"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/119"
       },
       "task": null,
       "attempt": 1,
@@ -293,7 +293,7 @@
       "log": {
         "id": 19,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/19"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/19"
       },
       "task": null,
       "attempt": 1,
@@ -324,7 +324,7 @@
       "log": {
         "id": 24,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/24"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/24"
       },
       "task": null,
       "attempt": 1,
@@ -351,7 +351,7 @@
       "details": {
         "id": "494b6ba0-6ac0-4ced-b528-d704f7f0f601",
         "changeId": 54,
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/Timeline/494b6ba0-6ac0-4ced-b528-d704f7f0f601"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/Timeline/494b6ba0-6ac0-4ced-b528-d704f7f0f601"
       },
       "errorCount": 0,
       "warningCount": 931,
@@ -359,7 +359,7 @@
       "log": {
         "id": 104,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/104"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/104"
       },
       "task": {
         "id": "5541a522-603c-47ad-91fc-a4b1d163081b",
@@ -527,7 +527,7 @@
       "log": {
         "id": 143,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/143"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/143"
       },
       "task": null,
       "attempt": 1,
@@ -558,7 +558,7 @@
       "log": {
         "id": 96,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/96"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/96"
       },
       "task": null,
       "attempt": 1,
@@ -589,7 +589,7 @@
       "log": {
         "id": 97,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/97"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/97"
       },
       "task": null,
       "attempt": 1,
@@ -620,7 +620,7 @@
       "log": {
         "id": 127,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/127"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/127"
       },
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
@@ -800,7 +800,7 @@
       "log": {
         "id": 157,
         "type": "Container",
-        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/logs/157"
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/logs/157"
       },
       "task": null,
       "attempt": 1,
@@ -811,5 +811,5 @@
   "lastChangedOn": "2026-11-06T14:40:54.427Z",
   "id": "889c1fbd-7ff7-42da-ab7a-e586989d13d2",
   "changeId": 717,
-  "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121608/Timeline/889c1fbd-7ff7-42da-ab7a-e586989d13d2"
+  "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/4300/Timeline/889c1fbd-7ff7-42da-ab7a-e586989d13d2"
 }

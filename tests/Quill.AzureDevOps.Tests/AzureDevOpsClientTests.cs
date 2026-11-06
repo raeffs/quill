@@ -19,7 +19,7 @@ public class AzureDevOpsClientTests
                 "System.WorkItemType": "Bug",
                 "System.Title": "Fix login",
                 "System.State": "Active",
-                "System.AssignedTo": { "id": "44892788-c082-4795-a323-8cc6daaaaba2", "displayName": "John Doe", "uniqueName": "john@example.com" },
+                "System.AssignedTo": { "id": "6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b", "displayName": "John Doe", "uniqueName": "john@example.com" },
                 "Microsoft.VSTS.TCM.ReproSteps": "<p>Fix the login bug</p>"
             },
             "relations": [
@@ -41,7 +41,7 @@ public class AzureDevOpsClientTests
         workItem.Type.ShouldBe("Bug");
         workItem.Title.ShouldBe("Fix login");
         workItem.State.ShouldBe("Active");
-        workItem.AssignedToId.ShouldBe("44892788-c082-4795-a323-8cc6daaaaba2");
+        workItem.AssignedToId.ShouldBe("6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b");
         workItem.AssignedToDisplayName.ShouldBe("John Doe");
         workItem.Description.ShouldBe("<p>Fix the login bug</p>");
         workItem.Relations.ShouldHaveSingleItem().TargetId.ShouldBe(456);
@@ -347,7 +347,7 @@ public class AzureDevOpsClientTests
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Bug", "New bug", 100, "44892788-c082-4795-a323-8cc6daaaaba2"));
+        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Bug", "New bug", 100, "6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b"));
 
         newId.ShouldBe(999);
         handler.LastRequest.ShouldNotBeNull();
@@ -359,7 +359,7 @@ public class AzureDevOpsClientTests
         handler.LastRequestBody.ShouldContain("New bug");
         handler.LastRequestBody.ShouldNotContain("System.State");
         handler.LastRequestBody.ShouldContain("System.AssignedTo");
-        handler.LastRequestBody.ShouldContain("44892788-c082-4795-a323-8cc6daaaaba2");
+        handler.LastRequestBody.ShouldContain("6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b");
         handler.LastRequestBody.ShouldContain("System.LinkTypes.Hierarchy-Reverse");
         handler.LastRequestBody.ShouldContain("/workitems/100");
     }

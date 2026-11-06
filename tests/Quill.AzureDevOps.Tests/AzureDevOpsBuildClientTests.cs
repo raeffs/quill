@@ -8,22 +8,22 @@ namespace Quill.AzureDevOps.Tests;
 public class AzureDevOpsBuildClientTests
 {
     private const string CompletedBuild = """
-        {"id":121549,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/23085/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121549"}}}
+        {"id":4201,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/815/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"Contoso PR Validation"},"requestedFor":{"displayName":"Jane Doe"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=4201"}}}
         """;
 
     private const string QueuedBuild = """
-        {"id":121549,"buildNumber":"20261106.3","status":"notStarted","reason":"pullRequest","sourceBranch":"refs/pull/23085/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121549"}}}
+        {"id":4201,"buildNumber":"20261106.3","status":"notStarted","reason":"pullRequest","sourceBranch":"refs/pull/815/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","definition":{"id":42,"name":"Contoso PR Validation"},"requestedFor":{"displayName":"Jane Doe"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=4201"}}}
         """;
 
     private const string PipelineList = """
-        {"count":3,"value":[{"id":42,"name":"G6 PR Validation Pipeline","path":"\\"},{"id":43,"name":"G6 Nightly","path":"\\Team A"},{"id":44,"name":"G6 Release","path":"\\Team A\\CI"}]}
+        {"count":3,"value":[{"id":42,"name":"Contoso PR Validation","path":"\\"},{"id":43,"name":"Contoso Nightly","path":"\\Team A"},{"id":44,"name":"Contoso Release","path":"\\Team A\\CI"}]}
         """;
 
     private const string PipelineBase =
         $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/definitions";
 
     private const string RunList = """
-        {"count":2,"value":[{"id":121549,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/23085/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121549"}}},{"id":121548,"buildNumber":"20261106.2","status":"inProgress","reason":"manual","sourceBranch":"refs/heads/main","sourceVersion":"9b8c7d6","queueTime":"2026-11-06T07:30:00Z","startTime":"2026-11-06T07:30:10Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121548"}}}]}
+        {"count":2,"value":[{"id":4201,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/815/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"Contoso PR Validation"},"requestedFor":{"displayName":"Jane Doe"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=4201"}}},{"id":4200,"buildNumber":"20261106.2","status":"inProgress","reason":"manual","sourceBranch":"refs/heads/main","sourceVersion":"9b8c7d6","queueTime":"2026-11-06T07:30:00Z","startTime":"2026-11-06T07:30:10Z","definition":{"id":42,"name":"Contoso PR Validation"},"requestedFor":{"displayName":"Jane Doe"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=4200"}}}]}
         """;
 
     private const string RunBase =
@@ -39,12 +39,12 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        await client.GetRunAsync(121549, TestContext.Current.CancellationToken);
+        await client.GetRunAsync(4201, TestContext.Current.CancellationToken);
 
         // Assert
         handler.LastRequest!.Method.ShouldBe(HttpMethod.Get);
         handler.LastRequest.RequestUri!.ToString().ShouldBe(
-            $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds/121549?api-version=7.1-preview");
+            $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds/4201?api-version=7.1-preview");
     }
 
     [Fact]
@@ -57,23 +57,23 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        var run = await client.GetRunAsync(121549, TestContext.Current.CancellationToken);
+        var run = await client.GetRunAsync(4201, TestContext.Current.CancellationToken);
 
         // Assert
-        run.Id.ShouldBe(121549);
+        run.Id.ShouldBe(4201);
         run.PipelineId.ShouldBe(42);
-        run.PipelineName.ShouldBe("G6 PR Validation Pipeline");
+        run.PipelineName.ShouldBe("Contoso PR Validation");
         run.BuildNumber.ShouldBe("20261106.3");
         run.Status.ShouldBe("completed");
         run.Result.ShouldBe("failed");
         run.Reason.ShouldBe("pullRequest");
-        run.SourceBranch.ShouldBe("refs/pull/23085/merge");
+        run.SourceBranch.ShouldBe("refs/pull/815/merge");
         run.SourceVersion.ShouldBe("3f2a9c1");
-        run.RequestedFor.ShouldBe("Raphael Fleischlin");
+        run.RequestedFor.ShouldBe("Jane Doe");
         run.QueueTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T07:58:01.123Z", System.Globalization.CultureInfo.InvariantCulture));
         run.StartTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T07:58:20.5Z", System.Globalization.CultureInfo.InvariantCulture));
         run.FinishTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T08:02:11.9Z", System.Globalization.CultureInfo.InvariantCulture));
-        run.WebUrl.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=121549");
+        run.WebUrl.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=4201");
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        var run = await client.GetRunAsync(121549, TestContext.Current.CancellationToken);
+        var run = await client.GetRunAsync(4201, TestContext.Current.CancellationToken);
 
         // Assert
         run.Status.ShouldBe("notStarted");
@@ -107,7 +107,7 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        var act = () => client.GetRunAsync(121549, TestContext.Current.CancellationToken);
+        var act = () => client.GetRunAsync(4201, TestContext.Current.CancellationToken);
 
         // Assert
         var exception = await Should.ThrowAsync<HttpRequestException>(act);
@@ -142,12 +142,12 @@ public class AzureDevOpsBuildClientTests
 
         // Act
         await client.ListPipelinesAsync(
-            new PipelineListQuery { Name = "G6*", Folder = "\\Team A\\CI", Top = 10 },
+            new PipelineListQuery { Name = "Contoso*", Folder = "\\Team A\\CI", Top = 10 },
             TestContext.Current.CancellationToken);
 
         // Assert
         handler.LastRequest!.RequestUri!.AbsoluteUri.ShouldBe(
-            $"{PipelineBase}?$top=10&api-version=7.1-preview&name=G6%2A&path=%5CTeam%20A%5CCI");
+            $"{PipelineBase}?$top=10&api-version=7.1-preview&name=Contoso%2A&path=%5CTeam%20A%5CCI");
     }
 
     [Fact]
@@ -186,13 +186,13 @@ public class AzureDevOpsBuildClientTests
         // Assert
         pipelines.Count.ShouldBe(3);
         pipelines[0].Id.ShouldBe(42);
-        pipelines[0].Name.ShouldBe("G6 PR Validation Pipeline");
+        pipelines[0].Name.ShouldBe("Contoso PR Validation");
         pipelines[0].Path.ShouldBe("\\");
         pipelines[1].Id.ShouldBe(43);
-        pipelines[1].Name.ShouldBe("G6 Nightly");
+        pipelines[1].Name.ShouldBe("Contoso Nightly");
         pipelines[1].Path.ShouldBe("\\Team A");
         pipelines[2].Id.ShouldBe(44);
-        pipelines[2].Name.ShouldBe("G6 Release");
+        pipelines[2].Name.ShouldBe("Contoso Release");
         pipelines[2].Path.ShouldBe("\\Team A\\CI");
     }
 
@@ -287,9 +287,9 @@ public class AzureDevOpsBuildClientTests
     [Fact]
     public async Task ListRunsAsync_FullRef_SendsRefVerbatim()
     {
-        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Branch = "refs/pull/23085/merge", Top = 50 });
+        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Branch = "refs/pull/815/merge", Top = 50 });
 
-        url.ShouldContain("branchName=refs%2Fpull%2F23085%2Fmerge");
+        url.ShouldContain("branchName=refs%2Fpull%2F815%2Fmerge");
     }
 
     [Fact]
@@ -322,22 +322,22 @@ public class AzureDevOpsBuildClientTests
         // Assert
         runs.Count.ShouldBe(2);
         var first = runs[0];
-        first.Id.ShouldBe(121549);
+        first.Id.ShouldBe(4201);
         first.PipelineId.ShouldBe(42);
-        first.PipelineName.ShouldBe("G6 PR Validation Pipeline");
+        first.PipelineName.ShouldBe("Contoso PR Validation");
         first.BuildNumber.ShouldBe("20261106.3");
         first.Status.ShouldBe("completed");
         first.Result.ShouldBe("failed");
         first.Reason.ShouldBe("pullRequest");
-        first.SourceBranch.ShouldBe("refs/pull/23085/merge");
+        first.SourceBranch.ShouldBe("refs/pull/815/merge");
         first.SourceVersion.ShouldBe("3f2a9c1");
-        first.RequestedFor.ShouldBe("Raphael Fleischlin");
+        first.RequestedFor.ShouldBe("Jane Doe");
         first.QueueTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T07:58:01.123Z", System.Globalization.CultureInfo.InvariantCulture));
         first.StartTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T07:58:20.5Z", System.Globalization.CultureInfo.InvariantCulture));
         first.FinishTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T08:02:11.9Z", System.Globalization.CultureInfo.InvariantCulture));
-        first.WebUrl.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=121549");
+        first.WebUrl.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=4201");
         var second = runs[1];
-        second.Id.ShouldBe(121548);
+        second.Id.ShouldBe(4200);
         second.Status.ShouldBe("inProgress");
         second.Result.ShouldBeNull();
         second.SourceBranch.ShouldBe("refs/heads/main");
@@ -427,12 +427,12 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        await client.GetTimelineAsync(121608, TestContext.Current.CancellationToken);
+        await client.GetTimelineAsync(4300, TestContext.Current.CancellationToken);
 
         // Assert
         handler.LastRequest!.Method.ShouldBe(HttpMethod.Get);
         handler.LastRequest.RequestUri!.ToString().ShouldBe(
-            $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds/121608/timeline?api-version=7.1-preview");
+            $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds/4300/timeline?api-version=7.1-preview");
     }
 
     [Fact]
@@ -445,7 +445,7 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        var records = await client.GetTimelineAsync(121608, TestContext.Current.CancellationToken);
+        var records = await client.GetTimelineAsync(4300, TestContext.Current.CancellationToken);
 
         // Assert
         records.Count.ShouldBe(22);
@@ -492,7 +492,7 @@ public class AzureDevOpsBuildClientTests
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         // Act
-        var records = await client.GetTimelineAsync(121608, TestContext.Current.CancellationToken);
+        var records = await client.GetTimelineAsync(4300, TestContext.Current.CancellationToken);
 
         // Assert
         var migrator = records.Single(r => string.Equals(r.Name, "Build database migrator", StringComparison.Ordinal));

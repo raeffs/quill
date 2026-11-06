@@ -13,7 +13,7 @@ public class AzureDevOpsIdentityClientTests
         var connectionDataJson = """
         {
             "authenticatedUser": {
-                "id": "44892788-c082-4795-a323-8cc6daaaaba2",
+                "id": "6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b",
                 "providerDisplayName": "Test User"
             }
         }
@@ -27,7 +27,7 @@ public class AzureDevOpsIdentityClientTests
         var currentUser = await client.GetCurrentUserAsync();
 
         // Assert
-        currentUser.Id.ShouldBe("44892788-c082-4795-a323-8cc6daaaaba2");
+        currentUser.Id.ShouldBe("6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b");
         currentUser.DisplayName.ShouldBe("Test User");
         handler.LastRequest!.RequestUri!.ToString().ShouldBe(
             $"{TestConstants.ServerUrl}/{TestConstants.Collection}/_apis/connectionData");

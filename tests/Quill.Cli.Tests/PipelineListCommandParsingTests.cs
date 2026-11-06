@@ -22,12 +22,12 @@ public class PipelineListCommandParsingTests
     {
         // Arrange + Act
         var parseResult = CliHost.Parse(
-            ["pipeline", "list", "--name", "G6*", "--folder", "\\Team A", "--limit", "10"],
+            ["pipeline", "list", "--name", "Contoso*", "--folder", "\\Team A", "--limit", "10"],
             TestServices.Empty);
 
         // Assert
         parseResult.Errors.ShouldBeEmpty();
-        parseResult.GetValue<string?>("--name").ShouldBe("G6*");
+        parseResult.GetValue<string?>("--name").ShouldBe("Contoso*");
         parseResult.GetValue<string?>("--folder").ShouldBe("\\Team A");
         parseResult.GetValue<int>("--limit").ShouldBe(10);
     }

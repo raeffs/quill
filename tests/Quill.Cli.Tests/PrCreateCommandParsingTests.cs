@@ -56,14 +56,14 @@ public class PrCreateCommandParsingTests
                 "--repo", "importer",
                 "--source-branch", "feat/x",
                 "--title", "Add the importer",
-                "--work-item", "63480",
-                "--work-item", "63481",
+                "--work-item", "2001",
+                "--work-item", "2002",
             ],
             TestServices.Empty);
 
         // Assert
         parseResult.Errors.ShouldBeEmpty();
-        parseResult.GetValue<int[]>("--work-item").ShouldBe([63480, 63481]);
+        parseResult.GetValue<int[]>("--work-item").ShouldBe([2001, 2002]);
     }
 
     [Fact]

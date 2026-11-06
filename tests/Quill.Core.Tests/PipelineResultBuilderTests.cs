@@ -13,7 +13,7 @@ public class PipelineResultBuilderTests
         var pipeline = new Pipeline
         {
             Id = 42,
-            Name = "G6 PR Validation Pipeline",
+            Name = "Contoso PR Validation",
             Path = "\\",
         };
 
@@ -22,7 +22,7 @@ public class PipelineResultBuilderTests
 
         // Assert
         result.Id.ShouldBe(42);
-        result.Name.ShouldBe("G6 PR Validation Pipeline");
+        result.Name.ShouldBe("Contoso PR Validation");
         result.Folder.ShouldBe("\\");
     }
 
@@ -36,7 +36,7 @@ public class PipelineResultBuilderTests
         var pipeline = new Pipeline
         {
             Id = 42,
-            Name = "G6 PR Validation Pipeline",
+            Name = "Contoso PR Validation",
             Path = path,
         };
 

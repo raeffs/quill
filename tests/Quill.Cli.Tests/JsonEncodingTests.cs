@@ -134,7 +134,7 @@ public class JsonEncodingTests
     public void PipelineResultList_EmitsABareArrayOfIdNameFolder()
     {
         var json = JsonSerializer.Serialize(
-            new List<PipelineResult> { new() { Id = 42, Name = "G6 PR Validation Pipeline", Folder = "\\" } },
+            new List<PipelineResult> { new() { Id = 42, Name = "Contoso PR Validation", Folder = "\\" } },
             CommandHelpers.Context.ListPipelineResult);
 
         using var document = JsonDocument.Parse(json);
@@ -158,7 +158,7 @@ public class JsonEncodingTests
         var json = JsonSerializer.Serialize(
             new PipelineRunResult
             {
-                Id = 121549,
+                Id = 4201,
                 PipelineId = 7,
                 PipelineName = "CI",
                 BuildNumber = "20260101.1",
@@ -168,7 +168,7 @@ public class JsonEncodingTests
                 SourceVersion = "abc123",
                 RequestedFor = "Jane Doe",
                 QueueTime = "2026-01-01T10:00:00Z",
-                Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+                Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=4201",
             },
             CommandHelpers.Context.PipelineRunResult);
 
@@ -272,7 +272,7 @@ public class JsonEncodingTests
             {
                 new()
                 {
-                    Id = 121549,
+                    Id = 4201,
                     PipelineId = 7,
                     PipelineName = "CI",
                     BuildNumber = "20260101.1",
@@ -282,7 +282,7 @@ public class JsonEncodingTests
                     SourceVersion = "abc123",
                     RequestedFor = "Jane Doe",
                     QueueTime = "2026-01-01T10:00:00Z",
-                    Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+                    Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=4201",
                 },
             },
             CommandHelpers.Context.ListPipelineRunResult);
@@ -510,7 +510,7 @@ public class JsonEncodingTests
     {
         return new PipelineRunResult
         {
-            Id = 121549,
+            Id = 4201,
             PipelineId = 7,
             PipelineName = "CI",
             BuildNumber = "20260101.1",
@@ -520,7 +520,7 @@ public class JsonEncodingTests
             SourceVersion = "abc123",
             RequestedFor = "Jane Doe",
             QueueTime = "2026-01-01T10:00:00Z",
-            Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+            Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=4201",
             Stages = stages,
         };
     }

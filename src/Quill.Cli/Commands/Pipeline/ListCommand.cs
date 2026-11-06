@@ -14,7 +14,7 @@ internal static class ListCommand
     {
         var nameOption = new Option<string?>("--name")
         {
-            Description = "Pipeline name. Matches the whole name; use * as a wildcard, for example \"G6*\".",
+            Description = "Pipeline name. Matches the whole name; use * as a wildcard, for example \"Release*\".",
         };
 
         var folderOption = new Option<string?>("--folder")

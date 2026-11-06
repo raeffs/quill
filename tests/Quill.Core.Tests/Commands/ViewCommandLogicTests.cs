@@ -16,7 +16,7 @@ public class ViewCommandLogicTests
             Type = "Product Backlog Item",
             Title = "The title",
             State = "Active",
-            AssignedToId = "44892788-c082-4795-a323-8cc6daaaaba2",
+            AssignedToId = "6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b",
             AssignedToDisplayName = "Jane Doe",
             Description = "<p>ignored here</p>",
             ParentId = 67890,
