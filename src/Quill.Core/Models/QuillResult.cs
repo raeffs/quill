@@ -570,3 +570,61 @@ public class PipelineLogResult
     [JsonPropertyName("lines")]
     public required IReadOnlyList<string> Lines { get; init; }
 }
+
+public class PipelineTestRunResult
+{
+    [JsonPropertyName("id")]
+    public required int Id { get; init; }
+
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("state")]
+    public required string State { get; init; }
+
+    [JsonPropertyName("total")]
+    public required int Total { get; init; }
+
+    [JsonPropertyName("passed")]
+    public required int Passed { get; init; }
+
+    [JsonPropertyName("failed")]
+    public required int Failed { get; init; }
+
+    [JsonPropertyName("skipped")]
+    public required int Skipped { get; init; }
+
+    [JsonPropertyName("results")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<PipelineTestCaseResult>? Results { get; init; }
+}
+
+public class PipelineTestCaseResult
+{
+    [JsonPropertyName("title")]
+    public string? Title { get; init; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("storage")]
+    public string? Storage { get; init; }
+
+    [JsonPropertyName("outcome")]
+    public required string Outcome { get; init; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; init; }
+
+    [JsonPropertyName("stackTrace")]
+    public string? StackTrace { get; init; }
+
+    [JsonPropertyName("durationMs")]
+    public int? DurationMs { get; init; }
+
+    [JsonPropertyName("failingSince")]
+    public string? FailingSince { get; init; }
+
+    [JsonPropertyName("failingSinceRunId")]
+    public int? FailingSinceRunId { get; init; }
+}
