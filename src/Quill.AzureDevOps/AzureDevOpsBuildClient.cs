@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Quill.AzureDevOps.Dto;
 using Quill.Core;
@@ -37,6 +38,53 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             ?? throw new InvalidOperationException("Failed to deserialize build response.");
 
         return ToPipelineRun(dto);
+    }
+
+    public async Task<PipelineRun> QueueRunAsync(
+        PipelineTriggerRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(request.PipelineId, nameof(request));
+
+        var body = new RunPipelineBody
+        {
+            Resources = request.Branch is null
+                ? null
+                : new RunPipelineResources
+                {
+                    Repositories = new RunPipelineRepositories
+                    {
+                        Self = new RunPipelineRepository { RefName = RefNames.FromBranch(request.Branch) },
+                    },
+                },
+            TemplateParameters = request.Parameters.Count == 0 ? null : request.Parameters,
+            StagesToSkip = request.StagesToSkip.Count == 0 ? null : request.StagesToSkip,
+        };
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/pipelines/{request.PipelineId.ToString(CultureInfo.InvariantCulture)}/runs?api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.RunPipelineBody);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        using var response = await _httpClient.PostAsync(url, content, cancellationToken);
+        await EnsureRunQueuedAsync(response, cancellationToken);
+
+        var queued = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize queued run response.");
+
+        try
+        {
+            return await GetRunAsync(queued.Id, cancellationToken);
+        }
+        catch (HttpRequestException exception)
+        {
+            throw new HttpRequestException(
+                $"Queued run {queued.Id}, but reading it failed: {exception.Message}",
+                exception,
+                exception.StatusCode);
+        }
     }
 
     public async Task<IReadOnlyList<TimelineRecord>> GetTimelineAsync(int runId, CancellationToken cancellationToken = default)
@@ -222,6 +270,32 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
                 Path = definition.Path,
             })
             .ToList();
+    }
+
+    // Auth, throttling and 5xx stay plain HTTP failures: the server did not
+    // judge the run. Any other 4xx is its verdict on what was sent.
+    private static async Task EnsureRunQueuedAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var status = (int)response.StatusCode;
+        if (status is < 400 or >= 500
+            or (int)HttpStatusCode.Unauthorized
+            or (int)HttpStatusCode.Forbidden
+            or (int)HttpStatusCode.NotFound
+            or (int)HttpStatusCode.TooManyRequests)
+        {
+            response.EnsureSuccessStatusCode();
+        }
+
+        var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync(cancellationToken));
+        var statusText = status.ToString(CultureInfo.InvariantCulture);
+
+        throw new PipelineRejectedException(
+            message is null ? $"The server rejected the pipeline run ({statusText})" : $"{message} ({statusText})");
     }
 
     private static TimelineRecord ToTimelineRecord(TimelineRecordResponse dto)

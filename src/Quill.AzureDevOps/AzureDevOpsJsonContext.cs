@@ -18,6 +18,8 @@ namespace Quill.AzureDevOps;
 [JsonSerializable(typeof(PullRequestIterationsResponse))]
 [JsonSerializable(typeof(CreatePullRequestBody))]
 [JsonSerializable(typeof(GitRepositoryResponse))]
+[JsonSerializable(typeof(RunPipelineBody))]
+[JsonSerializable(typeof(QueuedRunResponse))]
 [JsonSerializable(typeof(BuildResponse))]
 [JsonSerializable(typeof(BuildDefinitionListResponse))]
 [JsonSerializable(typeof(BuildListResponse))]
