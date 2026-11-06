@@ -71,7 +71,8 @@ These are the things the help output and a successful run do not tell you.
 - To diagnose a failure, run `pipeline view <runId> --with-stages`, select the tasks with `.stages[].jobs[].tasks[] | select(.result == "failed")`, and read their `issues` first. Each issue's `line` is the `##[error]` line in that task's log; the cause sits above it. Then open `pipeline log <runId> <logId> --start-line <line minus some lines> --end-line <line>`.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
 - A pipeline without a `stages:` block has one stage named `__default`.
-- A job with `tasks: []` did not run. Its `result` says why: `skipped` for a condition, `failed` for an error before it started, for example a template expansion error. A failed one has a `logId` that holds the error.
+- A job with `tasks: []` did not run. Its `result` says why: `skipped` for a condition, `failed` for an error before it started, for example a template expansion error. A failed one can have a `logId` that holds the error. On a run in progress, `result: null` means the job has not started yet.
+- A job has its own `issues`. A canceled, timed-out or lost job reports there, not on a task. When a job failed and none of its tasks did, read the job's `issues`.
 - The last stage can have `name: null`. It holds the job the server runs after all stages, for example `Finalize build`. You cannot skip it with `pipeline trigger --skip-stage`.
 - `wi list` does not validate `--state` and `--type` values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
