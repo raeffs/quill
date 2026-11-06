@@ -110,3 +110,69 @@ The act that ends a draft. It assigns the reviewers policy requires, evaluates
 the policies, and opens voting. A pull request cannot return to draft without
 discarding every vote it has collected.
 _Avoid_: undraft, open, ready for review
+
+## Pipelines
+
+**Pipeline**:
+A YAML pipeline in the configured project. Quill names it by its integer ID.
+_Avoid_: definition, build definition
+
+**Run**:
+One execution of a pipeline. Quill names it by its integer ID, which is unique
+across the project.
+_Avoid_: build, build number
+
+**Stage**:
+A named part of a run that groups jobs. A run has at least one stage, and a
+stage fails when one of its jobs fails. A stage has no log of its own.
+_Avoid_: phase, environment
+
+**Job**:
+A part of a stage that runs on one agent. Under a matrix each entry is its own
+job, and the job's name carries the entry. The server keeps a grouping record
+above the jobs of one YAML job; quill does not show it, unless it failed before
+any job under it started. Then quill shows it as the job.
+_Avoid_: phase, agent job, matrix entry
+
+**Task**:
+One step of a job. It is the smallest part of a run that has a log, and the
+only part that reports issues.
+_Avoid_: step, timeline record
+
+**Issue**:
+An error or warning a task reported while it ran. It carries the message and
+the log line where the message stands; the cause sits above that line. A task
+lists the first ten of each kind and counts them all.
+_Avoid_: annotation, problem, finding, error
+
+**Parameter**:
+A value the pipeline's YAML declares and a run receives when an agent triggers
+it. Quill passes it as a string and the pipeline types it.
+_Avoid_: template parameter, variable, input
+
+**Log**:
+The text a job or task wrote while it ran. A job's log holds the whole job;
+a task's log holds that task's section of it. Each log belongs to one run, and
+quill names it by its integer ID within that run. A stage has no log.
+_Avoid_: output, console, build log
+
+**Attempt**:
+One pass through the jobs of a run. A run starts with one attempt, and a retry
+adds another to the same run for the jobs that failed. Quill names the run,
+never the attempt.
+_Avoid_: rerun, re-run, retry count
+
+**Test run**:
+The batch of test results one task published to a run. A run has none, one
+or several, and quill reads them through the run. It is never a bare *run*.
+_Avoid_: run, suite, test batch
+
+**Test result**:
+What one test did within a test run. It is never a bare *result*, which is
+the verdict of a run.
+_Avoid_: result, test case, test
+
+**Outcome**:
+The verdict of a test result. Azure DevOps names it: passed, failed, not
+executed, and others. A run has a result; a test result has an outcome.
+_Avoid_: result, status, verdict
