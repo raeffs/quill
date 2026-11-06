@@ -11,6 +11,8 @@ namespace Quill.AzureDevOps;
 
 public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 {
+    private const string InvalidStateChangeTypeKey = "BuildStatusInvalidChangeException";
+
     private readonly HttpClient _httpClient;
     private readonly string _serverUrl;
     private readonly string _collection;
@@ -342,7 +344,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
     }
 
     // Auth, throttling and 5xx stay plain HTTP failures: the server did not
-    // judge the run. Any other 4xx is its verdict on what was sent.
+    // judge the run. Any other 4xx is its verdict on what was sent, and so is
+    // its 500 for an invalid build state change.
     private static async Task EnsureAcceptedAsync(HttpResponseMessage response, string fallback, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
@@ -351,16 +354,22 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         }
 
         var status = (int)response.StatusCode;
-        if (status is < 400 or >= 500
-            or (int)HttpStatusCode.Unauthorized
-            or (int)HttpStatusCode.Forbidden
-            or (int)HttpStatusCode.NotFound
-            or (int)HttpStatusCode.TooManyRequests)
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        var isInvalidStateChange = response.StatusCode == HttpStatusCode.InternalServerError
+            && string.Equals(ServerErrorMessage.ReadTypeKey(body), InvalidStateChangeTypeKey, StringComparison.Ordinal);
+
+        if (!isInvalidStateChange
+            && (status is < 400 or >= 500
+                or (int)HttpStatusCode.Unauthorized
+                or (int)HttpStatusCode.Forbidden
+                or (int)HttpStatusCode.NotFound
+                or (int)HttpStatusCode.TooManyRequests))
         {
             response.EnsureSuccessStatusCode();
         }
 
-        var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync(cancellationToken));
+        var message = ServerErrorMessage.Read(body);
         var statusText = status.ToString(CultureInfo.InvariantCulture);
 
         throw new PipelineRejectedException(

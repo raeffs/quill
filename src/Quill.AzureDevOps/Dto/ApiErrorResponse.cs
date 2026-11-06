@@ -6,4 +6,7 @@ internal sealed class ApiErrorResponse
 {
     [JsonPropertyName("message")]
     public string? Message { get; init; }
+
+    [JsonPropertyName("typeKey")]
+    public string? TypeKey { get; init; }
 }

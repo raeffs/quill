@@ -14,6 +14,10 @@ public class AzureDevOpsBuildClientUpdateTests
 
     private const string Base = $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis";
 
+    private const string InvalidStateChangeBody = """
+        {"$id":"1","innerException":null,"message":"Unable to retry pipeline 20261101.7 because it is not currently in the completed state.","typeName":"Microsoft.TeamFoundation.Build.WebApi.BuildStatusInvalidChangeException, Microsoft.TeamFoundation.Build2.WebApi","typeKey":"BuildStatusInvalidChangeException","errorCode":0,"eventId":3000}
+        """;
+
     [Fact]
     public async Task CancelRunAsync_PatchesTheBuild()
     {
@@ -190,6 +194,76 @@ public class AzureDevOpsBuildClientUpdateTests
         // Assert
         exception.GetType().ShouldBe(typeof(HttpRequestException));
         exception.StatusCode.ShouldBe(status);
+    }
+
+    [Fact]
+    public async Task RetryRunAsync_InvalidStateChange500_ThrowsPipelineRejectedExceptionWithServerMessage()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, InvalidStateChangeBody));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<PipelineRejectedException>(
+            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldBe("Unable to retry pipeline 20261101.7 because it is not currently in the completed state. (500)");
+    }
+
+    [Fact]
+    public async Task CancelRunAsync_InvalidStateChange500WithoutMessage_ThrowsRejectionNamingTheRun()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, """{"typeKey":"BuildStatusInvalidChangeException"}"""));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<PipelineRejectedException>(
+            () => client.CancelRunAsync(4202, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldBe("The server rejected the cancel of run 4202 (500)");
+    }
+
+    [Theory]
+    [InlineData("""{"message":"Something broke.","typeKey":"SomeOtherException"}""")]
+    [InlineData("""{"message":"Something broke."}""")]
+    [InlineData("")]
+    [InlineData("not json")]
+    public async Task RetryRunAsync_Other500_ThrowsPlainHttpRequestException(string body)
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, body));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<HttpRequestException>(
+            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.GetType().ShouldBe(typeof(HttpRequestException));
+        exception.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+    }
+
+    [Fact]
+    public async Task RetryRunAsync_InvalidStateChange503_ThrowsPlainHttpRequestException()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler((HttpStatusCode.ServiceUnavailable, InvalidStateChangeBody));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<HttpRequestException>(
+            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.GetType().ShouldBe(typeof(HttpRequestException));
+        exception.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
     }
 
     [Theory]

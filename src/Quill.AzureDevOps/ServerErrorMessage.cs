@@ -1,10 +1,22 @@
 using System.Text.Json;
+using Quill.AzureDevOps.Dto;
 
 namespace Quill.AzureDevOps;
 
 internal static class ServerErrorMessage
 {
     public static string? Read(string body)
+    {
+        var dto = Parse(body);
+        return string.IsNullOrWhiteSpace(dto?.Message) ? null : dto.Message.ReplaceLineEndings(" ");
+    }
+
+    public static string? ReadTypeKey(string body)
+    {
+        return Parse(body)?.TypeKey;
+    }
+
+    private static ApiErrorResponse? Parse(string body)
     {
         if (string.IsNullOrWhiteSpace(body))
         {
@@ -13,8 +25,7 @@ internal static class ServerErrorMessage
 
         try
         {
-            var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.ApiErrorResponse);
-            return string.IsNullOrWhiteSpace(dto?.Message) ? null : dto.Message.ReplaceLineEndings(" ");
+            return JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.ApiErrorResponse);
         }
         catch (JsonException)
         {
