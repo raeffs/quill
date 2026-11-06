@@ -1,19 +1,19 @@
 ---
 name: quill
-description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, or about pull requests — reading, listing, creating, updating, pushing, walking the hierarchy, or reading comments, review threads and revisions.
+description: Azure DevOps Server CLI for coding agents. Use when the user asks about work items / backlog items / PBIs / bugs / tasks, about pull requests, or about pipeline runs — reading, listing, creating, updating, pushing, walking the hierarchy, or reading comments, review threads and revisions.
 ---
 
 # Quill — Azure DevOps Server CLI
 
-Quill reads Azure DevOps Server work items and pull requests as JSON, writes work items back, and opens pull requests. To edit a work item, pull it into a markdown file, change the file, and push the file back. Work item commands come in two groups: `backlog` keeps the backlog as markdown files that you pull, edit and push, and `wi` reads and creates work items on demand while you implement.
+Quill reads Azure DevOps Server work items, pull requests and pipeline runs as JSON, writes work items back, and opens pull requests. To edit a work item, pull it into a markdown file, change the file, and push the file back. Work item commands come in two groups: `backlog` keeps the backlog as markdown files that you pull, edit and push, and `wi` reads and creates work items on demand while you implement.
 
 Quill needs the `quill` CLI on PATH, a Personal Access Token in `QUILL_PAT`, and a `.quill.json` config file. Do not check for any of them before you run a command, and do not ask the user for config values. Quill resolves them itself and reports a clear error when one is missing. Read [references/prerequisites.md](references/prerequisites.md) only when a command fails with such an error: it covers the install, the PAT scope each command needs, and the config file.
 
 ## Finding the right command
 
-Run `quill --help`, `quill backlog --help`, `quill wi --help`, `quill pr --help`, or `quill <group> <command> --help` for syntax, arguments, flags, and defaults. The help output is complete. Do not guess a flag, and do not expect this file to list one.
+Run `quill --help`, `quill backlog --help`, `quill wi --help`, `quill pr --help`, `quill pipeline --help`, or `quill <group> <command> --help` for syntax, arguments, flags, and defaults. The help output is complete. Do not guess a flag, and do not expect this file to list one.
 
-Pick the group first. Use `backlog` when you maintain the backlog as files: pull an item, edit it, push it back, or create one from a file. Use `wi` when you implement an item and want to read it, find related items, or create one without a file. Use `pr` for pull requests. Then pick the command from the group's table, and run its help for the rest.
+Pick the group first. Use `backlog` when you maintain the backlog as files: pull an item, edit it, push it back, or create one from a file. Use `wi` when you implement an item and want to read it, find related items, or create one without a file. Use `pr` for pull requests. Use `pipeline` for pipeline runs. Then pick the command from the group's table, and run its help for the rest.
 
 ### backlog
 
@@ -44,6 +44,12 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
 | `pr revisions` | You want to know what changed since you last reviewed. Lists one row per push, with the commits git needs to diff them. |
 | `pr create` | You finished a branch and want a pull request open on it. Opens a draft. |
+
+### pipeline
+
+| Command | Use it when |
+|---|---|
+| `pipeline view` | You want one run. |
 
 ## Gotchas
 

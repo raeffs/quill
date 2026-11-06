@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `quill pipeline view`: Prints one pipeline run as JSON.
+
 ## [2.1.0]
 
 ### Added
