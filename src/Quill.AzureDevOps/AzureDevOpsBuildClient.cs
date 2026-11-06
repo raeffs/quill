@@ -65,6 +65,71 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         return dto.Records.Select(ToTimelineRecord).ToList();
     }
 
+    public async Task<IReadOnlyList<string>> GetLogLinesAsync(
+        int runId,
+        int logId,
+        int? startLine,
+        int? endLine,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(logId);
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs/{logId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
+
+        if (startLine is { } start)
+        {
+            url += $"&startLine={start.ToString(CultureInfo.InvariantCulture)}";
+        }
+
+        if (endLine is { } end)
+        {
+            url += $"&endLine={end.ToString(CultureInfo.InvariantCulture)}";
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        if (response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
+        {
+            return [];
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return [];
+        }
+
+        var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.BuildLogLinesResponse)
+            ?? throw new InvalidOperationException("Failed to deserialize build log response.");
+
+        return dto.Value.ToList();
+    }
+
+    public async Task<int> GetLogLineCountAsync(int runId, int logId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(logId);
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs?api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.BuildLogListResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize build log list response.");
+
+        var log = dto.Value.FirstOrDefault(entry => entry.Id == logId)
+            ?? throw new HttpRequestException($"Log {logId} not found in run {runId}.", inner: null, HttpStatusCode.NotFound);
+
+        return log.LineCount;
+    }
+
     public async Task<IReadOnlyList<PipelineRun>> ListRunsAsync(
         PipelineRunListQuery query,
         CancellationToken cancellationToken = default)

@@ -26,6 +26,10 @@ public class AzureDevOpsBuildClientTests
         {"count":2,"value":[{"id":4201,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/815/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"Contoso PR Validation"},"requestedFor":{"displayName":"Jane Doe"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=4201"}}},{"id":4200,"buildNumber":"20261106.2","status":"inProgress","reason":"manual","sourceBranch":"refs/heads/main","sourceVersion":"9b8c7d6","queueTime":"2026-11-06T07:30:00Z","startTime":"2026-11-06T07:30:10Z","definition":{"id":42,"name":"Contoso PR Validation"},"requestedFor":{"displayName":"Jane Doe"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=4200"}}}]}
         """;
 
+    private const string LogList = """
+        {"count":3,"value":[{"id":1,"lineCount":40},{"id":12,"lineCount":1001},{"id":13,"lineCount":7}]}
+        """;
+
     private const string RunBase =
         $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds";
 
@@ -573,6 +577,206 @@ public class AzureDevOpsBuildClientTests
         // Assert
         var exception = await Should.ThrowAsync<HttpRequestException>(act);
         exception.StatusCode.ShouldBe(status);
+    }
+
+    [Fact]
+    public async Task GetLogLinesAsync_NoRange_SendsLogUrlWithoutRangeAndAcceptsJson()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        await client.GetLogLinesAsync(4201, 12, null, null, TestContext.Current.CancellationToken);
+
+        // Assert
+        handler.LastRequest!.Method.ShouldBe(HttpMethod.Get);
+        handler.LastRequest.RequestUri!.ToString().ShouldBe(
+            $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds/4201/logs/12?api-version=7.1-preview");
+        handler.LastRequest.Headers.Accept.ShouldContain(header => header.MediaType == "application/json");
+    }
+
+    [Fact]
+    public async Task GetLogLinesAsync_Range_SendsStartLineAndEndLine()
+    {
+        var uri = await LogLinesUrlAsync(401, 600);
+
+        uri.ShouldEndWith("?api-version=7.1-preview&startLine=401&endLine=600");
+    }
+
+    [Fact]
+    public async Task GetLogLinesAsync_StartLineOnly_SendsNoEndLine()
+    {
+        var uri = await LogLinesUrlAsync(5, null);
+
+        uri.ShouldEndWith("?api-version=7.1-preview&startLine=5");
+    }
+
+    [Fact]
+    public async Task GetLogLinesAsync_EndLineOnly_SendsNoStartLine()
+    {
+        var uri = await LogLinesUrlAsync(null, 9);
+
+        uri.ShouldEndWith("?api-version=7.1-preview&endLine=9");
+    }
+
+    [Fact]
+    public async Task GetLogLinesAsync_JsonBody_ReturnsLinesInOrder()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(
+            """{"count":3,"value":["Starting: Build","##[error]Build failed.","Finishing: Build"]}""",
+            HttpStatusCode.OK);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var lines = await client.GetLogLinesAsync(4201, 12, null, null, TestContext.Current.CancellationToken);
+
+        // Assert
+        lines.ShouldBe(["Starting: Build", "##[error]Build failed.", "Finishing: Build"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("""{"count":0,"value":[]}""")]
+    public async Task GetLogLinesAsync_NoLines_ReturnsEmptyList(string body)
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(body, HttpStatusCode.OK);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var lines = await client.GetLogLinesAsync(4201, 12, null, null, TestContext.Current.CancellationToken);
+
+        // Assert
+        lines.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetLogLinesAsync_NoContent_ReturnsEmptyList()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(string.Empty, HttpStatusCode.NoContent);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var lines = await client.GetLogLinesAsync(4201, 12, null, null, TestContext.Current.CancellationToken);
+
+        // Assert
+        lines.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    public async Task GetLogLinesAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler("{}", status);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var act = () => client.GetLogLinesAsync(4201, 12, null, null, TestContext.Current.CancellationToken);
+
+        // Assert
+        var exception = await Should.ThrowAsync<HttpRequestException>(act);
+        exception.StatusCode.ShouldBe(status);
+    }
+
+    [Fact]
+    public async Task GetLogLineCountAsync_SendsLogListUrl()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(LogList, HttpStatusCode.OK);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        await client.GetLogLineCountAsync(4201, 12, TestContext.Current.CancellationToken);
+
+        // Assert
+        handler.LastRequest!.Method.ShouldBe(HttpMethod.Get);
+        handler.LastRequest.RequestUri!.ToString().ShouldBe(
+            $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds/4201/logs?api-version=7.1-preview");
+    }
+
+    [Fact]
+    public async Task GetLogLineCountAsync_ReturnsLineCountOfTheMatchingLog()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(LogList, HttpStatusCode.OK);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var count = await client.GetLogLineCountAsync(4201, 12, TestContext.Current.CancellationToken);
+
+        // Assert
+        count.ShouldBe(1001);
+    }
+
+    [Fact]
+    public async Task GetLogLineCountAsync_UnknownLogId_ThrowsNotFound()
+    {
+        // Arrange
+        using var handler = new ScriptedHttpHandler([LogList]);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var act = () => client.GetLogLineCountAsync(4201, 99, TestContext.Current.CancellationToken);
+
+        // Assert
+        var exception = await Should.ThrowAsync<HttpRequestException>(act);
+        exception.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        exception.Message.ShouldContain("99");
+        exception.Message.ShouldContain("4201");
+        handler.Requests.Count.ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    public async Task GetLogLineCountAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler("{}", status);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var act = () => client.GetLogLineCountAsync(4201, 12, TestContext.Current.CancellationToken);
+
+        // Assert
+        var exception = await Should.ThrowAsync<HttpRequestException>(act);
+        exception.StatusCode.ShouldBe(status);
+    }
+
+    private static HttpClient CreateHttpClient(HttpMessageHandler handler)
+    {
+        return new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+    }
+
+    private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient)
+    {
+        return new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+    }
+
+    private static async Task<string> LogLinesUrlAsync(int? startLine, int? endLine)
+    {
+        using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        await client.GetLogLinesAsync(4201, 12, startLine, endLine, TestContext.Current.CancellationToken);
+
+        return handler.LastRequest!.RequestUri!.AbsoluteUri;
     }
 
     private static async Task<string> RequestUrlForRunsAsync(PipelineRunListQuery query)
