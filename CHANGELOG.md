@@ -13,6 +13,7 @@
 - `quill pipeline wait`: Waits until a pipeline run completes, or until `--timeout` passes, and prints the run as JSON.
 - `quill pipeline cancel`: Cancels a pipeline run and prints the run as JSON.
 - `quill pipeline retry`: Reruns the failed jobs of a pipeline run and prints the run as JSON.
+- `quill pipeline tests`: Lists the test runs of a pipeline run as JSON. `--with-results` adds the results of each test run, the failed ones by default.
 
 ## [2.1.0]
 

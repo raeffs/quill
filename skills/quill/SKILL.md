@@ -57,6 +57,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pipeline wait` | You want to block until a run completes and read its result. |
 | `pipeline cancel` | You want to stop a run you no longer need. |
 | `pipeline retry` | A run failed and you suspect it is flaky. Reruns the failed jobs on the same run ID. |
+| `pipeline tests` | You want to know which tests failed in a run. Add `--with-results` for message and stack trace. |
 
 ## Gotchas
 
@@ -79,6 +80,10 @@ These are the things the help output and a successful run do not tell you.
 - `pipeline retry` reruns the failed jobs and the jobs downstream of them as a new attempt on the same run ID. The returned row reads `notStarted` until an agent picks up the jobs. Follow with `pipeline wait <runId>`. Retry on a run still in progress is a server rejection, exit 1.
 - To diagnose a failure, run `pipeline view <runId> --with-stages`, select the tasks with `.stages[].jobs[].tasks[] | select(.result == "failed")`, and read their `issues` first. Each issue's `line` is the `##[error]` line in that task's log; the cause sits above it. Then open `pipeline log <runId> <logId> --start-line <line minus some lines> --end-line <line>`.
 - `pipeline log` counts lines from 1, and both ends of a range are inclusive. `startLine` and `endLine` are the numbers of the first and last line printed, so `lines[i]` is line `startLine + i`. A range past the end prints `lines: []` with both keys `null`. `--tail` sends one extra request.
+- A run can fail with every test passed. Read `pipeline tests` before you blame the tests, and read the failed task's issues for the rest.
+- `pipeline tests --with-results` returns `Failed` results by default. `--outcome Passed` returns rows with `null` `message` and `stackTrace`.
+- `failed` on a test run counts unanalysed failures only. It drops when someone marks a failure as analysed in the web UI.
+- `pipeline tests` prints `[]` for a run without tests and for an unknown run ID alike. `pipeline view` reports a missing run.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
 - A pipeline without a `stages:` block has one stage named `__default`.
 - A job with `tasks: []` did not run. Its `result` says why: `skipped` for a condition, `failed` for an error before it started, for example a template expansion error. A failed one can have a `logId` that holds the error. On a run in progress, `result: null` means the job has not started yet.
