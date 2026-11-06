@@ -504,6 +504,15 @@ public class PipelineJobResult
     [JsonPropertyName("logId")]
     public int? LogId { get; init; }
 
+    [JsonPropertyName("errorCount")]
+    public required int ErrorCount { get; init; }
+
+    [JsonPropertyName("warningCount")]
+    public required int WarningCount { get; init; }
+
+    [JsonPropertyName("issues")]
+    public required IReadOnlyList<PipelineIssueResult> Issues { get; init; }
+
     [JsonPropertyName("tasks")]
     public required IReadOnlyList<PipelineTaskResult> Tasks { get; init; }
 }

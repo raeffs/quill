@@ -41,6 +41,9 @@ public class PipelineStageTreeBuilderTests
         ]);
         jobs[1].Result.ShouldBe("failed");
         jobs[1].LogId.ShouldBe(143);
+        jobs[1].ErrorCount.ShouldBe(0);
+        jobs[1].WarningCount.ShouldBe(0);
+        jobs[1].Issues.ShouldBeEmpty();
         jobs[1].Tasks.Select(t => (t.Name, t.LogId)).ShouldBe(
         [
             ("Initialize job", (int?)96),
@@ -163,6 +166,57 @@ public class PipelineStageTreeBuilderTests
     }
 
     [Fact]
+    public void Build_CanceledJob_CarriesItsOwnIssue()
+    {
+        var stages = PipelineStageTreeBuilder.Build(
+        [
+            Record("s", "Stage", "Build stage", identifier: "build"),
+            Record("p", "Phase", "Build", parentId: "s"),
+            Record(
+                "j",
+                "Job",
+                "Build job",
+                parentId: "p",
+                result: "canceled",
+                errorCount: 1,
+                issues: [new TimelineIssue { Type = "error", Message = "The build was canceled by Jane Doe." }]),
+            Record("t", "Task", "Run script", parentId: "j", result: "skipped"),
+        ]);
+
+        var job = stages.ShouldHaveSingleItem().Jobs.ShouldHaveSingleItem();
+        job.ErrorCount.ShouldBe(1);
+        job.WarningCount.ShouldBe(0);
+        var issue = job.Issues.ShouldHaveSingleItem();
+        issue.Type.ShouldBe("error");
+        issue.Message.ShouldBe("The build was canceled by Jane Doe.");
+        issue.Line.ShouldBeNull();
+        job.Tasks.ShouldHaveSingleItem().Issues.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Build_FailedOrphanPhase_CarriesThePhaseIssues()
+    {
+        var stages = PipelineStageTreeBuilder.Build(
+        [
+            Record("s", "Stage", "Build stage", identifier: "build"),
+            Record(
+                "p",
+                "Phase",
+                "Build",
+                parentId: "s",
+                result: "failed",
+                errorCount: 1,
+                issues: [new TimelineIssue { Type = "error", Message = "Template expansion failed.", Line = 3 }]),
+        ]);
+
+        var job = stages.ShouldHaveSingleItem().Jobs.ShouldHaveSingleItem();
+        job.ErrorCount.ShouldBe(1);
+        var issue = job.Issues.ShouldHaveSingleItem();
+        issue.Message.ShouldBe("Template expansion failed.");
+        issue.Line.ShouldBe(3);
+    }
+
+    [Fact]
     public void Build_RootJobWithoutTasks_IsDropped()
     {
         var stages = PipelineStageTreeBuilder.Build(
@@ -264,7 +318,9 @@ public class PipelineStageTreeBuilderTests
         string state = "completed",
         string? result = null,
         int? logId = null,
-        int? order = null) => new()
+        int? order = null,
+        int errorCount = 0,
+        IReadOnlyList<TimelineIssue>? issues = null) => new()
         {
             Id = id,
             ParentId = parentId,
@@ -275,6 +331,7 @@ public class PipelineStageTreeBuilderTests
             Result = result,
             LogId = logId,
             Order = order,
-            Issues = [],
+            ErrorCount = errorCount,
+            Issues = issues ?? [],
         };
 }

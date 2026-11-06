@@ -55,6 +55,9 @@ public static class PipelineStageTreeBuilder
                     State = phase.State,
                     Result = phase.Result,
                     LogId = phase.LogId,
+                    ErrorCount = phase.ErrorCount,
+                    WarningCount = phase.WarningCount,
+                    Issues = BuildIssues(phase),
                     Tasks = [],
                 },
             ];
@@ -72,6 +75,9 @@ public static class PipelineStageTreeBuilder
             State = job.State,
             Result = job.Result,
             LogId = logId,
+            ErrorCount = job.ErrorCount,
+            WarningCount = job.WarningCount,
+            Issues = BuildIssues(job),
             Tasks = childrenOf(job, "Task").Select(BuildTask).ToList(),
         };
 
@@ -83,10 +89,12 @@ public static class PipelineStageTreeBuilder
         LogId = task.LogId,
         ErrorCount = task.ErrorCount,
         WarningCount = task.WarningCount,
-        Issues = task.Issues
-            .Select(i => new PipelineIssueResult { Type = i.Type, Message = i.Message, Line = i.Line })
-            .ToList(),
+        Issues = BuildIssues(task),
     };
+
+    private static List<PipelineIssueResult> BuildIssues(TimelineRecord record) => record.Issues
+        .Select(i => new PipelineIssueResult { Type = i.Type, Message = i.Message, Line = i.Line })
+        .ToList();
 
     private static IEnumerable<TimelineRecord> Sorted(IEnumerable<TimelineRecord> records) =>
         records.OrderBy(r => r.Order is null).ThenBy(r => r.Order);

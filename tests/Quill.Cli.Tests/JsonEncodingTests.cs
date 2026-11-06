@@ -207,6 +207,9 @@ public class JsonEncodingTests
                     {
                         Name = "Compile",
                         State = "completed",
+                        ErrorCount = 0,
+                        WarningCount = 0,
+                        Issues = [],
                         Tasks =
                         [
                             new PipelineTaskResult
@@ -239,7 +242,7 @@ public class JsonEncodingTests
         stage.EnumerateObject().Select(p => p.Name).ShouldBe(["name", "displayName", "state", "result", "jobs"]);
         stage.GetProperty("name").ValueKind.ShouldBe(JsonValueKind.Null);
         var job = stage.GetProperty("jobs")[0];
-        job.EnumerateObject().Select(p => p.Name).ShouldBe(["name", "state", "result", "logId", "tasks"]);
+        job.EnumerateObject().Select(p => p.Name).ShouldBe(["name", "state", "result", "logId", "errorCount", "warningCount", "issues", "tasks"]);
         job.GetProperty("logId").ValueKind.ShouldBe(JsonValueKind.Null);
         var task = job.GetProperty("tasks")[0];
         task.EnumerateObject().Select(p => p.Name).ShouldBe(
