@@ -52,4 +52,15 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("4202", "--timeout", "0")]
+    [InlineData("4202", "--timeout", "-1")]
+    public async Task InvokeAsync_PipelineWaitBadInput_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pipeline", "wait", .. args], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

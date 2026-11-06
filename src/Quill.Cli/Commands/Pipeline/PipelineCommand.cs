@@ -13,6 +13,7 @@ internal static class PipelineCommand
             ViewCommand.Create(serviceProvider),
             LogCommand.Create(serviceProvider),
             TriggerCommand.Create(serviceProvider),
+            WaitCommand.Create(serviceProvider),
         };
 
         return command;
