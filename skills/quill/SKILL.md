@@ -52,6 +52,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pipeline list` | You want a pipeline's ID. Filter by `--name` or `--folder`. |
 | `pipeline runs` | You want a run's ID: the newest runs of a pipeline, a branch, or the failed ones. |
 | `pipeline view` | You want one run. Add `--with-stages` for its stages, jobs, tasks and the issues each task reported. |
+| `pipeline log` | You want the log of a job or task. Take `logId` from `pipeline view --with-stages`. Add `--start-line` and `--end-line` for a range, or `--tail` for the last lines. |
 
 ## Gotchas
 
@@ -69,6 +70,7 @@ These are the things the help output and a successful run do not tell you.
 - `pipeline list` and `pipeline runs` have no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - Quill never reads the working copy, so no `--branch` means "the pipeline's default branch" on `pipeline trigger` and "every branch" on `pipeline runs`. Run git yourself: `--branch "$(git rev-parse --abbrev-ref HEAD)"` in bash, `--branch (git rev-parse --abbrev-ref HEAD)` in PowerShell.
 - To diagnose a failure, run `pipeline view <runId> --with-stages`, select the tasks with `.stages[].jobs[].tasks[] | select(.result == "failed")`, and read their `issues` first. Each issue's `line` is the `##[error]` line in that task's log; the cause sits above it. Then open `pipeline log <runId> <logId> --start-line <line minus some lines> --end-line <line>`.
+- `pipeline log` counts lines from 1, and both ends of a range are inclusive. `startLine` and `endLine` are the numbers of the first and last line printed, so `lines[i]` is line `startLine + i`. A range past the end prints `lines: []` with both keys `null`. `--tail` sends one extra request.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
 - A pipeline without a `stages:` block has one stage named `__default`.
 - A job with `tasks: []` did not run. Its `result` says why: `skipped` for a condition, `failed` for an error before it started, for example a template expansion error. A failed one can have a `logId` that holds the error. On a run in progress, `result: null` means the job has not started yet.

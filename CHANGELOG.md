@@ -8,6 +8,7 @@
 - `quill pipeline runs`: Lists pipeline runs as JSON, newest first, filtered by pipeline, branch, status, result or reason.
 - `quill pipeline view`: Prints one pipeline run as JSON.
 - `quill pipeline view --with-stages`: Adds the run's stages, jobs, tasks and the issues each task reported.
+- `quill pipeline log`: Prints a pipeline log as JSON: all of it, a line range, or the last lines.
 
 ## [2.1.0]
 
