@@ -23,6 +23,7 @@ internal static class CommandHelpers
             FileNotFoundException => (ex.Message, 3),
             InvalidOperationException => (ex.Message, 3),
             WorkItemRejectedException => (ex.Message, 1),
+            PipelineRejectedException => (ex.Message, 1),
             HttpRequestException => ($"API error: {ex.Message}", 2),
             _ => (ex.Message, 1),
         };

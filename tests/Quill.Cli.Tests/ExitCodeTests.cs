@@ -40,4 +40,16 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("42", "--parameter", "noequals")]
+    [InlineData("42", "--parameter", "env=dev", "--parameter", "env=prod")]
+    [InlineData("42", "--branch", "")]
+    public async Task InvokeAsync_PipelineTriggerBadInput_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pipeline", "trigger", .. args], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

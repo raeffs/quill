@@ -50,4 +50,22 @@ public sealed class HandleErrorTests : IDisposable
         document.RootElement.GetProperty("code").GetInt32().ShouldBe(2);
         Environment.ExitCode.ShouldBe(2);
     }
+
+    [Fact]
+    public void HandleError_PipelineRejected_Returns1WithTheMessage()
+    {
+        CommandHelpers.HandleError(new PipelineRejectedException("Unexpected parameter 'colour'. (400)"));
+
+        Environment.ExitCode.ShouldBe(1);
+        _output.ToString().ShouldContain("Unexpected parameter 'colour'. (400)");
+    }
+
+    [Fact]
+    public void HandleError_NotFound_Returns2()
+    {
+        CommandHelpers.HandleError(new HttpRequestException(
+            "Response status code does not indicate success: 404 (Not Found).", null, HttpStatusCode.NotFound));
+
+        Environment.ExitCode.ShouldBe(2);
+    }
 }
