@@ -2,19 +2,20 @@
 
 ## [Unreleased]
 
+## [2.2.0]
+
 ### Added
 
-- `quill pipeline list`: Lists pipelines as JSON, filtered by name or folder.
-- `quill pipeline runs`: Lists pipeline runs as JSON, newest first, filtered by pipeline, branch, status, result or reason.
-- `quill pipeline view`: Prints one pipeline run as JSON.
-- `quill pipeline view --with-stages`: Adds the run's stages, jobs, tasks and the issues each task reported.
-- `quill pipeline log`: Prints a pipeline log as JSON: all of it, a line range, or the last lines.
-- `quill pipeline trigger`: Queues a pipeline run with a branch, template parameters and stages to skip, and prints the run as JSON.
-- `quill pipeline wait`: Waits until a pipeline run completes, or until `--timeout` passes, and prints the run as JSON.
-- `quill pipeline cancel`: Cancels a pipeline run and prints the run as JSON.
-- `quill pipeline retry`: Reruns the failed jobs of a pipeline run and prints the run as JSON.
-- `quill pipeline tests`: Lists the test runs of a pipeline run as JSON. `--with-results` adds the results of each test run, the failed ones by default.
-- `quill pr checks`: Prints the policy evaluations that gate a pull request as JSON, build validation included.
+- `quill pipeline list`: Lists pipelines.
+- `quill pipeline runs`: Lists pipeline runs.
+- `quill pipeline view`: Prints one pipeline run.
+- `quill pipeline log`: Prints a pipeline log.
+- `quill pipeline trigger`: Queues a pipeline run.
+- `quill pipeline wait`: Waits until a pipeline run completes.
+- `quill pipeline cancel`: Cancels a pipeline run.
+- `quill pipeline retry`: Reruns the failed jobs of a pipeline run.
+- `quill pipeline tests`: Lists the test runs of a pipeline run.
+- `quill pr checks`: Prints the policy evaluations that gate a pull request.
 
 ## [2.1.0]
 
