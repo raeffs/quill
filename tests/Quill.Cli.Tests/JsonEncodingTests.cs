@@ -436,6 +436,46 @@ public class JsonEncodingTests
         json.ShouldNotContain("lastUpdatedDate");
     }
 
+    [Fact]
+    public void PipelineLogResult_EmitsExactKeysInOrder()
+    {
+        var json = JsonSerializer.Serialize(
+            new PipelineLogResult { RunId = 4201, LogId = 12, StartLine = 401, EndLine = 402, Lines = ["first", "second"] },
+            CommandHelpers.Context.PipelineLogResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.EnumerateObject().Select(p => p.Name).ShouldBe(["runId", "logId", "startLine", "endLine", "lines"]);
+    }
+
+    [Fact]
+    public void PipelineLogResult_Empty_EmitsNullLineKeysAndEmptyArray()
+    {
+        var json = JsonSerializer.Serialize(
+            new PipelineLogResult { RunId = 4201, LogId = 12, Lines = [] },
+            CommandHelpers.Context.PipelineLogResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.GetProperty("startLine").ValueKind.ShouldBe(JsonValueKind.Null);
+        document.RootElement.GetProperty("endLine").ValueKind.ShouldBe(JsonValueKind.Null);
+        document.RootElement.GetProperty("lines").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
+    public void PipelineLogResult_LineText_IsNotEscaped()
+    {
+        var json = JsonSerializer.Serialize(
+            new PipelineLogResult { RunId = 4201, LogId = 12, StartLine = 1, EndLine = 1, Lines = ["##[error]Expected <Foo> & \"Bär\" — 50 %"] },
+            CommandHelpers.Context.PipelineLogResult);
+
+        json.ShouldContain("<Foo>");
+        json.ShouldContain("&");
+        json.ShouldContain("Bär");
+        json.ShouldContain("\\\"Bär\\\"");
+        json.ShouldNotContain(@"\u003C");
+        json.ShouldNotContain(@"\u0026");
+        json.ShouldNotContain(@"\u00E4");
+    }
+
     private static PullRequestThreadResult MakeThreadResult(string? origFilePath)
     {
         return new PullRequestThreadResult
