@@ -68,7 +68,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         using var response = await _httpClient.PostAsync(url, content, cancellationToken);
-        await EnsureRunQueuedAsync(response, cancellationToken);
+        await EnsureAcceptedAsync(response, "The server rejected the pipeline run", cancellationToken);
 
         var queued = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken)
@@ -85,6 +85,30 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
                 exception,
                 exception.StatusCode);
         }
+    }
+
+    public Task<PipelineRun> CancelRunAsync(int runId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+
+        return UpdateRunAsync(
+            runId,
+            string.Empty,
+            new UpdateBuildBody { Status = "cancelling" },
+            $"The server rejected the cancel of run {runId.ToString(CultureInfo.InvariantCulture)}",
+            cancellationToken);
+    }
+
+    public Task<PipelineRun> RetryRunAsync(int runId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+
+        return UpdateRunAsync(
+            runId,
+            "&retry=true",
+            new UpdateBuildBody(),
+            $"The server rejected the retry of run {runId.ToString(CultureInfo.InvariantCulture)}",
+            cancellationToken);
     }
 
     public async Task<IReadOnlyList<TimelineRecord>> GetTimelineAsync(int runId, CancellationToken cancellationToken = default)
@@ -272,6 +296,28 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             .ToList();
     }
 
+    private async Task<PipelineRun> UpdateRunAsync(
+        int runId,
+        string query,
+        UpdateBuildBody body,
+        string rejection,
+        CancellationToken cancellationToken)
+    {
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}{query}";
+
+        var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.UpdateBuildBody);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        using var response = await _httpClient.PatchAsync(url, content, cancellationToken);
+        await EnsureAcceptedAsync(response, rejection, cancellationToken);
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize build response.");
+
+        return ToPipelineRun(dto);
+    }
+
     private static void ThrowIfFailed(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
@@ -297,7 +343,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
     // Auth, throttling and 5xx stay plain HTTP failures: the server did not
     // judge the run. Any other 4xx is its verdict on what was sent.
-    private static async Task EnsureRunQueuedAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    private static async Task EnsureAcceptedAsync(HttpResponseMessage response, string fallback, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -318,7 +364,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var statusText = status.ToString(CultureInfo.InvariantCulture);
 
         throw new PipelineRejectedException(
-            message is null ? $"The server rejected the pipeline run ({statusText})" : $"{message} ({statusText})");
+            message is null ? $"{fallback} ({statusText})" : $"{message} ({statusText})");
     }
 
     private static TimelineRecord ToTimelineRecord(TimelineRecordResponse dto)

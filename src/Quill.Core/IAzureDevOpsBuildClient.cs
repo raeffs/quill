@@ -8,6 +8,10 @@ public interface IAzureDevOpsBuildClient
 
     Task<PipelineRun> QueueRunAsync(PipelineTriggerRequest request, CancellationToken cancellationToken = default);
 
+    Task<PipelineRun> CancelRunAsync(int runId, CancellationToken cancellationToken = default);
+
+    Task<PipelineRun> RetryRunAsync(int runId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Pipeline>> ListPipelinesAsync(PipelineListQuery query, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<PipelineRun>> ListRunsAsync(PipelineRunListQuery query, CancellationToken cancellationToken = default);

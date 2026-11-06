@@ -16,6 +16,12 @@ internal sealed class FakeBuildClient(params Func<PipelineRun>[] polls) : IAzure
     public Task<PipelineRun> QueueRunAsync(PipelineTriggerRequest request, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
+    public Task<PipelineRun> CancelRunAsync(int runId, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<PipelineRun> RetryRunAsync(int runId, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
     public Task<IReadOnlyList<Pipeline>> ListPipelinesAsync(PipelineListQuery query, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 

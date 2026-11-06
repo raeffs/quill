@@ -1,9 +1,9 @@
 namespace Quill.Core;
 
 /// <summary>
-/// The server refused a pipeline run, for example a missing required parameter or
-/// an unknown stage. Derives from HttpRequestException so the commands' catch
-/// filters hold.
+/// The server refused a pipeline write, for example a missing required parameter,
+/// an unknown stage or a run in the wrong state. Derives from HttpRequestException
+/// so the commands' catch filters hold.
 /// </summary>
 public sealed class PipelineRejectedException : HttpRequestException
 {
