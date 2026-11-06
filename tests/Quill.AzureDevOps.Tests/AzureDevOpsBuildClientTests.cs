@@ -256,7 +256,7 @@ public class AzureDevOpsBuildClientTests
     {
         var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Top = 50 });
 
-        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview");
+        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview&queryOrder=queueTimeDescending");
     }
 
     [Fact]
@@ -272,7 +272,7 @@ public class AzureDevOpsBuildClientTests
             Top = 10,
         });
 
-        url.ShouldBe($"{RunBase}?$top=10&api-version=7.1-preview&definitions=42&branchName=refs%2Fheads%2Fmain&statusFilter=completed&resultFilter=failed&reasonFilter=pullRequest");
+        url.ShouldBe($"{RunBase}?$top=10&api-version=7.1-preview&queryOrder=queueTimeDescending&definitions=42&branchName=refs%2Fheads%2Fmain&statusFilter=completed&resultFilter=failed&reasonFilter=pullRequest");
     }
 
     [Fact]
@@ -303,7 +303,7 @@ public class AzureDevOpsBuildClientTests
             Top = 50,
         });
 
-        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview");
+        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview&queryOrder=queueTimeDescending");
     }
 
     [Fact]

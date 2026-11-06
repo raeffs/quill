@@ -44,20 +44,17 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Top, nameof(query));
 
-        if (query.PipelineId is { } pipelineId)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pipelineId, nameof(query));
-        }
-
         var parameters = new List<string>
         {
             $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
             $"api-version={AzureDevOpsConstants.ApiVersion}",
+            "queryOrder=queueTimeDescending",
         };
 
-        if (query.PipelineId is { } definitionId)
+        if (query.PipelineId is { } pipelineId)
         {
-            parameters.Add($"definitions={definitionId.ToString(CultureInfo.InvariantCulture)}");
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pipelineId, nameof(query));
+            parameters.Add($"definitions={pipelineId.ToString(CultureInfo.InvariantCulture)}");
         }
 
         if (!string.IsNullOrEmpty(query.Branch))
