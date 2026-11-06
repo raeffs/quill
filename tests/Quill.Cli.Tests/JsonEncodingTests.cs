@@ -184,6 +184,48 @@ public class JsonEncodingTests
     }
 
     [Fact]
+    public void PipelineRunResultList_EmitsABareArrayOfRunRows()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PipelineRunResult>
+            {
+                new()
+                {
+                    Id = 121549,
+                    PipelineId = 7,
+                    PipelineName = "CI",
+                    BuildNumber = "20260101.1",
+                    Status = "inProgress",
+                    Reason = "manual",
+                    SourceBranch = "refs/heads/main",
+                    SourceVersion = "abc123",
+                    RequestedFor = "Jane Doe",
+                    QueueTime = "2026-01-01T10:00:00Z",
+                    Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=121549",
+                },
+            },
+            CommandHelpers.Context.ListPipelineRunResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+        document.RootElement[0].EnumerateObject().Select(p => p.Name).ShouldBe(
+        [
+            "id", "pipelineId", "pipelineName", "buildNumber", "status", "result", "reason",
+            "sourceBranch", "sourceVersion", "requestedFor", "queueTime", "startTime", "finishTime", "url",
+        ]);
+    }
+
+    [Fact]
+    public void PipelineRunResultList_Empty_EmitsEmptyArray()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PipelineRunResult>(),
+            CommandHelpers.Context.ListPipelineRunResult);
+
+        json.ShouldBe("[]");
+    }
+
+    [Fact]
     public void PullRequestViewResult_NoMergeAttempt_StillEmitsBothCommitKeys()
     {
         var json = JsonSerializer.Serialize(

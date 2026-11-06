@@ -9,6 +9,7 @@ internal static class PipelineCommand
         var command = new Command("pipeline", "Pipeline commands")
         {
             ListCommand.Create(serviceProvider),
+            RunsCommand.Create(serviceProvider),
             ViewCommand.Create(serviceProvider),
         };
 
