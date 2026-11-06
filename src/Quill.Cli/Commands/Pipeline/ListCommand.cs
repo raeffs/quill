@@ -14,12 +14,12 @@ internal static class ListCommand
     {
         var nameOption = new Option<string?>("--name")
         {
-            Description = "Pipeline name filter. The server matches the pattern.",
+            Description = "Pipeline name. Matches the whole name; use * as a wildcard, for example \"G6*\".",
         };
 
         var folderOption = new Option<string?>("--folder")
         {
-            Description = "Folder filter, for example \\Team A.",
+            Description = "Folder path with a leading backslash, for example \\Team A. Lists that folder only, not its subfolders.",
         };
 
         var limitOption = new Option<int>("--limit")
