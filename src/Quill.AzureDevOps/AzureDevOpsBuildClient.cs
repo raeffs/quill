@@ -1,0 +1,54 @@
+using System.Globalization;
+using System.Net.Http.Json;
+using Quill.Core;
+using Quill.Core.Models;
+
+namespace Quill.AzureDevOps;
+
+public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
+{
+    private readonly HttpClient _httpClient;
+    private readonly string _serverUrl;
+    private readonly string _collection;
+    private readonly string _project;
+
+    public AzureDevOpsBuildClient(HttpClient httpClient, string serverUrl, string collection, string project)
+    {
+        _httpClient = httpClient;
+        _serverUrl = serverUrl.TrimEnd('/');
+        _collection = collection;
+        _project = project;
+    }
+
+    public async Task<PipelineRun> GetRunAsync(int runId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize build response.");
+
+        return new PipelineRun
+        {
+            Id = dto.Id,
+            PipelineId = dto.Definition?.Id ?? 0,
+            PipelineName = dto.Definition?.Name ?? string.Empty,
+            BuildNumber = dto.BuildNumber,
+            Status = dto.Status,
+            Result = dto.Result,
+            Reason = dto.Reason,
+            SourceBranch = dto.SourceBranch,
+            SourceVersion = dto.SourceVersion,
+            RequestedFor = dto.RequestedFor?.DisplayName ?? string.Empty,
+            QueueTime = dto.QueueTime,
+            StartTime = dto.StartTime,
+            FinishTime = dto.FinishTime,
+            WebUrl = dto.Links?.Web?.Href ?? string.Empty,
+        };
+    }
+}
