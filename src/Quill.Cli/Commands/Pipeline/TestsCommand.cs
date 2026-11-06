@@ -30,7 +30,7 @@ internal static class TestsCommand
 
         var outcomeOption = new Option<string[]>("--outcome")
         {
-            Description = "Result outcome, for example Failed or Passed. Repeat for more. Replaces the default Failed. Passed to the server as is. Needs --with-results.",
+            Description = "Test result outcome, for example Failed or Passed. Repeat for more. Replaces the default Failed. Passed to the server as is. Needs --with-results.",
             DefaultValueFactory = _ => ["Failed"],
         };
 

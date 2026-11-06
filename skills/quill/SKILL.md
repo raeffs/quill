@@ -84,6 +84,7 @@ These are the things the help output and a successful run do not tell you.
 - `pipeline tests --with-results` returns `Failed` results by default. `--outcome Passed` returns rows with `null` `message` and `stackTrace`.
 - `failed` on a test run counts unanalysed failures only. It drops when someone marks a failure as analysed in the web UI.
 - `pipeline tests` prints `[]` for a run without tests and for an unknown run ID alike. `pipeline view` reports a missing run.
+- `pipeline tests --with-results` returns at most 1000 results per test run without `--limit`. When a test run returns exactly `--limit` results, page with `--skip` or widen `--limit`.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
 - A pipeline without a `stages:` block has one stage named `__default`.
 - A job with `tasks: []` did not run. Its `result` says why: `skipped` for a condition, `failed` for an error before it started, for example a template expansion error. A failed one can have a `logId` that holds the error. On a run in progress, `result: null` means the job has not started yet.
