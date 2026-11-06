@@ -53,6 +53,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pipeline runs` | You want a run's ID: the newest runs of a pipeline, a branch, or the failed ones. |
 | `pipeline view` | You want one run. Add `--with-stages` for its stages, jobs, tasks and the issues each task reported. |
 | `pipeline log` | You want the log of a job or task. Take `logId` from `pipeline view --with-stages`. Add `--start-line` and `--end-line` for a range, or `--tail` for the last lines. |
+| `pipeline trigger` | You pushed a branch and want a run on it. Prints the run; follow with `pipeline wait`. |
 
 ## Gotchas
 
@@ -69,6 +70,7 @@ These are the things the help output and a successful run do not tell you.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `pipeline list` and `pipeline runs` have no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - Quill never reads the working copy, so no `--branch` means "the pipeline's default branch" on `pipeline trigger` and "every branch" on `pipeline runs`. Run git yourself: `--branch "$(git rev-parse --abbrev-ref HEAD)"` in bash, `--branch (git rev-parse --abbrev-ref HEAD)` in PowerShell.
+- `--parameter` sends every value as a string. Object and list parameters are not supported. A parameter or stage name the YAML does not declare is a server rejection, exit 1.
 - To diagnose a failure, run `pipeline view <runId> --with-stages`, select the tasks with `.stages[].jobs[].tasks[] | select(.result == "failed")`, and read their `issues` first. Each issue's `line` is the `##[error]` line in that task's log; the cause sits above it. Then open `pipeline log <runId> <logId> --start-line <line minus some lines> --end-line <line>`.
 - `pipeline log` counts lines from 1, and both ends of a range are inclusive. `startLine` and `endLine` are the numbers of the first and last line printed, so `lines[i]` is line `startLine + i`. A range past the end prints `lines: []` with both keys `null`. `--tail` sends one extra request.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
@@ -125,6 +127,6 @@ These are the things the help output and a successful run do not tell you.
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Validation failure (wrong state or assignee), or the server rejected a work item write |
+| 1 | Validation failure (wrong state or assignee), or the server rejected a work item write or a pipeline run |
 | 2 | API error (network, auth, server) |
 | 3 | Configuration or argument error |
