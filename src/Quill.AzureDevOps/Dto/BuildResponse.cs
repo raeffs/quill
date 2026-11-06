@@ -51,6 +51,9 @@ internal sealed class BuildDefinitionResponse
 
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
+
+    [JsonPropertyName("path")]
+    public string Path { get; init; } = string.Empty;
 }
 
 internal sealed class BuildIdentityResponse
@@ -69,4 +72,10 @@ internal sealed class BuildLinkResponse
 {
     [JsonPropertyName("href")]
     public string Href { get; init; } = string.Empty;
+}
+
+internal sealed class BuildDefinitionListResponse
+{
+    [JsonPropertyName("value")]
+    public IReadOnlyList<BuildDefinitionResponse> Value { get; init; } = Array.Empty<BuildDefinitionResponse>();
 }

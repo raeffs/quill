@@ -51,4 +51,46 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             WebUrl = dto.Links?.Web?.Href ?? string.Empty,
         };
     }
+
+    public async Task<IReadOnlyList<Pipeline>> ListPipelinesAsync(
+        PipelineListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Top, nameof(query));
+
+        var parameters = new List<string>
+        {
+            $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
+            $"api-version={AzureDevOpsConstants.ApiVersion}",
+        };
+
+        if (!string.IsNullOrEmpty(query.Name))
+        {
+            parameters.Add($"name={Uri.EscapeDataString(query.Name)}");
+        }
+
+        if (!string.IsNullOrEmpty(query.Folder))
+        {
+            parameters.Add($"path={Uri.EscapeDataString(query.Folder)}");
+        }
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/definitions?{string.Join('&', parameters)}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.BuildDefinitionListResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize build definition list response.");
+
+        return dto.Value
+            .Select(definition => new Pipeline
+            {
+                Id = definition.Id,
+                Name = definition.Name,
+                Path = definition.Path,
+            })
+            .ToList();
+    }
 }
