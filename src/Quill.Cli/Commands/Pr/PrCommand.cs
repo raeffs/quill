@@ -8,6 +8,7 @@ internal static class PrCommand
     {
         var command = new Command("pr", "Pull request commands")
         {
+            ChecksCommand.Create(serviceProvider),
             CreateCommand.Create(serviceProvider),
             ListCommand.Create(serviceProvider),
             RevisionsCommand.Create(serviceProvider),

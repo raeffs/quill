@@ -88,4 +88,14 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("abc")]
+    public async Task InvokeAsync_PrChecksBadInput_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pr", "checks", .. args], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

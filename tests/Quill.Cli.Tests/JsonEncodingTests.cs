@@ -526,6 +526,71 @@ public class JsonEncodingTests
         json.ShouldBe("[]");
     }
 
+    [Fact]
+    public void PullRequestChecksResult_EmitsKeysInOrder()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeChecksResult(MakeCheck("Contoso build", Parse("""{"buildId":4201}"""))),
+            CommandHelpers.Context.PullRequestChecksResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.EnumerateObject().Select(p => p.Name)
+            .ShouldBe(["id", "status", "mergeStatus", "isDraft", "checks"]);
+        document.RootElement.GetProperty("checks")[0].EnumerateObject().Select(p => p.Name)
+            .ShouldBe(["name", "isBlocking", "status", "startedDate", "completedDate", "context"]);
+    }
+
+    [Fact]
+    public void PullRequestChecksResult_NullMergeStatus_EmitsNull()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeChecksResult(),
+            CommandHelpers.Context.PullRequestChecksResult);
+
+        json.ShouldContain("\"mergeStatus\":null");
+    }
+
+    [Fact]
+    public void PullRequestChecksResult_ContextForms_EmitAsSent()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeChecksResult(
+                MakeCheck("A", Parse("""{"buildId":4201}""")),
+                MakeCheck("B", Parse("{}")),
+                MakeCheck("C", Parse("null")),
+                MakeCheck("D", null)),
+            CommandHelpers.Context.PullRequestChecksResult);
+
+        json.ShouldContain("\"context\":{\"buildId\":4201}");
+        json.ShouldContain("\"context\":{}");
+        json.ShouldContain("\"context\":null");
+
+        using var document = JsonDocument.Parse(json);
+        var checks = document.RootElement.GetProperty("checks");
+        checks[3].TryGetProperty("context", out _).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void PullRequestChecksResult_ContextText_IsNotEscaped()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeChecksResult(
+                MakeCheck("Contoso build", Parse("""{"buildOutputPreview":"Contoso.cs(12,5): error CS0103: <Größe> & más"}"""))),
+            CommandHelpers.Context.PullRequestChecksResult);
+
+        json.ShouldContain("<Größe> & más");
+    }
+
+    [Fact]
+    public void PullRequestChecksResult_NoChecks_EmitsEmptyArray()
+    {
+        var json = JsonSerializer.Serialize(
+            MakeChecksResult(),
+            CommandHelpers.Context.PullRequestChecksResult);
+
+        json.ShouldContain("\"checks\":[]");
+    }
+
     private static PullRequestThreadResult MakeThreadResult(string? origFilePath)
     {
         return new PullRequestThreadResult
@@ -627,6 +692,37 @@ public class JsonEncodingTests
             Failed = 1,
             Skipped = 0,
             Results = results,
+        };
+    }
+
+    private static JsonElement Parse(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
+    private static PullRequestCheckResult MakeCheck(string name, JsonElement? context)
+    {
+        return new PullRequestCheckResult
+        {
+            Name = name,
+            IsBlocking = true,
+            Status = "approved",
+            StartedDate = "2026-01-02T03:04:05Z",
+            CompletedDate = "2026-01-02T03:05:05Z",
+            Context = context,
+        };
+    }
+
+    private static PullRequestChecksResult MakeChecksResult(params PullRequestCheckResult[] checks)
+    {
+        return new PullRequestChecksResult
+        {
+            Id = 4711,
+            Status = "active",
+            MergeStatus = null,
+            IsDraft = false,
+            Checks = checks,
         };
     }
 }
