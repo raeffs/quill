@@ -13,6 +13,7 @@ namespace Quill.AzureDevOps;
 [JsonSerializable(typeof(CommentsResponse))]
 [JsonSerializable(typeof(PullRequestListResponse))]
 [JsonSerializable(typeof(PullRequestItemResponse))]
+[JsonSerializable(typeof(PolicyEvaluationListResponse))]
 [JsonSerializable(typeof(PullRequestThreadsResponse))]
 [JsonSerializable(typeof(PullRequestWorkItemRefsResponse))]
 [JsonSerializable(typeof(PullRequestIterationsResponse))]

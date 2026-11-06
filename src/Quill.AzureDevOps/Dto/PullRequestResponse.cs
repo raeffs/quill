@@ -10,6 +10,9 @@ internal sealed class PullRequestListResponse
 
 internal sealed class PullRequestItemResponse
 {
+    [JsonPropertyName("codeReviewId")]
+    public int CodeReviewId { get; init; }
+
     [JsonPropertyName("pullRequestId")]
     public int PullRequestId { get; init; }
 
@@ -75,6 +78,15 @@ internal sealed class PullRequestRepositoryResponse
 
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
+
+    [JsonPropertyName("project")]
+    public PullRequestProjectResponse? Project { get; init; }
+}
+
+internal sealed class PullRequestProjectResponse
+{
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
 }
 
 internal sealed class PullRequestCommitRefResponse

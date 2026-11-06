@@ -10,6 +10,11 @@ public interface IAzureDevOpsPullRequestClient
 
     Task<PullRequest> GetByIdAsync(int prId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PolicyEvaluation>> GetPolicyEvaluationsAsync(
+        string projectId,
+        int codeReviewId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<PullRequestThread>> GetThreadsAsync(
         int prId,
         string repo,

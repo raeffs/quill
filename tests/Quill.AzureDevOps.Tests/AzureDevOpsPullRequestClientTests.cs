@@ -486,4 +486,51 @@ public class AzureDevOpsPullRequestClientTests
         // Assert
         await Should.ThrowAsync<ArgumentOutOfRangeException>(act);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_MapsCodeReviewIdAndProjectId()
+    {
+        var pr = await GetPullRequestAsync(
+            """
+            "codeReviewId": 9001,
+            "repository": { "id": "r1", "name": "importer", "project": { "id": "11111111-2222-3333-4444-555555555555" } }
+            """);
+
+        pr.Id.ShouldBe(4711);
+        pr.CodeReviewId.ShouldBe(9001);
+        pr.ProjectId.ShouldBe("11111111-2222-3333-4444-555555555555");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_NoProject_LeavesProjectIdNull()
+    {
+        var pr = await GetPullRequestAsync(
+            """
+            "repository": { "id": "r1", "name": "importer" }
+            """);
+
+        pr.ProjectId.ShouldBeNull();
+    }
+
+    private static async Task<PullRequest> GetPullRequestAsync(string extraFields)
+    {
+        var responseJson = $$"""
+        {
+            "pullRequestId": 4711,
+            "title": "Fix retry policy",
+            "status": "active",
+            "sourceRefName": "refs/heads/feat/retry",
+            "targetRefName": "refs/heads/main",
+            "creationDate": "2026-05-12T08:00:00Z",
+            "createdBy": { "id": "u1", "displayName": "Jane Doe" },
+            {{extraFields}}
+        }
+        """;
+        using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsPullRequestClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        return await client.GetByIdAsync(4711, TestContext.Current.CancellationToken);
+    }
 }

@@ -115,6 +115,41 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return MapToPullRequest(dto);
     }
 
+    public async Task<IReadOnlyList<PolicyEvaluation>> GetPolicyEvaluationsAsync(
+        string projectId,
+        int codeReviewId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(codeReviewId);
+
+        var artifactId = $"vstfs:///CodeReview/CodeReviewId/{projectId}/{codeReviewId.ToString(CultureInfo.InvariantCulture)}";
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/policy/evaluations?artifactId={artifactId}&api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.PolicyEvaluationListResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize policy evaluations response.");
+
+        var results = new List<PolicyEvaluation>(dto.Value.Count);
+        foreach (var item in dto.Value)
+        {
+            results.Add(new PolicyEvaluation
+            {
+                Name = item.Configuration?.Type?.DisplayName ?? string.Empty,
+                IsBlocking = item.Configuration?.IsBlocking ?? false,
+                Status = item.Status,
+                StartedDate = item.StartedDate,
+                CompletedDate = item.CompletedDate,
+                Context = item.Context.ValueKind == JsonValueKind.Undefined ? null : item.Context.Clone(),
+            });
+        }
+
+        return results;
+    }
+
     public async Task<IReadOnlyList<PullRequestThread>> GetThreadsAsync(
         int prId,
         string repo,
@@ -559,6 +594,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return new PullRequest
         {
             Id = dto.PullRequestId,
+            CodeReviewId = dto.CodeReviewId,
+            ProjectId = string.IsNullOrEmpty(dto.Repository.Project?.Id) ? null : dto.Repository.Project.Id,
             Title = dto.Title,
             AuthorDisplayName = dto.CreatedBy?.DisplayName ?? string.Empty,
             Status = dto.Status,
