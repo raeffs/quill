@@ -24,6 +24,10 @@ public class PullRequest
 
     public required IReadOnlyList<PullRequestReviewer> Reviewers { get; init; }
 
+    public int CodeReviewId { get; init; }
+
+    public string? ProjectId { get; init; }
+
     public string? MergeStatus { get; init; }
 
     public string? LastMergeSourceCommit { get; init; }
