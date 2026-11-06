@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Json;
+using Quill.AzureDevOps.Dto;
 using Quill.Core;
 using Quill.Core.Models;
 
@@ -33,23 +34,62 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
             ?? throw new InvalidOperationException("Failed to deserialize build response.");
 
-        return new PipelineRun
+        return ToPipelineRun(dto);
+    }
+
+    public async Task<IReadOnlyList<PipelineRun>> ListRunsAsync(
+        PipelineRunListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Top, nameof(query));
+
+        if (query.PipelineId is { } pipelineId)
         {
-            Id = dto.Id,
-            PipelineId = dto.Definition?.Id ?? 0,
-            PipelineName = dto.Definition?.Name ?? string.Empty,
-            BuildNumber = dto.BuildNumber,
-            Status = dto.Status,
-            Result = dto.Result,
-            Reason = dto.Reason,
-            SourceBranch = dto.SourceBranch,
-            SourceVersion = dto.SourceVersion,
-            RequestedFor = dto.RequestedFor?.DisplayName ?? string.Empty,
-            QueueTime = dto.QueueTime,
-            StartTime = dto.StartTime,
-            FinishTime = dto.FinishTime,
-            WebUrl = dto.Links?.Web?.Href ?? string.Empty,
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pipelineId, nameof(query));
+        }
+
+        var parameters = new List<string>
+        {
+            $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
+            $"api-version={AzureDevOpsConstants.ApiVersion}",
         };
+
+        if (query.PipelineId is { } definitionId)
+        {
+            parameters.Add($"definitions={definitionId.ToString(CultureInfo.InvariantCulture)}");
+        }
+
+        if (!string.IsNullOrEmpty(query.Branch))
+        {
+            parameters.Add($"branchName={Uri.EscapeDataString(RefNames.FromBranch(query.Branch))}");
+        }
+
+        if (!string.IsNullOrEmpty(query.Status))
+        {
+            parameters.Add($"statusFilter={Uri.EscapeDataString(query.Status)}");
+        }
+
+        if (!string.IsNullOrEmpty(query.Result))
+        {
+            parameters.Add($"resultFilter={Uri.EscapeDataString(query.Result)}");
+        }
+
+        if (!string.IsNullOrEmpty(query.Reason))
+        {
+            parameters.Add($"reasonFilter={Uri.EscapeDataString(query.Reason)}");
+        }
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds?{string.Join('&', parameters)}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.BuildListResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize build list response.");
+
+        return dto.Value.Select(ToPipelineRun).ToList();
     }
 
     public async Task<IReadOnlyList<Pipeline>> ListPipelinesAsync(
@@ -92,5 +132,26 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
                 Path = definition.Path,
             })
             .ToList();
+    }
+
+    private static PipelineRun ToPipelineRun(BuildResponse dto)
+    {
+        return new PipelineRun
+        {
+            Id = dto.Id,
+            PipelineId = dto.Definition?.Id ?? 0,
+            PipelineName = dto.Definition?.Name ?? string.Empty,
+            BuildNumber = dto.BuildNumber,
+            Status = dto.Status,
+            Result = dto.Result,
+            Reason = dto.Reason,
+            SourceBranch = dto.SourceBranch,
+            SourceVersion = dto.SourceVersion,
+            RequestedFor = dto.RequestedFor?.DisplayName ?? string.Empty,
+            QueueTime = dto.QueueTime,
+            StartTime = dto.StartTime,
+            FinishTime = dto.FinishTime,
+            WebUrl = dto.Links?.Web?.Href ?? string.Empty,
+        };
     }
 }

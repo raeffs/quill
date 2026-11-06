@@ -68,12 +68,12 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         if (!string.IsNullOrEmpty(query.SourceBranch))
         {
-            parameters.Add($"searchCriteria.sourceRefName={Uri.EscapeDataString(ToRefName(query.SourceBranch))}");
+            parameters.Add($"searchCriteria.sourceRefName={Uri.EscapeDataString(RefNames.FromBranch(query.SourceBranch))}");
         }
 
         if (!string.IsNullOrEmpty(query.TargetBranch))
         {
-            parameters.Add($"searchCriteria.targetRefName={Uri.EscapeDataString(ToRefName(query.TargetBranch))}");
+            parameters.Add($"searchCriteria.targetRefName={Uri.EscapeDataString(RefNames.FromBranch(query.TargetBranch))}");
         }
 
         if (query.Skip is { } skipValue)
@@ -277,7 +277,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var targetRefName = string.IsNullOrWhiteSpace(request.TargetBranch)
             ? await GetDefaultBranchAsync(request.Repo, cancellationToken)
-            : ToRefName(request.TargetBranch);
+            : RefNames.FromBranch(request.TargetBranch);
 
         var workItemRefs = new List<CreatePullRequestWorkItemRef>(request.WorkItemIds.Count);
         foreach (var id in request.WorkItemIds)
@@ -287,7 +287,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var body = new CreatePullRequestBody
         {
-            SourceRefName = ToRefName(request.SourceBranch),
+            SourceRefName = RefNames.FromBranch(request.SourceBranch),
             TargetRefName = targetRefName,
             Title = request.Title,
             IsDraft = true,
@@ -588,13 +588,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return refName.StartsWith(RefsHeadsPrefix, StringComparison.Ordinal)
             ? refName.Substring(RefsHeadsPrefix.Length)
             : refName;
-    }
-
-    private static string ToRefName(string branch)
-    {
-        return branch.StartsWith("refs/", StringComparison.Ordinal)
-            ? branch
-            : RefsHeadsPrefix + branch;
     }
 
     private sealed class ThreadPosition

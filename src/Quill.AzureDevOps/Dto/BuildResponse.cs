@@ -79,3 +79,9 @@ internal sealed class BuildDefinitionListResponse
     [JsonPropertyName("value")]
     public IReadOnlyList<BuildDefinitionResponse> Value { get; init; } = Array.Empty<BuildDefinitionResponse>();
 }
+
+internal sealed class BuildListResponse
+{
+    [JsonPropertyName("value")]
+    public IReadOnlyList<BuildResponse> Value { get; init; } = Array.Empty<BuildResponse>();
+}

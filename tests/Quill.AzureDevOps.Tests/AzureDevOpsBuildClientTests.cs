@@ -21,6 +21,12 @@ public class AzureDevOpsBuildClientTests
 
     private const string PipelineBase =
         $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/definitions";
+    private const string RunList = """
+        {"count":2,"value":[{"id":121549,"buildNumber":"20261106.3","status":"completed","result":"failed","reason":"pullRequest","sourceBranch":"refs/pull/23085/merge","sourceVersion":"3f2a9c1","queueTime":"2026-11-06T07:58:01.123Z","startTime":"2026-11-06T07:58:20.5Z","finishTime":"2026-11-06T08:02:11.9Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121549"}}},{"id":121548,"buildNumber":"20261106.2","status":"inProgress","reason":"manual","sourceBranch":"refs/heads/main","sourceVersion":"9b8c7d6","queueTime":"2026-11-06T07:30:00Z","startTime":"2026-11-06T07:30:10Z","definition":{"id":42,"name":"G6 PR Validation Pipeline"},"requestedFor":{"displayName":"Raphael Fleischlin"},"_links":{"web":{"href":"https://devops.example.com/COL/PROJ/_build/results?buildId=121548"}}}]}
+        """;
+
+    private const string RunBase =
+        $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis/build/builds";
 
     [Fact]
     public async Task GetRunAsync_SendsBuildUrlWithApiVersion()
@@ -243,5 +249,183 @@ public class AzureDevOpsBuildClientTests
         // Assert
         var exception = await Should.ThrowAsync<HttpRequestException>(act);
         exception.StatusCode.ShouldBe(status);
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_NoFilter_SendsTopAndApiVersionOnly()
+    {
+        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Top = 50 });
+
+        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview");
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_AllFilters_SendsEveryParameterInOrder()
+    {
+        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery
+        {
+            PipelineId = 42,
+            Branch = "main",
+            Status = "completed",
+            Result = "failed",
+            Reason = "pullRequest",
+            Top = 10,
+        });
+
+        url.ShouldBe($"{RunBase}?$top=10&api-version=7.1-preview&definitions=42&branchName=refs%2Fheads%2Fmain&statusFilter=completed&resultFilter=failed&reasonFilter=pullRequest");
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_BranchWithSlashAndSpace_SendsEscapedRefName()
+    {
+        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Branch = "feature/a b", Top = 50 });
+
+        url.ShouldContain("branchName=refs%2Fheads%2Ffeature%2Fa%20b");
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_FullRef_SendsRefVerbatim()
+    {
+        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Branch = "refs/pull/23085/merge", Top = 50 });
+
+        url.ShouldContain("branchName=refs%2Fpull%2F23085%2Fmerge");
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_EmptyStrings_SendNoFilter()
+    {
+        var url = await RequestUrlForRunsAsync(new PipelineRunListQuery
+        {
+            Branch = string.Empty,
+            Status = string.Empty,
+            Result = string.Empty,
+            Reason = string.Empty,
+            Top = 50,
+        });
+
+        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview");
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_TwoRuns_MapsEveryRowInServerOrder()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var runs = await client.ListRunsAsync(new PipelineRunListQuery { Top = 50 }, TestContext.Current.CancellationToken);
+
+        // Assert
+        runs.Count.ShouldBe(2);
+        var first = runs[0];
+        first.Id.ShouldBe(121549);
+        first.PipelineId.ShouldBe(42);
+        first.PipelineName.ShouldBe("G6 PR Validation Pipeline");
+        first.BuildNumber.ShouldBe("20261106.3");
+        first.Status.ShouldBe("completed");
+        first.Result.ShouldBe("failed");
+        first.Reason.ShouldBe("pullRequest");
+        first.SourceBranch.ShouldBe("refs/pull/23085/merge");
+        first.SourceVersion.ShouldBe("3f2a9c1");
+        first.RequestedFor.ShouldBe("Raphael Fleischlin");
+        first.QueueTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T07:58:01.123Z", System.Globalization.CultureInfo.InvariantCulture));
+        first.StartTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T07:58:20.5Z", System.Globalization.CultureInfo.InvariantCulture));
+        first.FinishTime.ShouldBe(DateTimeOffset.Parse("2026-11-06T08:02:11.9Z", System.Globalization.CultureInfo.InvariantCulture));
+        first.WebUrl.ShouldBe("https://devops.example.com/COL/PROJ/_build/results?buildId=121549");
+        var second = runs[1];
+        second.Id.ShouldBe(121548);
+        second.Status.ShouldBe("inProgress");
+        second.Result.ShouldBeNull();
+        second.SourceBranch.ShouldBe("refs/heads/main");
+    }
+
+    [Fact]
+    public async Task ListRunsAsync_EmptyValue_ReturnsEmptyList()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var runs = await client.ListRunsAsync(new PipelineRunListQuery { Top = 50 }, TestContext.Current.CancellationToken);
+
+        // Assert
+        runs.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task ListRunsAsync_TopBelowOne_ThrowsArgumentOutOfRange(int top)
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var act = () => client.ListRunsAsync(
+            new PipelineRunListQuery { Top = top }, TestContext.Current.CancellationToken);
+
+        // Assert
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(act);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task ListRunsAsync_PipelineIdBelowOne_ThrowsArgumentOutOfRange(int pipelineId)
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var act = () => client.ListRunsAsync(
+            new PipelineRunListQuery { PipelineId = pipelineId, Top = 50 }, TestContext.Current.CancellationToken);
+
+        // Assert
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(act);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    public async Task ListRunsAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler("{}", status);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        // Act
+        var act = () => client.ListRunsAsync(
+            new PipelineRunListQuery { Top = 50 }, TestContext.Current.CancellationToken);
+
+        // Assert
+        var exception = await Should.ThrowAsync<HttpRequestException>(act);
+        exception.StatusCode.ShouldBe(status);
+    }
+
+    private static async Task<string> RequestUrlForRunsAsync(PipelineRunListQuery query)
+    {
+        using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsBuildClient(
+            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await client.ListRunsAsync(query, TestContext.Current.CancellationToken);
+
+        handler.LastRequest!.Method.ShouldBe(HttpMethod.Get);
+        return handler.LastRequest.RequestUri!.AbsoluteUri;
     }
 }
