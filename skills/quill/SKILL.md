@@ -7,13 +7,7 @@ description: Azure DevOps Server CLI for coding agents. Use when the user asks a
 
 Quill reads Azure DevOps Server work items and pull requests as JSON, writes work items back, and opens pull requests. To edit a work item, pull it into a markdown file, change the file, and push the file back. Work item commands come in two groups: `backlog` keeps the backlog as markdown files that you pull, edit and push, and `wi` reads and creates work items on demand while you implement.
 
-Quill needs the `quill` CLI on PATH. Install it once per machine:
-
-```bash
-dotnet tool install -g Raeffs.Quill
-```
-
-The install needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs as a native binary. Other platforms need the .NET 10 runtime.
+Quill needs the `quill` CLI on PATH, a Personal Access Token in `QUILL_PAT`, and a `.quill.json` config file. Do not check for any of them before you run a command, and do not ask the user for config values. Quill resolves them itself and reports a clear error when one is missing. Read [references/prerequisites.md](references/prerequisites.md) only when a command fails with such an error: it covers the install, the PAT scope each command needs, and the config file.
 
 ## Finding the right command
 
@@ -28,6 +22,8 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `backlog pull` | You want to read one work item *and* edit it and push it back. Writes a file and overwrites without asking. |
 | `backlog push` | You want to send an edited file back to the server. |
 | `backlog create` | You want a new Feature, Product Backlog Item, Bug or Task, described by a markdown file. |
+
+`backlog pull` writes a markdown file with YAML frontmatter, and `backlog push` and `backlog create` read it. Read [references/backlog-file-format.md](references/backlog-file-format.md) before you edit or write such a file. It lists the frontmatter fields, how `tags` and `predecessors` behave on push and create, and how to link to another work item.
 
 ### wi
 
@@ -48,65 +44,6 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
 | `pr revisions` | You want to know what changed since you last reviewed. Lists one row per push, with the commits git needs to diff them. |
 | `pr create` | You finished a branch and want a pull request open on it. Opens a draft. |
-
-## Prerequisites
-
-- `QUILL_PAT` holds a Personal Access Token. Each command needs its own scope:
-
-  | Command | PAT scope |
-  |---|---|
-  | every `quill backlog` and `quill wi` command | Work Items: Read & Write |
-  | `pr list`, `pr view`, `pr threads`, `pr revisions` | Code: Read |
-  | `pr create` | Code: Read & Write |
-
-  `pr view` also reads the linked work items, so it needs Work Items: Read. `pr create` links work items through the pull request and needs no work item scope, whether or not you pass `--work-item`.
-
-- `.quill.json` sits in the current working directory, or in the user profile directory (`$USERPROFILE` on Windows, `$HOME` elsewhere) as a fallback.
-
-```json
-{
-  "serverUrl": "https://your-server.com/tfs",
-  "collection": "DefaultCollection",
-  "project": "YourProject",
-  "allowedStates": ["New", "Active"]
-}
-```
-
-All fields are required. `allowedStates` controls which work items you can push. Quill validates the assignee against the PAT user.
-
-Do not check for the config file before you run a command, and do not ask the user for its values. Quill resolves the config itself and reports a clear error when the file is missing from both locations.
-
-## Backlog file format
-
-`backlog pull` writes this format, and `backlog push` and `backlog create` read it. No other command emits it.
-
-```markdown
----
-id: 12345
-type: Product Backlog Item
-title: The work item title
-state: Active
-parentId: 67890
-tags: [backend, tech-debt]
-predecessors: [67891]
----
-
-Description content goes here in markdown.
-
-Link to another work item: [Product Backlog Item: Other Item](#67890)
-```
-
-| Field | Meaning |
-|-------|---------|
-| `id` | Work item ID. Required for push. Set it to `0` for create. Written on pull. |
-| `type` | Work item type. Required for create. Read-only on pull. |
-| `title` | Work item title. Pushed to the server. Required for create. |
-| `state` | Work item state. Read-only. Written on pull. |
-| `parentId` | Parent work item ID. Required for create. Written on pull when a parent exists. |
-| `tags` | Tags, as a YAML list. Round-trip: written on pull, sent on push and create. On push a list replaces all tags, `[]` removes them all, and no key leaves them alone. On create no key and `[]` both mean no tags. A tag must not contain `;` or `,`; a bad value exits 3. |
-| `predecessors` | IDs of the work items that must be done before this one, as a YAML list. Written only on the item that waits; there is no `successors` key. Round-trip: written on pull, sent on push and create. On push a list sets the exact set of Predecessor links, `[]` removes them all, and no key leaves them alone. On create no key and `[]` both mean none. A value that is not a positive integer, or a repeated ID, exits 3. The server rejects missing targets and cycles, which exits 1. |
-
-Write `[link text](#<work-item-id>)` to link to another backlog item. On push, quill replaces the link text with `{Type} {Id}: {Title}` from the server, creates a `Related` relation, and turns the link into a URL. On pull, quill converts links back to `[{Type}: {Title}](#<id>)`.
 
 ## Gotchas
 
