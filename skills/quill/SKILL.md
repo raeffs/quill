@@ -51,7 +51,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 |---|---|
 | `pipeline list` | You want a pipeline's ID. Filter by `--name` or `--folder`. |
 | `pipeline runs` | You want a run's ID: the newest runs of a pipeline, a branch, or the failed ones. |
-| `pipeline view` | You want one run. |
+| `pipeline view` | You want one run. Add `--with-stages` for its stages, jobs, tasks and the issues each task reported. |
 
 ## Gotchas
 
@@ -68,6 +68,11 @@ These are the things the help output and a successful run do not tell you.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `pipeline list` and `pipeline runs` have no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - Quill never reads the working copy, so no `--branch` means "the pipeline's default branch" on `pipeline trigger` and "every branch" on `pipeline runs`. Run git yourself: `--branch "$(git rev-parse --abbrev-ref HEAD)"` in bash, `--branch (git rev-parse --abbrev-ref HEAD)` in PowerShell.
+- To diagnose a failure, run `pipeline view <runId> --with-stages`, select the tasks with `.stages[].jobs[].tasks[] | select(.result == "failed")`, and read their `issues` first. Each issue's `line` is the `##[error]` line in that task's log; the cause sits above it. Then open `pipeline log <runId> <logId> --start-line <line minus some lines> --end-line <line>`.
+- `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
+- A pipeline without a `stages:` block has one stage named `__default`.
+- A job with `tasks: []` did not run. Its `result` says why: `skipped` for a condition, `failed` for an error before it started, for example a template expansion error. A failed one has a `logId` that holds the error.
+- The last stage can have `name: null`. It holds the job the server runs after all stages, for example `Finalize build`. You cannot skip it with `pipeline trigger --skip-stage`.
 - `wi list` does not validate `--state` and `--type` values against `.quill.json`. A typo returns `[]` rather than an error.
 - `wi list` silently omits items that fail to load. It is a discovery list, not a structural view.
 - `wi view` and `wi create` always print `tags` as an array, `[]` when the item has none. `wi list` rows do not carry `tags`, so call `wi view` for them.
