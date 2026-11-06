@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Quill.AzureDevOps.Dto;
 using Quill.Core;
 using Quill.Core.Models;
@@ -35,6 +37,32 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             ?? throw new InvalidOperationException("Failed to deserialize build response.");
 
         return ToPipelineRun(dto);
+    }
+
+    public async Task<IReadOnlyList<TimelineRecord>> GetTimelineAsync(int runId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/timeline?api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        if (response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
+        {
+            return [];
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return [];
+        }
+
+        var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.TimelineResponse)
+            ?? throw new InvalidOperationException("Failed to deserialize timeline response.");
+
+        return dto.Records.Select(ToTimelineRecord).ToList();
     }
 
     public async Task<IReadOnlyList<PipelineRun>> ListRunsAsync(
@@ -129,6 +157,38 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
                 Path = definition.Path,
             })
             .ToList();
+    }
+
+    private static TimelineRecord ToTimelineRecord(TimelineRecordResponse dto)
+    {
+        return new TimelineRecord
+        {
+            Id = dto.Id,
+            ParentId = dto.ParentId,
+            Type = dto.Type,
+            Name = dto.Name,
+            Identifier = dto.Identifier,
+            State = dto.State,
+            Result = dto.Result,
+            LogId = dto.Log?.Id,
+            ErrorCount = dto.ErrorCount ?? 0,
+            WarningCount = dto.WarningCount ?? 0,
+            Order = dto.Order,
+            Issues = (dto.Issues ?? []).Select(ToTimelineIssue).ToList(),
+        };
+    }
+
+    private static TimelineIssue ToTimelineIssue(TimelineIssueResponse dto)
+    {
+        int? line = null;
+        if (dto.Data is not null
+            && dto.Data.TryGetValue("logFileLineNumber", out var text)
+            && int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        {
+            line = parsed;
+        }
+
+        return new TimelineIssue { Type = dto.Type, Message = dto.Message, Line = line };
     }
 
     private static PipelineRun ToPipelineRun(BuildResponse dto)

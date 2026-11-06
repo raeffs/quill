@@ -21,6 +21,7 @@ namespace Quill.AzureDevOps;
 [JsonSerializable(typeof(BuildResponse))]
 [JsonSerializable(typeof(BuildDefinitionListResponse))]
 [JsonSerializable(typeof(BuildListResponse))]
+[JsonSerializable(typeof(TimelineResponse))]
 [JsonSerializable(typeof(ApiErrorResponse))]
 internal sealed partial class AzureDevOpsJsonContext : JsonSerializerContext
 {

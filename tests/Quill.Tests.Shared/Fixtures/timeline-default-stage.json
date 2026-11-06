@@ -1,0 +1,596 @@
+{
+  "records": [
+    {
+      "previousAttempts": [],
+      "id": "e1b6d151-de52-530f-8d0c-2198197e5032",
+      "parentId": "96ac2280-8cb4-5df5-99de-dd2da759617d",
+      "type": "Checkpoint",
+      "name": "Checkpoint",
+      "refName": "Checkpoint",
+      "startTime": "2026-11-06T09:57:23.3Z",
+      "finishTime": "2026-11-06T09:57:23.3Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "succeeded",
+      "resultCode": null,
+      "changeId": 2,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": null,
+      "details": null,
+      "errorCount": 0,
+      "warningCount": 0,
+      "url": null,
+      "log": null,
+      "task": null,
+      "attempt": 1,
+      "identifier": "Checkpoint"
+    },
+    {
+      "previousAttempts": [],
+      "id": "96ac2280-8cb4-5df5-99de-dd2da759617d",
+      "parentId": null,
+      "type": "Stage",
+      "name": "__default",
+      "refName": "__default",
+      "startTime": "2026-11-06T09:57:26.5133333Z",
+      "finishTime": "2026-11-06T10:17:18.51Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "failed",
+      "resultCode": null,
+      "changeId": 6,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": null,
+      "order": 1,
+      "details": null,
+      "errorCount": 0,
+      "warningCount": 0,
+      "url": null,
+      "log": null,
+      "task": null,
+      "attempt": 1,
+      "identifier": "__default"
+    },
+    {
+      "previousAttempts": [],
+      "id": "859b8d9a-8fd6-5a5c-6f5e-f84f1990894e",
+      "parentId": "96ac2280-8cb4-5df5-99de-dd2da759617d",
+      "type": "Phase",
+      "name": "Test",
+      "refName": "Test",
+      "startTime": "2026-11-06T09:57:26.5133333Z",
+      "finishTime": "2026-11-06T10:17:18.2Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "failed",
+      "resultCode": null,
+      "changeId": 204,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": null,
+      "order": 1,
+      "details": null,
+      "errorCount": 0,
+      "warningCount": 0,
+      "url": null,
+      "log": {
+        "id": 3,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/3"
+      },
+      "task": null,
+      "attempt": 1,
+      "identifier": "Test"
+    },
+    {
+      "previousAttempts": [],
+      "id": "5264e576-3c6f-51f6-f055-fab409685f20",
+      "parentId": "859b8d9a-8fd6-5a5c-6f5e-f84f1990894e",
+      "type": "Job",
+      "name": "Test",
+      "refName": "__default",
+      "startTime": "2026-11-06T09:57:26.5133333Z",
+      "finishTime": "2026-11-06T10:17:15.5633333Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "failed",
+      "resultCode": null,
+      "changeId": 207,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": "BUILD04-A02",
+      "queueId": 9,
+      "order": 1,
+      "details": null,
+      "errorCount": 0,
+      "warningCount": 0,
+      "url": null,
+      "log": {
+        "id": 35,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/35"
+      },
+      "task": null,
+      "attempt": 1,
+      "identifier": "Test.__default"
+    },
+    {
+      "previousAttempts": [],
+      "id": "3278164e-004d-4da0-bd13-c609653a5efc",
+      "parentId": "5264e576-3c6f-51f6-f055-fab409685f20",
+      "type": "Task",
+      "name": "Initialize job",
+      "refName": "JobExtension_Init",
+      "startTime": "2026-11-06T09:57:26.6466667Z",
+      "finishTime": "2026-11-06T09:57:26.8166667Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "succeeded",
+      "resultCode": null,
+      "changeId": 7,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": "BUILD04-A02",
+      "order": 1,
+      "details": null,
+      "errorCount": 0,
+      "warningCount": 0,
+      "url": null,
+      "log": {
+        "id": 4,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/4"
+      },
+      "task": null,
+      "attempt": 1,
+      "identifier": null
+    },
+    {
+      "previousAttempts": [],
+      "id": "b8eaaf21-0d52-5d8a-3fb7-61f540175d01",
+      "parentId": "5264e576-3c6f-51f6-f055-fab409685f20",
+      "type": "Task",
+      "name": "Checkout Sources",
+      "refName": "Checkout",
+      "startTime": "2026-11-06T09:57:26.82Z",
+      "finishTime": "2026-11-06T09:57:30.4366667Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "succeeded",
+      "resultCode": null,
+      "changeId": 9,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": "BUILD04-A02",
+      "order": 2,
+      "details": null,
+      "errorCount": 0,
+      "warningCount": 0,
+      "url": null,
+      "log": {
+        "id": 5,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/5"
+      },
+      "task": null,
+      "attempt": 1,
+      "identifier": null
+    },
+    {
+      "previousAttempts": [],
+      "id": "354ddca7-03d8-5dfd-2622-279d8ee2409e",
+      "parentId": "5264e576-3c6f-51f6-f055-fab409685f20",
+      "type": "Task",
+      "name": "Build database migrator",
+      "refName": "DotNetCoreCLI2",
+      "startTime": "2026-11-06T09:58:13.0033333Z",
+      "finishTime": "2026-11-06T09:59:30.65Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "succeeded",
+      "resultCode": null,
+      "changeId": 94,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": "BUILD04-A02",
+      "order": 19,
+      "details": {
+        "id": "48e0912d-9951-4077-967c-03517f15adaf",
+        "changeId": 52,
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/Timeline/48e0912d-9951-4077-967c-03517f15adaf"
+      },
+      "errorCount": 0,
+      "warningCount": 931,
+      "url": null,
+      "log": {
+        "id": 22,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/22"
+      },
+      "task": {
+        "id": "5541a522-603c-47ad-91fc-a4b1d163081b",
+        "name": "DotNetCoreCLI",
+        "version": "2.247.2"
+      },
+      "attempt": 1,
+      "identifier": null,
+      "issues": [
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File1.cs(28,23): Warning CS0618: Sample warning 1.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File1.cs",
+            "linenumber": "28",
+            "columnnumber": "23",
+            "code": "CS0618",
+            "logFileLineNumber": "14"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File2.cs(79,16): Warning CS8618: Sample warning 2.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File2.cs",
+            "linenumber": "79",
+            "columnnumber": "16",
+            "code": "CS8618",
+            "logFileLineNumber": "16"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File3.cs(98,28): Warning CS8603: Sample warning 3.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File3.cs",
+            "linenumber": "98",
+            "columnnumber": "28",
+            "code": "CS8603",
+            "logFileLineNumber": "18"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File4.cs(31,24): Warning CS0618: Sample warning 4.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File4.cs",
+            "linenumber": "31",
+            "columnnumber": "24",
+            "code": "CS0618",
+            "logFileLineNumber": "20"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File5.cs(45,26): Warning CS1572: Sample warning 5.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File5.cs",
+            "linenumber": "45",
+            "columnnumber": "26",
+            "code": "CS1572",
+            "logFileLineNumber": "22"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File6.cs(62,26): Warning CS1572: Sample warning 6.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File6.cs",
+            "linenumber": "62",
+            "columnnumber": "26",
+            "code": "CS1572",
+            "logFileLineNumber": "24"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File7.cs(90,37): Warning CS1570: Sample warning 7.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File7.cs",
+            "linenumber": "90",
+            "columnnumber": "37",
+            "code": "CS1570",
+            "logFileLineNumber": "31"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File8.cs(90,37): Warning CS1570: Sample warning 8.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File8.cs",
+            "linenumber": "90",
+            "columnnumber": "37",
+            "code": "CS1570",
+            "logFileLineNumber": "33"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File9.cs(25,13): Warning SYSLIB0051: Sample warning 9.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File9.cs",
+            "linenumber": "25",
+            "columnnumber": "13",
+            "code": "SYSLIB0051",
+            "logFileLineNumber": "36"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File10.cs(10,22): Warning CS1572: Sample warning 10.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File10.cs",
+            "linenumber": "10",
+            "columnnumber": "22",
+            "code": "CS1572",
+            "logFileLineNumber": "40"
+          }
+        }
+      ]
+    },
+    {
+      "previousAttempts": [],
+      "id": "2d076608-0650-50dc-5b7c-c45eca6dbd8a",
+      "parentId": "5264e576-3c6f-51f6-f055-fab409685f20",
+      "type": "Task",
+      "name": "Build Integration Test Solution",
+      "refName": "DotNetCoreCLI5",
+      "startTime": "2026-11-06T09:59:55.4633333Z",
+      "finishTime": "2026-11-06T10:01:10.0833333Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "succeeded",
+      "resultCode": null,
+      "changeId": 196,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": "BUILD04-A02",
+      "order": 22,
+      "details": {
+        "id": "9d4d5f51-0ed4-4a8d-bff4-221d116c1ca4",
+        "changeId": 70,
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/Timeline/9d4d5f51-0ed4-4a8d-bff4-221d116c1ca4"
+      },
+      "errorCount": 0,
+      "warningCount": 2397,
+      "url": null,
+      "log": {
+        "id": 25,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/25"
+      },
+      "task": {
+        "id": "5541a522-603c-47ad-91fc-a4b1d163081b",
+        "name": "DotNetCoreCLI",
+        "version": "2.247.2"
+      },
+      "attempt": 1,
+      "identifier": null,
+      "issues": [
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File11.cs(8,9): Warning MSB3026: Sample warning 11.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File11.cs",
+            "linenumber": "8",
+            "columnnumber": "9",
+            "code": "MSB3026",
+            "logFileLineNumber": "16"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File12.cs(8,3): Warning MSB3026: Sample warning 12.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File12.cs",
+            "linenumber": "8",
+            "columnnumber": "3",
+            "code": "MSB3026",
+            "logFileLineNumber": "24"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File13.cs(8,3): Warning MSB3026: Sample warning 13.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File13.cs",
+            "linenumber": "8",
+            "columnnumber": "3",
+            "code": "MSB3026",
+            "logFileLineNumber": "26"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File14.cs(8,3): Warning MSB3026: Sample warning 14.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File14.cs",
+            "linenumber": "8",
+            "columnnumber": "3",
+            "code": "MSB3026",
+            "logFileLineNumber": "28"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File15.cs(8,3): Warning MSB3026: Sample warning 15.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File15.cs",
+            "linenumber": "8",
+            "columnnumber": "3",
+            "code": "MSB3026",
+            "logFileLineNumber": "50"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File16.cs(8,3): Warning MSB3026: Sample warning 16.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File16.cs",
+            "linenumber": "8",
+            "columnnumber": "3",
+            "code": "MSB3026",
+            "logFileLineNumber": "52"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File17.cs(8,3): Warning MSB3026: Sample warning 17.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File17.cs",
+            "linenumber": "8",
+            "columnnumber": "3",
+            "code": "MSB3026",
+            "logFileLineNumber": "68"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File18.cs(18,9): Warning SYSLIB0051: Sample warning 18.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File18.cs",
+            "linenumber": "18",
+            "columnnumber": "9",
+            "code": "SYSLIB0051",
+            "logFileLineNumber": "87"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File19.cs(24,33): Warning CS8601: Sample warning 19.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File19.cs",
+            "linenumber": "24",
+            "columnnumber": "33",
+            "code": "CS8601",
+            "logFileLineNumber": "102"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "Code",
+          "message": "src\\Contoso.Core\\File20.cs(25,20): Warning CS8603: Sample warning 20.",
+          "data": {
+            "type": "Warning",
+            "sourcepath": "src\\Contoso.Core\\File20.cs",
+            "linenumber": "25",
+            "columnnumber": "20",
+            "code": "CS8603",
+            "logFileLineNumber": "104"
+          }
+        }
+      ]
+    },
+    {
+      "previousAttempts": [],
+      "id": "7a35c80c-9969-517c-4996-5aec4e054a9f",
+      "parentId": "5264e576-3c6f-51f6-f055-fab409685f20",
+      "type": "Task",
+      "name": "Run Integration Tests",
+      "refName": "DotNetCoreCLI6",
+      "startTime": "2026-11-06T10:01:10.0833333Z",
+      "finishTime": "2026-11-06T10:17:08.48Z",
+      "currentOperation": null,
+      "percentComplete": null,
+      "state": "completed",
+      "result": "failed",
+      "resultCode": null,
+      "changeId": 198,
+      "lastModified": "0001-01-01T00:00:00",
+      "workerName": "BUILD04-A02",
+      "order": 23,
+      "details": null,
+      "errorCount": 2,
+      "warningCount": 1,
+      "url": null,
+      "log": {
+        "id": 26,
+        "type": "Container",
+        "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/logs/26"
+      },
+      "task": {
+        "id": "5541a522-603c-47ad-91fc-a4b1d163081b",
+        "name": "DotNetCoreCLI",
+        "version": "2.247.2"
+      },
+      "attempt": 1,
+      "identifier": null,
+      "issues": [
+        {
+          "type": "error",
+          "category": "General",
+          "message": "Error: The process 'C:\\Agent\\_work\\_tool\\dotnet\\dotnet.exe' failed with exit code 2",
+          "data": {
+            "type": "error",
+            "source": "TaskInternal",
+            "logFileLineNumber": "855"
+          }
+        },
+        {
+          "type": "warning",
+          "category": "General",
+          "message": ".NET 5 has some compatibility issues with older Nuget versions(<=5.7), so if you are using an older Nuget version(and not dotnet cli) to restore, then the dotnet cli commands (e.g. dotnet build) which rely on such restored packages might fail. To mitigate such error, you can either: (1) - Use dotnet cli to restore, (2) - Use Nuget version 5.8 to restore, (3) - Use global.json using an older sdk version(<=3) to build",
+          "data": {
+            "type": "warning",
+            "source": "TaskInternal",
+            "logFileLineNumber": "856"
+          }
+        },
+        {
+          "type": "error",
+          "category": "General",
+          "message": "Dotnet command failed with non-zero exit code on the following projects : [\n  'C:\\\\Agent\\\\_work\\\\2\\\\s\\\\Backend\\\\Contoso.IntegrationTests\\\\Contoso.IntegrationTests.sln'\n]",
+          "data": {
+            "type": "error",
+            "source": "TaskInternal",
+            "logFileLineNumber": "858"
+          }
+        }
+      ]
+    }
+  ],
+  "lastChangedBy": "00000000-0000-0000-0000-000000000000",
+  "lastChangedOn": "2026-11-06T10:17:18.683Z",
+  "id": "b354da15-e374-4567-8021-801d5a202333",
+  "changeId": 207,
+  "url": "https://myserver.com/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_apis/build/builds/121567/Timeline/b354da15-e374-4567-8021-801d5a202333"
+}

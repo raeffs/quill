@@ -9,4 +9,8 @@
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Fixtures\*.json" LogicalName="%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
