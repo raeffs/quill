@@ -32,6 +32,8 @@ public class ExitCodeTests
     [InlineData("--start-line", "0")]
     [InlineData("--start-line", "10", "--end-line", "9")]
     [InlineData("--tail", "5", "--start-line", "1")]
+    [InlineData("--end-line", "abc")]
+    [InlineData("--tail", "abc", "--start-line", "1")]
     public async Task InvokeAsync_PipelineLogBadFlags_Returns3(params string[] flags)
     {
         var exitCode = await CliHost.InvokeAsync(["pipeline", "log", "4201", "12", .. flags], TestServices.Empty);

@@ -87,6 +87,11 @@ public class PipelineLogCommandParsingTests
     [InlineData("--start-line", "10", "--end-line", "9")]
     [InlineData("--tail", "5", "--start-line", "1")]
     [InlineData("--tail", "5", "--end-line", "9")]
+    [InlineData("--start-line", "abc")]
+    [InlineData("--end-line", "abc")]
+    [InlineData("--tail", "abc")]
+    [InlineData("--start-line", "abc", "--end-line", "5")]
+    [InlineData("--tail", "abc", "--start-line", "1")]
     public void Parse_BadFlags_ProducesError(params string[] flags)
     {
         var parseResult = CliHost.Parse([.. Prefix, .. flags], TestServices.Empty);

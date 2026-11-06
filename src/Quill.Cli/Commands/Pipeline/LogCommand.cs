@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,9 +74,12 @@ internal static class LogCommand
 
         command.Validators.Add(commandResult =>
         {
-            var startLine = commandResult.GetValue(startLineOption);
-            var endLine = commandResult.GetValue(endLineOption);
-            var tail = commandResult.GetValue(tailOption);
+            if (!TryReadInt(commandResult, startLineOption, out var startLine)
+                || !TryReadInt(commandResult, endLineOption, out var endLine)
+                || !TryReadInt(commandResult, tailOption, out var tail))
+            {
+                return;
+            }
 
             if (endLine is not null && endLine < (startLine ?? 1))
             {
@@ -99,6 +103,24 @@ internal static class LogCommand
         });
 
         return command;
+    }
+
+    private static bool TryReadInt(CommandResult commandResult, Option<int?> option, out int? value)
+    {
+        value = null;
+        var tokens = commandResult.GetResult(option)?.Tokens;
+        if (tokens is null || tokens.Count == 0)
+        {
+            return true;
+        }
+
+        if (!int.TryParse(tokens[0].Value, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return false;
+        }
+
+        value = parsed;
+        return true;
     }
 
     private static async Task ExecuteAsync(
