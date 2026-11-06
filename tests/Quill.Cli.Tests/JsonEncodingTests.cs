@@ -131,6 +131,28 @@ public class JsonEncodingTests
     }
 
     [Fact]
+    public void PipelineResultList_EmitsABareArrayOfIdNameFolder()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PipelineResult> { new() { Id = 42, Name = "G6 PR Validation Pipeline", Folder = "\\" } },
+            CommandHelpers.Context.ListPipelineResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+        var row = document.RootElement[0];
+        row.EnumerateObject().Select(p => p.Name).ShouldBe(["id", "name", "folder"]);
+        row.GetProperty("folder").GetString().ShouldBe("\\");
+    }
+
+    [Fact]
+    public void PipelineResultList_Empty_EmitsEmptyArray()
+    {
+        var json = JsonSerializer.Serialize(new List<PipelineResult>(), CommandHelpers.Context.ListPipelineResult);
+
+        json.ShouldBe("[]");
+    }
+
+    [Fact]
     public void PipelineRunResult_EmitsExactlyTheRunRowKeysWithNulls()
     {
         var json = JsonSerializer.Serialize(
