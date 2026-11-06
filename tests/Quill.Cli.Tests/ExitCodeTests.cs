@@ -75,4 +75,17 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("4201", "--limit", "5")]
+    [InlineData("4201", "--skip", "0")]
+    [InlineData("4201", "--outcome", "Failed")]
+    [InlineData("4201", "--with-results", "--limit", "0")]
+    public async Task InvokeAsync_PipelineTestsBadInput_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pipeline", "tests", .. args], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

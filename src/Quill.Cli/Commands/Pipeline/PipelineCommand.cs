@@ -16,6 +16,7 @@ internal static class PipelineCommand
             WaitCommand.Create(serviceProvider),
             CancelCommand.Create(serviceProvider),
             RetryCommand.Create(serviceProvider),
+            TestsCommand.Create(serviceProvider),
         };
 
         return command;

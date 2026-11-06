@@ -476,6 +476,56 @@ public class JsonEncodingTests
         json.ShouldNotContain(@"\u00E4");
     }
 
+    [Fact]
+    public void PipelineTestRunResultList_WithoutResults_EmitsRowKeysWithoutResults()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PipelineTestRunResult> { MakeTestRunRow(null) },
+            CommandHelpers.Context.ListPipelineTestRunResult);
+
+        using var document = JsonDocument.Parse(json);
+        document.RootElement[0].EnumerateObject().Select(p => p.Name).ShouldBe(
+            ["id", "name", "state", "total", "passed", "failed", "skipped"]);
+    }
+
+    [Fact]
+    public void PipelineTestRunResultList_WithResults_EmitsResultKeysWithNulls()
+    {
+        var results = new List<PipelineTestCaseResult>
+        {
+            new() { Title = "Adds two numbers", Name = "Contoso.Tests.Add", Storage = "Contoso.Tests.dll", Outcome = "Passed" },
+        };
+
+        var json = JsonSerializer.Serialize(
+            new List<PipelineTestRunResult> { MakeTestRunRow(results) },
+            CommandHelpers.Context.ListPipelineTestRunResult);
+
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement[0];
+        row.EnumerateObject().Select(p => p.Name).ShouldBe(
+            ["id", "name", "state", "total", "passed", "failed", "skipped", "results"]);
+        var result = row.GetProperty("results")[0];
+        result.EnumerateObject().Select(p => p.Name).ShouldBe(
+        [
+            "title", "name", "storage", "outcome", "message", "stackTrace",
+            "durationMs", "failingSince", "failingSinceRunId",
+        ]);
+        foreach (var key in new[] { "message", "stackTrace", "durationMs", "failingSince", "failingSinceRunId" })
+        {
+            result.GetProperty(key).ValueKind.ShouldBe(JsonValueKind.Null);
+        }
+    }
+
+    [Fact]
+    public void PipelineTestRunResultList_Empty_EmitsEmptyArray()
+    {
+        var json = JsonSerializer.Serialize(
+            new List<PipelineTestRunResult>(),
+            CommandHelpers.Context.ListPipelineTestRunResult);
+
+        json.ShouldBe("[]");
+    }
+
     private static PullRequestThreadResult MakeThreadResult(string? origFilePath)
     {
         return new PullRequestThreadResult
@@ -562,6 +612,21 @@ public class JsonEncodingTests
             QueueTime = "2026-01-01T10:00:00Z",
             Url = "https://devops.example.com/COL/PROJ/_build/results?buildId=4201",
             Stages = stages,
+        };
+    }
+
+    private static PipelineTestRunResult MakeTestRunRow(IReadOnlyList<PipelineTestCaseResult>? results)
+    {
+        return new PipelineTestRunResult
+        {
+            Id = 9001,
+            Name = "Contoso unit tests",
+            State = "Completed",
+            Total = 3,
+            Passed = 2,
+            Failed = 1,
+            Skipped = 0,
+            Results = results,
         };
     }
 }
