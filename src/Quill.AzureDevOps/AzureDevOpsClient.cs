@@ -259,28 +259,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         return (int)status >= 500 && (int)status < 600;
     }
 
-    private static TimeSpan GetRetryAfter(HttpResponseMessage response)
-    {
-        var retryAfter = response.Headers.RetryAfter;
-        if (retryAfter is null)
-        {
-            return TimeSpan.Zero;
-        }
-
-        if (retryAfter.Delta is TimeSpan delta)
-        {
-            return delta;
-        }
-
-        if (retryAfter.Date is DateTimeOffset date)
-        {
-            var diff = date - DateTimeOffset.UtcNow;
-            return diff > TimeSpan.Zero ? diff : TimeSpan.Zero;
-        }
-
-        return TimeSpan.Zero;
-    }
-
     private JsonPatchOperation RelationOperation(string rel, int targetId) => new()
     {
         Op = "add",
@@ -392,7 +370,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 
             if (IsTransientStatus(response.StatusCode))
             {
-                return (null, GetRetryAfter(response));
+                return (null, RetryAfterHeader.Read(response) ?? TimeSpan.Zero);
             }
 
             response.EnsureSuccessStatusCode();

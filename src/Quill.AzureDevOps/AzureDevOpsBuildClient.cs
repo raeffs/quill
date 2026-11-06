@@ -31,7 +31,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        ThrowIfFailed(response);
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
@@ -270,6 +270,28 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
                 Path = definition.Path,
             })
             .ToList();
+    }
+
+    private static void ThrowIfFailed(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode || RetryAfterHeader.Read(response) is not TimeSpan retryAfter)
+        {
+            response.EnsureSuccessStatusCode();
+            return;
+        }
+
+        string message;
+        try
+        {
+            response.EnsureSuccessStatusCode();
+            return;
+        }
+        catch (HttpRequestException exception)
+        {
+            message = exception.Message;
+        }
+
+        throw new RetryAfterHttpRequestException(message, response.StatusCode, retryAfter);
     }
 
     // Auth, throttling and 5xx stay plain HTTP failures: the server did not
