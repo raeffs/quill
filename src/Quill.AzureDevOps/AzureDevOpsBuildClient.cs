@@ -274,24 +274,25 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
     private static void ThrowIfFailed(HttpResponseMessage response)
     {
-        if (response.IsSuccessStatusCode || RetryAfterHeader.Read(response) is not TimeSpan retryAfter)
+        if (response.IsSuccessStatusCode)
         {
-            response.EnsureSuccessStatusCode();
             return;
         }
 
-        string message;
+        var retryAfter = RetryAfterHeader.Read(response);
+        if (retryAfter is null)
+        {
+            response.EnsureSuccessStatusCode();
+        }
+
         try
         {
             response.EnsureSuccessStatusCode();
-            return;
         }
         catch (HttpRequestException exception)
         {
-            message = exception.Message;
+            throw new RetryAfterHttpRequestException(exception.Message, response.StatusCode, retryAfter!.Value);
         }
-
-        throw new RetryAfterHttpRequestException(message, response.StatusCode, retryAfter);
     }
 
     // Auth, throttling and 5xx stay plain HTTP failures: the server did not
