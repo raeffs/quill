@@ -411,6 +411,18 @@ public class PullRequestLinkedWorkItemResult
     public string? Error { get; init; }
 }
 
+public class PipelineResult
+{
+    [JsonPropertyName("id")]
+    public required int Id { get; init; }
+
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
+
+    [JsonPropertyName("folder")]
+    public required string Folder { get; init; }
+}
+
 public class PipelineRunResult
 {
     [JsonPropertyName("id")]
