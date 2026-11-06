@@ -36,4 +36,10 @@ internal sealed class FakeBuildClient(params Func<PipelineRun>[] polls) : IAzure
 
     public Task<int> GetLogLineCountAsync(int runId, int logId, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<TestRun>> ListTestRunsAsync(int runId, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<TestCaseResult>> ListTestResultsAsync(int testRunId, TestResultQuery query, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
 }

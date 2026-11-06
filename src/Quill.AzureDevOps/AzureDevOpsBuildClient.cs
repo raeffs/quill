@@ -298,6 +298,86 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             .ToList();
     }
 
+    public async Task<IReadOnlyList<TestRun>> ListTestRunsAsync(int runId, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/test/runs?buildUri=vstfs:///Build/Build/{runId.ToString(CultureInfo.InvariantCulture)}&api-version={AzureDevOpsConstants.ApiVersion}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.TestRunListResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize test run list response.");
+
+        return dto.Value
+            .Select(run => new TestRun
+            {
+                Id = run.Id,
+                Name = run.Name,
+                State = run.State,
+                TotalTests = run.TotalTests,
+                PassedTests = run.PassedTests,
+                UnanalyzedTests = run.UnanalyzedTests,
+                NotApplicableTests = run.NotApplicableTests,
+            })
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<TestCaseResult>> ListTestResultsAsync(
+        int testRunId,
+        TestResultQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(testRunId);
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfZero(query.Outcomes.Count, nameof(query));
+
+        var parameters = new List<string>
+        {
+            $"outcomes={string.Join(',', query.Outcomes.Select(Uri.EscapeDataString))}",
+        };
+
+        if (query.Top is { } top)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(top, 1, nameof(query));
+            parameters.Add($"$top={top.ToString(CultureInfo.InvariantCulture)}");
+        }
+
+        if (query.Skip is { } skip)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(skip, nameof(query));
+            parameters.Add($"$skip={skip.ToString(CultureInfo.InvariantCulture)}");
+        }
+
+        parameters.Add($"api-version={AzureDevOpsConstants.ApiVersion}");
+
+        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/test/Runs/{testRunId.ToString(CultureInfo.InvariantCulture)}/results?{string.Join('&', parameters)}";
+
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync(
+            AzureDevOpsJsonContext.Default.TestResultListResponse, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize test result list response.");
+
+        return dto.Value
+            .Select(result => new TestCaseResult
+            {
+                Title = result.TestCaseTitle,
+                Name = result.AutomatedTestName,
+                Storage = result.AutomatedTestStorage,
+                Outcome = result.Outcome,
+                Message = result.ErrorMessage,
+                StackTrace = result.StackTrace,
+                DurationInMs = result.DurationInMs,
+                FailingSince = result.FailingSince?.Date,
+                FailingSinceRunId = result.FailingSince?.Build?.Id,
+            })
+            .ToList();
+    }
+
     private async Task<PipelineRun> UpdateRunAsync(
         int runId,
         string query,

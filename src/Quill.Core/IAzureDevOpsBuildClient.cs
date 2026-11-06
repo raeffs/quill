@@ -21,4 +21,8 @@ public interface IAzureDevOpsBuildClient
     Task<IReadOnlyList<string>> GetLogLinesAsync(int runId, int logId, int? startLine, int? endLine, CancellationToken cancellationToken = default);
 
     Task<int> GetLogLineCountAsync(int runId, int logId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TestRun>> ListTestRunsAsync(int runId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TestCaseResult>> ListTestResultsAsync(int testRunId, TestResultQuery query, CancellationToken cancellationToken = default);
 }
