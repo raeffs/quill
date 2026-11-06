@@ -14,6 +14,8 @@ internal static class PipelineCommand
             LogCommand.Create(serviceProvider),
             TriggerCommand.Create(serviceProvider),
             WaitCommand.Create(serviceProvider),
+            CancelCommand.Create(serviceProvider),
+            RetryCommand.Create(serviceProvider),
         };
 
         return command;

@@ -63,4 +63,16 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("cancel", "0")]
+    [InlineData("cancel", "-1")]
+    [InlineData("retry", "0")]
+    [InlineData("retry", "abc")]
+    public async Task InvokeAsync_PipelineCancelRetryBadInput_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pipeline", .. args], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }
