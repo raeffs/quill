@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
+using Quill.Core;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -72,6 +73,7 @@ public sealed class WiCreateTagsTests : IDisposable
             .AddSingleton(new QuillConfig { ServerUrl = ServerUrl, Collection = Collection, Project = Project })
             .AddSingleton(httpClient)
             .AddSingleton(new AzureDevOpsClient(httpClient, ServerUrl, Collection, Project))
+            .AddSingleton<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>())
             .BuildServiceProvider();
         Console.SetOut(_output);
 

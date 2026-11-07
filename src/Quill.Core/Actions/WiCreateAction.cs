@@ -3,19 +3,19 @@ using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
 
-namespace Quill.Core;
+namespace Quill.Core.Actions;
 
-public static class WorkItemCreator
+public static class WiCreateAction
 {
-    public static async Task<WorkItemCreateOutcome> CreateAsync(
-        IAzureDevOpsClient client, QuillConfig config, WorkItemCreateRequest request, ILogger? logger = null)
+    public static async Task<ViewResult> RunAsync(
+        IAzureDevOpsClient client, QuillConfig config, ILogger logger, WorkItemCreateRequest request)
     {
         var parent = await client.GetWorkItemAsync(request.ParentId);
 
         var validation = ParentValidator.ValidateType(request.Type, parent);
         if (!validation.IsValid)
         {
-            return new WorkItemCreateOutcome(validation, null);
+            throw new InvalidRequestException(string.Join("; ", validation.Errors));
         }
 
         string? descriptionHtml = null;
@@ -49,6 +49,6 @@ public static class WorkItemCreator
             : (await MarkdownConverter.ToMarkdownAsync(
                 created.Description, config.ServerUrl, config.Collection, config.Project, client, logger)).TrimEnd();
 
-        return new WorkItemCreateOutcome(validation, ViewResultBuilder.Build(created, body, children: null));
+        return ViewResultBuilder.Build(created, body, children: null);
     }
 }

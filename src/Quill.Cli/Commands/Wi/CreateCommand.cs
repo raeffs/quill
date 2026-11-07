@@ -1,9 +1,8 @@
 using System.CommandLine;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Models;
 using Quill.Core.Validation;
 
@@ -74,9 +73,9 @@ internal static class CreateCommand
             predecessorOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
-            await ExecuteAsync(
+            return ExecuteAsync(
                 serviceProvider,
                 WorkItemHierarchy.CanonicalChildType(parseResult.GetValue(typeOption)!)!,
                 parseResult.GetValue(titleOption)!,
@@ -91,7 +90,7 @@ internal static class CreateCommand
         return command;
     }
 
-    private static async Task ExecuteAsync(
+    private static Task ExecuteAsync(
         IServiceProvider serviceProvider,
         string type,
         string title,
@@ -102,43 +101,26 @@ internal static class CreateCommand
         IReadOnlyList<int> predecessors,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var normalizedTags = WorkItemTags.Normalize(tags);
-            var validatedPredecessors = WorkItemPredecessors.Validate(predecessors);
-
-            var description = await ReadDescriptionAsync(descriptionFile, cancellationToken);
-            if (description is null && descriptionFile is not null)
+        return CommandHelpers.RunAsync(
+            async ct =>
             {
-                Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = $"File not found: {descriptionFile}", Code = 3 },
-                    CommandHelpers.Context.ErrorResult));
-                Environment.ExitCode = 3;
-                return;
-            }
+                var normalizedTags = WorkItemTags.Normalize(tags);
+                var validatedPredecessors = WorkItemPredecessors.Validate(predecessors);
 
-            var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create");
-            var config = serviceProvider.GetRequiredService<QuillConfig>();
-            var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
+                var description = await ReadDescriptionAsync(descriptionFile, ct);
+                if (description is null && descriptionFile is not null)
+                {
+                    throw new FileNotFoundException($"File not found: {descriptionFile}");
+                }
 
-            var outcome = await WorkItemCreator.CreateAsync(
-                client, config, new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags, validatedPredecessors), logger);
-
-            if (outcome.Created is null)
-            {
-                var errorMsg = string.Join("; ", outcome.Validation.Errors);
-                Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = errorMsg, Code = 1 }, CommandHelpers.Context.ErrorResult));
-                Environment.ExitCode = 1;
-                return;
-            }
-
-            Console.WriteLine(JsonSerializer.Serialize(outcome.Created, CommandHelpers.Context.ViewResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
+                return await WiCreateAction.RunAsync(
+                    serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
+                    serviceProvider.GetRequiredService<QuillConfig>(),
+                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create"),
+                    new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags, validatedPredecessors));
+            },
+            CommandHelpers.Context.ViewResult,
+            cancellationToken);
     }
 
     private static async Task<string?> ReadDescriptionAsync(string? path, CancellationToken cancellationToken)

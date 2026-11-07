@@ -1,5 +1,3 @@
-using Quill.Core.Validation;
-
 namespace Quill.Core.Models;
 
 public sealed record WorkItemCreateRequest(
@@ -10,5 +8,3 @@ public sealed record WorkItemCreateRequest(
     string? Assignee,
     IReadOnlyList<string>? Tags = null,
     IReadOnlyList<int>? Predecessors = null);
-
-public sealed record WorkItemCreateOutcome(ValidationResult Validation, ViewResult? Created);
