@@ -13,4 +13,6 @@ public interface IAzureDevOpsClient
     Task<int> CreateWorkItemAsync(WorkItemCreatePatch patch);
 
     Task<IReadOnlyList<WorkItemComment>> GetCommentsAsync(int id, int? limit = null, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<int>> QueryByWiqlAsync(string wiql, int top, CancellationToken cancellationToken = default);
 }

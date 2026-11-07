@@ -1,8 +1,7 @@
 using System.CommandLine;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 
 namespace Quill.Cli.Commands.Wi;
 
@@ -47,48 +46,25 @@ internal static class ListCommand
             limitOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
-            var title = parseResult.GetValue(titleOption);
-            var assignee = parseResult.GetValue(assigneeOption);
-            var states = parseResult.GetValue(stateOption) ?? [];
-            var types = parseResult.GetValue(typeOption) ?? [];
-            var limit = parseResult.GetValue(limitOption);
-            await ExecuteAsync(serviceProvider, title, assignee, states, types, limit, cancellationToken);
+            var request = new WiListRequest(
+                parseResult.GetValue(titleOption),
+                parseResult.GetValue(assigneeOption),
+                parseResult.GetValue(stateOption) ?? [],
+                parseResult.GetValue(typeOption) ?? [],
+                parseResult.GetValue(limitOption));
+
+            return CommandHelpers.RunAsync(
+                ct => WiListAction.RunAsync(
+                    serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
+                    serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
+                    request,
+                    ct),
+                CommandHelpers.Context.ListSearchResult,
+                cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        string? title,
-        string? assignee,
-        IReadOnlyList<string> states,
-        IReadOnlyList<string> types,
-        int limit,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var (wiql, top) = WiqlBuilder.Build(title, assignee, states, types, limit);
-
-            var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
-
-            var ids = await client.QueryByWiqlAsync(wiql, top, cancellationToken);
-            var batch = await client.FetchAsync(ids, cancellationToken);
-
-            var byId = batch.Items.ToDictionary(i => i.Id);
-            var results = ids
-                .Where(byId.ContainsKey)
-                .Select(id => SearchResultBuilder.Build(byId[id]))
-                .ToList();
-
-            Console.WriteLine(JsonSerializer.Serialize(results, CommandHelpers.Context.ListSearchResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
