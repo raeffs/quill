@@ -1,8 +1,7 @@
 using System.CommandLine;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pr;
@@ -57,73 +56,42 @@ internal static class CreateCommand
             workItemOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
-            await ExecuteAsync(
-                serviceProvider,
-                parseResult.GetValue(repoOption)!,
-                parseResult.GetValue(sourceBranchOption)!,
-                parseResult.GetValue(titleOption)!,
-                parseResult.GetValue(targetBranchOption),
-                parseResult.GetValue(descriptionFileOption),
-                parseResult.GetValue(workItemOption) ?? [],
+            var repo = parseResult.GetValue(repoOption)!;
+            var sourceBranch = parseResult.GetValue(sourceBranchOption)!;
+            var title = parseResult.GetValue(titleOption)!;
+            var targetBranch = parseResult.GetValue(targetBranchOption);
+            var descriptionFile = parseResult.GetValue(descriptionFileOption);
+            var workItemIds = parseResult.GetValue(workItemOption) ?? [];
+
+            return CommandHelpers.RunAsync(
+                async ct =>
+                {
+                    var description = await ReadDescriptionAsync(descriptionFile, ct);
+                    if (description is null && descriptionFile is not null)
+                    {
+                        throw new FileNotFoundException($"File not found: {descriptionFile}");
+                    }
+
+                    return await PrCreateAction.RunAsync(
+                        serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
+                        new PullRequestCreateRequest
+                        {
+                            Repo = repo,
+                            SourceBranch = sourceBranch,
+                            Title = title,
+                            TargetBranch = targetBranch,
+                            Description = description,
+                            WorkItemIds = workItemIds,
+                        },
+                        ct);
+                },
+                CommandHelpers.Context.PullRequestViewResult,
                 cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        string repo,
-        string sourceBranch,
-        string title,
-        string? targetBranch,
-        string? descriptionFile,
-        IReadOnlyList<int> workItemIds,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var description = await ReadDescriptionAsync(descriptionFile, cancellationToken);
-            if (description is null && descriptionFile is not null)
-            {
-                Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = $"File not found: {descriptionFile}", Code = 3 },
-                    CommandHelpers.Context.ErrorResult));
-                Environment.ExitCode = 3;
-                return;
-            }
-
-            var pullRequestClient = serviceProvider.GetRequiredService<AzureDevOpsPullRequestClient>();
-
-            var created = await pullRequestClient.CreateAsync(
-                new PullRequestCreateRequest
-                {
-                    Repo = repo,
-                    SourceBranch = sourceBranch,
-                    Title = title,
-                    TargetBranch = targetBranch,
-                    Description = description,
-                    WorkItemIds = workItemIds,
-                },
-                cancellationToken);
-
-            // The author is not a reviewer and a draft gains no policy-required reviewer, so myVote
-            // and myIsRequired are null whatever the current user is. That saves the identity call.
-            var result = PullRequestViewResultBuilder.Build(
-                created,
-                currentUserId: string.Empty,
-                markdownDescription: created.Description,
-                workItems: null,
-                threads: null);
-
-            Console.WriteLine(JsonSerializer.Serialize(result, CommandHelpers.Context.PullRequestViewResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 
     private static async Task<string?> ReadDescriptionAsync(string? path, CancellationToken cancellationToken)
