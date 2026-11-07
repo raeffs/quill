@@ -6,13 +6,14 @@ using AngleSharp.Dom;
 using Markdig;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Quill.Core.Models;
 using ReverseMarkdown;
 
 namespace Quill.Core.Markdown;
 
 public static partial class MarkdownConverter
 {
-    public static async Task<(string Html, List<int> WorkItemLinkIds)> ToHtmlAsync(
+    public static Task<(string Html, List<int> WorkItemLinkIds)> ToHtmlAsync(
         string markdown,
         string serverUrl,
         string collection,
@@ -21,36 +22,45 @@ public static partial class MarkdownConverter
         ILogger? logger = null)
     {
         logger ??= NullLogger.Instance;
+        return ToHtmlAsync(markdown, serverUrl, collection, project, ResolveEach(client, (ex, id) =>
+            logger.LogWarning(ex, "Failed to fetch work item {WorkItemId} for link resolution; keeping original link text", id)));
+    }
+
+    public static Task<string> ToMarkdownAsync(
+        string html,
+        string serverUrl,
+        string collection,
+        string project,
+        IAzureDevOpsClient? client = null,
+        ILogger? logger = null)
+    {
+        logger ??= NullLogger.Instance;
+        return ToMarkdownAsync(html, serverUrl, collection, project, ResolveEach(client, (ex, id) =>
+            logger.LogWarning(ex, "Failed to fetch work item {WorkItemId} for link resolution; falling back to #{WorkItemId}", id, id)));
+    }
+
+    internal static async Task<(string Html, List<int> WorkItemLinkIds)> ToHtmlAsync(
+        string markdown,
+        string serverUrl,
+        string collection,
+        string project,
+        Func<IReadOnlyCollection<int>, Task<IReadOnlyDictionary<int, WorkItem>>> resolve)
+    {
         var linkIds = new List<int>();
         var baseUrl = $"{serverUrl.TrimEnd('/')}/{collection}/{project}/_workitems/edit";
 
         foreach (Match match in WorkItemLinkRegex().Matches(markdown))
         {
-            linkIds.Add(int.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture));
+            linkIds.Add(int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
         }
 
-        var workItemTexts = new Dictionary<int, string>();
-        if (client is not null)
-        {
-            foreach (var id in linkIds)
-            {
-                try
-                {
-                    var wi = await client.GetWorkItemAsync(id);
-                    workItemTexts[id] = $"{wi.Type} {wi.Id}: {wi.Title}";
-                }
-                catch (HttpRequestException ex)
-                {
-                    logger.LogWarning(ex, "Failed to fetch work item {WorkItemId} for link resolution; keeping original link text", id);
-                }
-            }
-        }
+        var workItems = await ResolveAsync(linkIds, resolve);
 
         var rewritten = WorkItemLinkRegex().Replace(markdown, match =>
         {
             var originalText = match.Groups[1].Value;
             var id = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            var linkText = workItemTexts.GetValueOrDefault(id, originalText);
+            var linkText = workItems.TryGetValue(id, out var wi) ? $"{wi.Type} {wi.Id}: {wi.Title}" : originalText;
             return $"[{linkText}]({baseUrl}/{id})";
         });
 
@@ -87,15 +97,13 @@ public static partial class MarkdownConverter
         return (html, linkIds);
     }
 
-    public static async Task<string> ToMarkdownAsync(
+    internal static async Task<string> ToMarkdownAsync(
         string html,
         string serverUrl,
         string collection,
         string project,
-        IAzureDevOpsClient? client = null,
-        ILogger? logger = null)
+        Func<IReadOnlyCollection<int>, Task<IReadOnlyDictionary<int, WorkItem>>> resolve)
     {
-        logger ??= NullLogger.Instance;
         html = await ConvertCodeDivsToPreCodeAsync(html);
         html = await PreserveTrailingTextSpaceBeforeNestedBlockAsync(html);
         var converter = new ReverseMarkdown.Converter(new ReverseMarkdown.Config { GithubFlavored = true });
@@ -118,35 +126,57 @@ public static partial class MarkdownConverter
         var pattern = $@"\[((?:[^\[\]]|\[[^\]]*\])+)\]\({serverUrlEscaped}/[^/]+/_workitems/edit/(\d+)\)";
         var regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(5));
 
-        var workItemTexts = new Dictionary<int, string>();
-        if (client is not null)
-        {
-            foreach (Match match in regex.Matches(markdown))
-            {
-                var id = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-                if (!workItemTexts.ContainsKey(id))
-                {
-                    try
-                    {
-                        var wi = await client.GetWorkItemAsync(id);
-                        workItemTexts[id] = $"{wi.Type}: {wi.Title}";
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        logger.LogWarning(ex, "Failed to fetch work item {WorkItemId} for link resolution; falling back to #{WorkItemId}", id, id);
-                    }
-                }
-            }
-        }
+        var linkIds = regex.Matches(markdown)
+            .Select(match => int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture))
+            .ToList();
+        var workItems = await ResolveAsync(linkIds, resolve);
 
         markdown = regex.Replace(markdown, match =>
         {
             var id = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-            var linkText = workItemTexts.GetValueOrDefault(id, $"#{id}");
+            var linkText = workItems.TryGetValue(id, out var wi) ? $"{wi.Type}: {wi.Title}" : $"#{id}";
             return $"[{linkText}](#{id})";
         });
 
         return markdown;
+    }
+
+    private static async Task<IReadOnlyDictionary<int, WorkItem>> ResolveAsync(
+        List<int> linkIds,
+        Func<IReadOnlyCollection<int>, Task<IReadOnlyDictionary<int, WorkItem>>> resolve)
+    {
+        var distinctIds = linkIds.Distinct().ToList();
+        return distinctIds.Count == 0
+            ? new Dictionary<int, WorkItem>()
+            : await resolve(distinctIds);
+    }
+
+    private static Func<IReadOnlyCollection<int>, Task<IReadOnlyDictionary<int, WorkItem>>> ResolveEach(
+        IAzureDevOpsClient? client,
+        Action<HttpRequestException, int> onFailure)
+    {
+        return async ids =>
+        {
+            var workItems = new Dictionary<int, WorkItem>();
+            if (client is null)
+            {
+                return workItems;
+            }
+
+            foreach (var id in ids)
+            {
+                try
+                {
+                    workItems[id] = await client.GetWorkItemAsync(id);
+                }
+                catch (HttpRequestException ex)
+                {
+                    onFailure(ex, id);
+                }
+            }
+
+            return workItems;
+        };
     }
 
     private static async Task<string> ConvertCodeDivsToPreCodeAsync(string html)

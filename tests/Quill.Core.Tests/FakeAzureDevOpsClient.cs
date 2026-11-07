@@ -12,6 +12,8 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
 
     public HashSet<int> BatchFailedIds { get; } = [];
 
+    public Exception? FetchException { get; set; }
+
 #pragma warning disable CA1002, MA0016 // Tests assert on the recorded calls as a list
     public List<string> Calls { get; } = [];
 #pragma warning restore CA1002, MA0016
@@ -101,6 +103,11 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
     public Task<BatchFetchResult> FetchAsync(IReadOnlyList<int> ids, CancellationToken cancellationToken = default)
     {
         Calls.Add(string.Create(CultureInfo.InvariantCulture, $"Fetch({string.Join(',', ids)})"));
+        if (FetchException is not null)
+        {
+            return Task.FromException<BatchFetchResult>(FetchException);
+        }
+
         return Task.FromResult(new BatchFetchResult
         {
             Items = [.. ids.Where(_workItems.ContainsKey).Select(id => _workItems[id])],

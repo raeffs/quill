@@ -11,12 +11,6 @@ public static class WorkItemDescription
         var (rawHtml, linkIds) = await MarkdownConverter.ToHtmlAsync(
             markdown, config.ServerUrl, config.Collection, config.Project, client, logger);
 
-        var styledHtml = HtmlStyler.ApplyStyles(rawHtml);
-        var sanitizer = new Ganss.Xss.HtmlSanitizer();
-        sanitizer.AllowedAttributes.Add("style");
-        sanitizer.AllowedAttributes.Add("data-vss-mention");
-        sanitizer.AllowedAttributes.Add("data-lang");
-
-        return (sanitizer.Sanitize(styledHtml), linkIds);
+        return (RichText.StyleAndSanitize(rawHtml), linkIds);
     }
 }

@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -34,6 +35,18 @@ public class ServiceWiringTests
         provider.GetRequiredService<IAzureDevOpsPullRequestClient>().ShouldBeOfType<AzureDevOpsPullRequestClient>();
         provider.GetRequiredService<IIdentityClient>().ShouldBeOfType<AzureDevOpsIdentityClient>();
         provider.GetRequiredService<IAzureDevOpsBuildClient>().ShouldBeOfType<AzureDevOpsBuildClient>();
+    }
+
+    [Fact]
+    public void AddQuillServices_ResolvesRichTextOnce()
+    {
+        using var handler = new CapturingHandler();
+        using var provider = BuildProvider(handler);
+
+        var first = provider.GetRequiredService<RichText>();
+        var second = provider.GetRequiredService<RichText>();
+
+        second.ShouldBeSameAs(first);
     }
 
     [Fact]

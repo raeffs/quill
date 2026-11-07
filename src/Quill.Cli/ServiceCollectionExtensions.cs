@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 
 namespace Quill.Cli;
@@ -61,6 +62,8 @@ internal static class ServiceCollectionExtensions
         services.AddTransient<IAzureDevOpsPullRequestClient>(sp => sp.GetRequiredService<AzureDevOpsPullRequestClient>());
         services.AddTransient<IIdentityClient>(sp => sp.GetRequiredService<AzureDevOpsIdentityClient>());
         services.AddTransient<IAzureDevOpsBuildClient>(sp => sp.GetRequiredService<AzureDevOpsBuildClient>());
+
+        services.AddSingleton<RichText>();
 
         return services;
     }

@@ -25,6 +25,12 @@ command parses flags into a request, hands it to the action, and prints what
 comes back. Every command has exactly one action.
 _Avoid_: operation, handler, use case, logic
 
+**Rich text**:
+The HTML Azure DevOps stores in a description or a comment. Quill hands it to
+the agent as markdown and turns markdown back into it, so a linked work item
+names its type and title in both.
+_Avoid_: HTML field, body, content
+
 ## Backlog
 
 **Backlog**:
