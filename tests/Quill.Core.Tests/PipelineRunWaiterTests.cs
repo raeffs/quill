@@ -1,5 +1,6 @@
 using System.Net;
 using Quill.Core.Models;
+using Quill.Tests.Shared.Fakes;
 using Shouldly;
 
 namespace Quill.Core.Tests;
@@ -27,7 +28,7 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var completed = Run("completed", result);
-        var client = new FakeBuildClient(() => completed);
+        var client = new ScriptedBuildClient(() => completed);
         var clock = new FakeWaitClock();
 
         // Act
@@ -35,7 +36,7 @@ public class PipelineRunWaiterTests
 
         // Assert
         run.ShouldBeSameAs(completed);
-        client.GetRunCalls.ShouldBe(1);
+        client.Calls.Count.ShouldBe(1);
         clock.Delays.ShouldBeEmpty();
     }
 
@@ -44,7 +45,7 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var completed = Run("completed", "succeeded");
-        var client = new FakeBuildClient(() => Run("inProgress"), () => Run("inProgress"), () => completed);
+        var client = new ScriptedBuildClient(() => Run("inProgress"), () => Run("inProgress"), () => completed);
         var clock = new FakeWaitClock();
 
         // Act
@@ -52,7 +53,7 @@ public class PipelineRunWaiterTests
 
         // Assert
         run.ShouldBeSameAs(completed);
-        client.GetRunCalls.ShouldBe(3);
+        client.Calls.Count.ShouldBe(3);
         clock.Delays.ShouldBe([Ten, Ten]);
     }
 
@@ -61,21 +62,21 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var completed = Run("completed", "canceled");
-        var client = new FakeBuildClient(() => Run("cancelling"), () => completed);
+        var client = new ScriptedBuildClient(() => Run("cancelling"), () => completed);
 
         // Act
         var run = await new PipelineRunWaiter(client, new FakeWaitClock()).WaitAsync(4202, TimeSpan.FromSeconds(600), TestContext.Current.CancellationToken);
 
         // Assert
         run.ShouldBeSameAs(completed);
-        client.GetRunCalls.ShouldBe(2);
+        client.Calls.Count.ShouldBe(2);
     }
 
     [Fact]
     public async Task WaitAsync_Timeout_ReturnsTheRowOfTheLastPoll()
     {
         // Arrange
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => Run("inProgress", buildNumber: "p1"),
             () => Run("inProgress", buildNumber: "p2"),
             () => Run("inProgress", buildNumber: "p3"),
@@ -88,7 +89,7 @@ public class PipelineRunWaiterTests
         // Assert
         run.Status.ShouldBe("inProgress");
         run.BuildNumber.ShouldBe("p4");
-        client.GetRunCalls.ShouldBe(4);
+        client.Calls.Count.ShouldBe(4);
         clock.Delays.ShouldBe([Ten, Ten, TimeSpan.FromSeconds(5)]);
     }
 
@@ -96,7 +97,7 @@ public class PipelineRunWaiterTests
     public async Task WaitAsync_CompletesAtTheDeadline_ReturnsTheCompletedRow()
     {
         // Arrange
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => Run("inProgress"),
             () => Run("inProgress"),
             () => Run("inProgress"),
@@ -107,7 +108,7 @@ public class PipelineRunWaiterTests
 
         // Assert
         run.Status.ShouldBe("completed");
-        client.GetRunCalls.ShouldBe(4);
+        client.Calls.Count.ShouldBe(4);
     }
 
     [Theory]
@@ -116,7 +117,7 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var completed = Run("completed", "succeeded");
-        var client = new FakeBuildClient(() => Run("inProgress"), () => throw failure, () => completed);
+        var client = new ScriptedBuildClient(() => Run("inProgress"), () => throw failure, () => completed);
         var clock = new FakeWaitClock();
 
         // Act
@@ -124,7 +125,7 @@ public class PipelineRunWaiterTests
 
         // Assert
         run.ShouldBeSameAs(completed);
-        client.GetRunCalls.ShouldBe(3);
+        client.Calls.Count.ShouldBe(3);
         clock.Delays.ShouldBe([Ten, Ten]);
     }
 
@@ -133,7 +134,7 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var completed = Run("completed", "succeeded");
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => throw new HttpRequestException("boom", null, HttpStatusCode.ServiceUnavailable),
             () => completed);
 
@@ -142,14 +143,14 @@ public class PipelineRunWaiterTests
 
         // Assert
         run.ShouldBeSameAs(completed);
-        client.GetRunCalls.ShouldBe(2);
+        client.Calls.Count.ShouldBe(2);
     }
 
     [Fact]
     public async Task WaitAsync_RetryAfterLongerThanInterval_WaitsRetryAfter()
     {
         // Arrange
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => throw new RetryAfterHttpRequestException("slow down", HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(30)),
             () => Run("completed", "succeeded"));
         var clock = new FakeWaitClock();
@@ -165,7 +166,7 @@ public class PipelineRunWaiterTests
     public async Task WaitAsync_RetryAfterShorterThanInterval_WaitsInterval()
     {
         // Arrange
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => throw new RetryAfterHttpRequestException("unavailable", HttpStatusCode.ServiceUnavailable, TimeSpan.FromSeconds(3)),
             () => Run("completed", "succeeded"));
         var clock = new FakeWaitClock();
@@ -181,7 +182,7 @@ public class PipelineRunWaiterTests
     public async Task WaitAsync_RetryAfterPastDeadline_StopsAtDeadline()
     {
         // Arrange
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => Run("inProgress"),
             () => throw new RetryAfterHttpRequestException("slow down", HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(60)),
             () => Run("inProgress", buildNumber: "last"));
@@ -193,7 +194,7 @@ public class PipelineRunWaiterTests
         // Assert
         clock.Delays.ShouldBe([Ten, TimeSpan.FromSeconds(5)]);
         run.BuildNumber.ShouldBe("last");
-        client.GetRunCalls.ShouldBe(3);
+        client.Calls.Count.ShouldBe(3);
     }
 
     [Theory]
@@ -205,7 +206,7 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var failure = new HttpRequestException("rejected", null, status);
-        var client = new FakeBuildClient(() => Run("inProgress"), () => throw failure);
+        var client = new ScriptedBuildClient(() => Run("inProgress"), () => throw failure);
         var clock = new FakeWaitClock();
 
         // Act
@@ -214,7 +215,7 @@ public class PipelineRunWaiterTests
 
         // Assert
         thrown.ShouldBeSameAs(failure);
-        client.GetRunCalls.ShouldBe(2);
+        client.Calls.Count.ShouldBe(2);
         clock.Delays.ShouldBe([Ten]);
     }
 
@@ -222,7 +223,7 @@ public class PipelineRunWaiterTests
     public async Task WaitAsync_EveryPollFailsUntilTimeout_ThrowsNamingTheRun()
     {
         // Arrange
-        var client = new FakeBuildClient(
+        var client = new ScriptedBuildClient(
             () => throw new HttpRequestException("Response status code does not indicate success: 503 (Service Unavailable).", null, HttpStatusCode.ServiceUnavailable));
 
         // Act
@@ -232,7 +233,7 @@ public class PipelineRunWaiterTests
         // Assert
         thrown.Message.ShouldStartWith("No poll of run 4202 succeeded before the timeout: ");
         thrown.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
-        client.GetRunCalls.ShouldBe(3);
+        client.Calls.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -241,14 +242,14 @@ public class PipelineRunWaiterTests
         // Arrange
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
-        var client = new FakeBuildClient(() => throw new TaskCanceledException());
+        var client = new ScriptedBuildClient(() => throw new TaskCanceledException());
 
         // Act
         var act = () => new PipelineRunWaiter(client, new FakeWaitClock()).WaitAsync(4202, TimeSpan.FromSeconds(600), cts.Token);
 
         // Assert
         await Should.ThrowAsync<OperationCanceledException>(act);
-        client.GetRunCalls.ShouldBe(1);
+        client.Calls.Count.ShouldBe(1);
     }
 
     [Theory]
@@ -257,14 +258,14 @@ public class PipelineRunWaiterTests
     public async Task WaitAsync_TimeoutZeroOrNegative_Throws(int seconds)
     {
         // Arrange
-        var client = new FakeBuildClient(() => Run("completed", "succeeded"));
+        var client = new ScriptedBuildClient(() => Run("completed", "succeeded"));
 
         // Act
         var act = () => new PipelineRunWaiter(client, new FakeWaitClock()).WaitAsync(4202, TimeSpan.FromSeconds(seconds), TestContext.Current.CancellationToken);
 
         // Assert
         await Should.ThrowAsync<ArgumentOutOfRangeException>(act);
-        client.GetRunCalls.ShouldBe(0);
+        client.Calls.Count.ShouldBe(0);
     }
 
     private static PipelineRun Run(string status, string? result = null, string buildNumber = "20260101.1") => new()

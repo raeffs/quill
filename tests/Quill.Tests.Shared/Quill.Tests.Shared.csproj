@@ -13,4 +13,8 @@
     <EmbeddedResource Include="Fixtures\*.json" LogicalName="%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Quill.Core\Quill.Core.csproj" />
+  </ItemGroup>
+
 </Project>

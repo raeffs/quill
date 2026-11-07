@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Quill.Cli\Quill.Cli.csproj" />
+    <ProjectReference Include="..\Quill.Tests.Shared\Quill.Tests.Shared.csproj" />
   </ItemGroup>
 
 </Project>

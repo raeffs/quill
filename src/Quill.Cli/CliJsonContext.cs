@@ -20,7 +20,7 @@ namespace Quill.Cli;
 [JsonSerializable(typeof(PipelineRunResult))]
 [JsonSerializable(typeof(PipelineLogResult))]
 [JsonSerializable(typeof(List<PipelineRunResult>))]
-[JsonSerializable(typeof(List<PipelineTestRunResult>))]
+[JsonSerializable(typeof(IReadOnlyList<PipelineTestRunResult>), TypeInfoPropertyName = "ListPipelineTestRunResult")]
 [JsonSerializable(typeof(TreeNode))]
 internal sealed partial class CliJsonContext : JsonSerializerContext
 {
