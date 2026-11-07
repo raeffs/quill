@@ -20,5 +20,5 @@ public class WorkItemsBatchResponse
     public int Count { get; init; }
 
     [JsonPropertyName("value")]
-    public IReadOnlyList<WorkItemResponse> Value { get; init; } = Array.Empty<WorkItemResponse>();
+    public IReadOnlyList<WorkItemResponse?> Value { get; init; } = Array.Empty<WorkItemResponse?>();
 }

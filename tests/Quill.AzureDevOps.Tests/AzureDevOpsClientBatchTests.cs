@@ -88,6 +88,29 @@ public class AzureDevOpsClientBatchTests
     }
 
     [Fact]
+    public async Task FetchAsync_ErrorPolicyOmit_NullEntriesAreSkipped()
+    {
+        var responseJson = """
+        {
+          "count": 2,
+          "value": [
+            { "id": 10, "fields": { "System.WorkItemType": "Feature", "System.Title": "ten", "System.State": "New" } },
+            null
+          ]
+        }
+        """;
+
+        using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
+        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
+
+        result.Items.Select(i => i.Id).ShouldBe([10]);
+        result.BatchFailedIds.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task FetchAsync_MoreThan200Ids_SplitsIntoSequentialSubBatches()
     {
         var ids = Enumerable.Range(1, 250).ToArray();

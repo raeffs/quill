@@ -363,6 +363,11 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
                 var items = new List<WorkItem>(dto.Value.Count);
                 foreach (var itemDto in dto.Value)
                 {
+                    if (itemDto is null)
+                    {
+                        continue;
+                    }
+
                     items.Add(MapToWorkItem(itemDto));
                 }
                 return (items, TimeSpan.Zero);
