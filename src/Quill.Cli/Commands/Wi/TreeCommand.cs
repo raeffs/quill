@@ -1,9 +1,7 @@
 using System.CommandLine;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
-using Quill.Core.Models;
+using Quill.Core.Actions;
 
 namespace Quill.Cli.Commands.Wi;
 
@@ -31,41 +29,32 @@ internal static class TreeCommand
             allOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.Validators.Add(result =>
+        {
+            if (!result.GetValue(allOption) && result.GetValue(depthOption) < 1)
+            {
+                result.AddError("--depth must be ≥ 1.");
+            }
+        });
+
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var id = parseResult.GetValue(idArg);
             var depth = parseResult.GetValue(depthOption);
             var all = parseResult.GetValue(allOption);
-            await ExecuteAsync(serviceProvider, id, depth, all, cancellationToken);
+            int? maxDepth = all ? null : depth;
+
+            return CommandHelpers.RunAsync(
+                ct => WiTreeAction.RunAsync(
+                    serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
+                    serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
+                    id,
+                    maxDepth,
+                    ct),
+                CommandHelpers.Context.TreeNode,
+                cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(IServiceProvider serviceProvider, int id, int depth, bool all, CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (!all && depth < 1)
-            {
-                Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = "--depth must be ≥ 1.", Code = 3 }, CommandHelpers.Context.ErrorResult));
-                Environment.ExitCode = 3;
-                return;
-            }
-
-            var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
-
-            var root = await client.GetWorkItemAsync(id);
-
-            int? maxDepth = all ? null : depth;
-            var tree = await TreeBuilder.BuildAsync(root, client, maxDepth, cancellationToken);
-
-            Console.WriteLine(JsonSerializer.Serialize(tree, CommandHelpers.Context.TreeNode));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
