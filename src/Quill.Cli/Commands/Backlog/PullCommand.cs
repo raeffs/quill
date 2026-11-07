@@ -1,9 +1,9 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Quill.Cli;
 using Quill.Core;
 using Quill.Core.Actions.Backlog;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Backlog;
@@ -39,8 +39,7 @@ internal static class PullCommand
             {
                 var outcome = await PullAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
-                    serviceProvider.GetRequiredService<QuillConfig>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Pull"),
+                    serviceProvider.GetRequiredService<RichText>(),
                     id);
 
                 var directory = Path.GetDirectoryName(filePath);

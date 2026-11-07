@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
@@ -11,7 +10,7 @@ public static class PushAction
         IAzureDevOpsClient client,
         IIdentityClient identity,
         QuillConfig config,
-        ILogger logger,
+        RichText richText,
         string fileContent)
     {
         var parsed = FrontmatterParser.Parse(fileContent);
@@ -25,7 +24,7 @@ public static class PushAction
             throw new InvalidRequestException(string.Join("; ", validation.Errors));
         }
 
-        var (html, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
+        var (html, linkIds) = await richText.ToHtmlAsync(parsed.Body);
 
         var predecessorChange = WorkItemPredecessors.Diff(workItem.Predecessors, parsed.Predecessors);
 

@@ -47,6 +47,8 @@ public sealed class BacklogTagsTests : IDisposable
             .AddSingleton(new QuillConfig())
             .AddSingleton<HttpClient>()
             .AddSingleton<IAzureDevOpsClient>(sp => new AzureDevOpsClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ"))
+            .AddSingleton<IWorkItemBatchFetcher>(sp => new AzureDevOpsClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ"))
+            .AddSingleton<RichText>()
             .AddSingleton<IIdentityClient>(sp => new AzureDevOpsIdentityClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL"))
             .BuildServiceProvider();
         Console.SetOut(_output);

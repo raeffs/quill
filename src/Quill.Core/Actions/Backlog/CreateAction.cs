@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
@@ -12,8 +11,7 @@ public static class CreateAction
     public static async Task<BacklogCreateOutcome> RunAsync(
         IAzureDevOpsClient client,
         IIdentityClient identity,
-        QuillConfig config,
-        ILogger logger,
+        RichText richText,
         string fileContent,
         string? assignedTo)
     {
@@ -55,7 +53,7 @@ public static class CreateAction
 
         var assignee = string.IsNullOrWhiteSpace(assignedTo) ? currentUser.DisplayName : assignedTo;
 
-        var (descriptionHtml, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
+        var (descriptionHtml, linkIds) = await richText.ToHtmlAsync(parsed.Body);
 
         var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch(
             parsed.Type,

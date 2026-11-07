@@ -209,6 +209,8 @@ public sealed class BacklogPredecessorsTests : IDisposable
             .AddSingleton(httpClient)
             .AddSingleton(new AzureDevOpsClient(httpClient, ServerUrl, Collection, Project))
             .AddSingleton<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>())
+            .AddSingleton<IWorkItemBatchFetcher>(sp => sp.GetRequiredService<AzureDevOpsClient>())
+            .AddSingleton<RichText>()
             .AddSingleton(new AzureDevOpsIdentityClient(httpClient, ServerUrl, Collection))
             .AddSingleton<IIdentityClient>(sp => sp.GetRequiredService<AzureDevOpsIdentityClient>())
             .BuildServiceProvider();
@@ -236,6 +238,14 @@ public sealed class BacklogPredecessorsTests : IDisposable
                 return RejectPatches
                     ? Json("""{"message": "TF401232: cycle"}""", HttpStatusCode.BadRequest)
                     : Json("""{"id": 1000, "fields": {}}""");
+            }
+
+            if (request.Method == HttpMethod.Post)
+            {
+                using var batch = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
+                var items = batch.RootElement.GetProperty("ids").EnumerateArray()
+                    .Select(i => $$$"""{"id": {{{i.GetInt32()}}}, "fields": {"System.WorkItemType": "Task", "System.Title": "T", "System.State": "New"}}""");
+                return Json($$"""{"value": [{{string.Join(",", items)}}]}""");
             }
 
             var path = request.RequestUri!.AbsolutePath;

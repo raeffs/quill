@@ -1,8 +1,8 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Quill.Core;
 using Quill.Core.Actions.Backlog;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Backlog;
@@ -46,8 +46,7 @@ internal static class CreateCommand
                 var outcome = await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IIdentityClient>(),
-                    serviceProvider.GetRequiredService<QuillConfig>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create"),
+                    serviceProvider.GetRequiredService<RichText>(),
                     content,
                     assignedTo);
 

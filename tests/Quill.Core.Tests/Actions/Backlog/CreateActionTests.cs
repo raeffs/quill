@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Quill.Core.Actions.Backlog;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Quill.Tests.Shared.Fakes;
@@ -29,7 +30,7 @@ public class CreateActionTests
     {
         var client = new FakeAzureDevOpsClient();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, $"---\n{frontmatter}\n---\n\nbody\n", null));
+        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), $"---\n{frontmatter}\n---\n\nbody\n", null));
 
         ex.Message.ShouldBe(message);
         client.Calls.ShouldBeEmpty();
@@ -41,7 +42,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent(assignedToId: "other-user-id"));
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, ValidFile, null));
+        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null));
 
         ex.Message.ShouldBe("Parent work item assignee does not match the current user.");
         client.CreateCall.ShouldBeNull();
@@ -53,7 +54,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        var outcome = await CreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, ValidFile, null);
+        var outcome = await CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null);
 
         outcome.Row.Id.ShouldBe(1000);
         outcome.Row.Title.ShouldBe("T");
@@ -68,7 +69,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        await CreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, ValidFile, "John Roe");
+        await CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "John Roe");
 
         client.CreateCall!.AssignedToId.ShouldBe("John Roe");
     }

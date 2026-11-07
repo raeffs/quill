@@ -22,7 +22,7 @@ public class PullActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(WorkItem(42, "<p>Hello</p>"));
 
-        var outcome = await PullAction.RunAsync(client, Config, NullLogger.Instance, 42);
+        var outcome = await PullAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), 42);
 
         outcome.Id.ShouldBe(42);
         outcome.Title.ShouldBe("Fix login page");
@@ -37,7 +37,7 @@ public class PullActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(WorkItem(43, string.Empty));
 
-        var outcome = await PullAction.RunAsync(client, Config, NullLogger.Instance, 43);
+        var outcome = await PullAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), 43);
 
         outcome.FileContent.ShouldContain("id: 43");
         FrontmatterParser.Parse(outcome.FileContent).Body.ShouldBeEmpty();
