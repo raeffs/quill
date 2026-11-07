@@ -48,7 +48,8 @@ internal static class CreateCommand
                     serviceProvider.GetRequiredService<IIdentityClient>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),
                     serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create"),
-                    new BacklogCreateRequest(content, assignedTo));
+                    content,
+                    assignedTo);
 
                 await File.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
 

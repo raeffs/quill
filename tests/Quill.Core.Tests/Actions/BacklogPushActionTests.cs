@@ -35,6 +35,20 @@ public class BacklogPushActionTests
     }
 
     [Fact]
+    public async Task RunAsync_FileWithTagsKey_SendsTagsAndListsThemInUpdatedFields()
+    {
+        var client = new FakeAzureDevOpsClient();
+        client.Add(WorkItem(5, state: "New"));
+        WorkItemUpdatePatch? seen = null;
+        client.UpdateWorkItem = p => seen = p;
+
+        var row = await BacklogPushAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, "---\nid: 5\ntype: Task\ntitle: T\nparentId: 42\ntags: [a, b]\n---\n\nbody\n");
+
+        seen!.Tags.ShouldBe(["a", "b"]);
+        row.UpdatedFields.ShouldBe(["title", "description", "tags"]);
+    }
+
+    [Fact]
     public async Task RunAsync_InvalidState_ThrowsAndSendsNoUpdate()
     {
         var client = new FakeAzureDevOpsClient();

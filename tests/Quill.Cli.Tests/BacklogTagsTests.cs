@@ -34,24 +34,6 @@ public sealed class BacklogTagsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("tags: []")]
-    [InlineData("tags: [a]")]
-    public void UpdatedFieldsFor_WithTagsKey_ListsTags(string line)
-    {
-        var parsed = FrontmatterParser.Parse($"---\nid: 1\ntitle: T\n{line}\n---\n\nBody\n");
-
-        BacklogPushAction.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description", "tags"]);
-    }
-
-    [Fact]
-    public void UpdatedFieldsFor_WithoutTagsKey_OmitsTags()
-    {
-        var parsed = FrontmatterParser.Parse("---\nid: 1\ntitle: T\n---\n\nBody\n");
-
-        BacklogPushAction.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description"]);
-    }
-
-    [Theory]
     [InlineData("push", "tags: [\"a;b\"]", "must not contain")]
     [InlineData("push", "tags: [\"\"]", "must not be empty")]
     [InlineData("push", "tags: a", "Invalid frontmatter")]
@@ -72,8 +54,6 @@ public sealed class BacklogTagsTests : IDisposable
 
         var exitCode = await CliHost.InvokeAsync(["backlog", command, _path], services);
 
-        // The message matters: the unregistered client also ends in exit 3, so
-        // the code alone would pass even if the tags were never looked at.
         exitCode.ShouldBe(3);
         _output.ToString().ShouldContain(message);
     }

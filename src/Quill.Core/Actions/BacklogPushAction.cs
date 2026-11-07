@@ -7,23 +7,6 @@ namespace Quill.Core.Actions;
 
 public static class BacklogPushAction
 {
-    public static IReadOnlyList<string> UpdatedFieldsFor(ParsedMarkdownFile parsed, bool predecessorsChanged)
-    {
-        var fields = new List<string> { "title", "description" };
-
-        if (parsed.Tags is not null)
-        {
-            fields.Add("tags");
-        }
-
-        if (predecessorsChanged)
-        {
-            fields.Add("predecessors");
-        }
-
-        return fields;
-    }
-
     public static async Task<PushResult> RunAsync(
         IAzureDevOpsClient client,
         IIdentityClient identity,
@@ -72,5 +55,22 @@ public static class BacklogPushAction
             UpdatedFields = UpdatedFieldsFor(parsed, predecessorChange.HasChanges),
             RelationsAdded = newRelations,
         };
+    }
+
+    private static List<string> UpdatedFieldsFor(ParsedMarkdownFile parsed, bool predecessorsChanged)
+    {
+        var fields = new List<string> { "title", "description" };
+
+        if (parsed.Tags is not null)
+        {
+            fields.Add("tags");
+        }
+
+        if (predecessorsChanged)
+        {
+            fields.Add("predecessors");
+        }
+
+        return fields;
     }
 }

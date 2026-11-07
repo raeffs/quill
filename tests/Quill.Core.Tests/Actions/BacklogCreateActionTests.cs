@@ -29,7 +29,7 @@ public class BacklogCreateActionTests
     {
         var client = new FakeAzureDevOpsClient();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, new BacklogCreateRequest($"---\n{frontmatter}\n---\n\nbody\n", null)));
+        var ex = await Should.ThrowAsync<InvalidRequestException>(() => BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, $"---\n{frontmatter}\n---\n\nbody\n", null));
 
         ex.Message.ShouldBe(message);
         client.Calls.ShouldBeEmpty();
@@ -41,7 +41,7 @@ public class BacklogCreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent(assignedToId: "other-user-id"));
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, new BacklogCreateRequest(ValidFile, null)));
+        var ex = await Should.ThrowAsync<InvalidRequestException>(() => BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, ValidFile, null));
 
         ex.Message.ShouldBe("Parent work item assignee does not match the current user.");
         client.CreateCall.ShouldBeNull();
@@ -53,7 +53,7 @@ public class BacklogCreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        var outcome = await BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, new BacklogCreateRequest(ValidFile, null));
+        var outcome = await BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, ValidFile, null);
 
         outcome.Row.Id.ShouldBe(1000);
         outcome.Row.Title.ShouldBe("T");
@@ -68,7 +68,7 @@ public class BacklogCreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        await BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, new BacklogCreateRequest(ValidFile, "John Roe"));
+        await BacklogCreateAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, ValidFile, "John Roe");
 
         client.CreateCall!.AssignedToId.ShouldBe("John Roe");
     }

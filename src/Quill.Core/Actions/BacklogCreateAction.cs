@@ -5,8 +5,6 @@ using Quill.Core.Validation;
 
 namespace Quill.Core.Actions;
 
-public sealed record BacklogCreateRequest(string FileContent, string? AssignedTo);
-
 public sealed record BacklogCreateOutcome(CreateResult Row, string FileContent);
 
 public static class BacklogCreateAction
@@ -16,9 +14,10 @@ public static class BacklogCreateAction
         IIdentityClient identity,
         QuillConfig config,
         ILogger logger,
-        BacklogCreateRequest request)
+        string fileContent,
+        string? assignedTo)
     {
-        var parsed = FrontmatterParser.Parse(request.FileContent);
+        var parsed = FrontmatterParser.Parse(fileContent);
 
         if (parsed.Id != 0)
         {
@@ -54,7 +53,7 @@ public static class BacklogCreateAction
             throw new InvalidRequestException(string.Join("; ", validation.Errors));
         }
 
-        var assignee = string.IsNullOrWhiteSpace(request.AssignedTo) ? currentUser.DisplayName : request.AssignedTo;
+        var assignee = string.IsNullOrWhiteSpace(assignedTo) ? currentUser.DisplayName : assignedTo;
 
         var (descriptionHtml, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
 
