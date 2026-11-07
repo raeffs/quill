@@ -50,7 +50,7 @@ internal static class CreateCommand
                     serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create"),
                     new BacklogCreateRequest(content, assignedTo));
 
-                await File.WriteAllTextAsync(filePath, outcome.FileContent, ct);
+                await File.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
 
                 return outcome.Row;
             },
