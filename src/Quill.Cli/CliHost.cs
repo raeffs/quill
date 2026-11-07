@@ -1,9 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using Quill.Cli.Commands.Backlog;
-using Quill.Cli.Commands.Pipeline;
-using Quill.Cli.Commands.Pr;
-using Quill.Cli.Commands.Wi;
+using Quill.Cli.Commands.Pipelines;
+using Quill.Cli.Commands.PullRequests;
+using Quill.Cli.Commands.WorkItems;
 
 namespace Quill.Cli;
 
