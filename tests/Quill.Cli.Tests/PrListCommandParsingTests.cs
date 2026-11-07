@@ -103,4 +103,16 @@ public class PrListCommandParsingTests
         // Assert
         parseResult.Errors.ShouldNotBeEmpty();
     }
+
+    [Theory]
+    [InlineData("--reviewer", "bob", "--reviewer accepts only '@me' in this release.")]
+    [InlineData("--author", "bob", "--author accepts only '@me' in this release.")]
+    [InlineData("--skip", "-1", "--skip must not be negative.")]
+    [InlineData("--state", "open", "--state must be one of: active, completed, abandoned, all.")]
+    public void Parse_RejectedFlagValue_ProducesTheMessage(string flag, string value, string message)
+    {
+        var parseResult = CliHost.Parse(["pr", "list", flag, value], TestServices.Empty);
+
+        parseResult.Errors.Select(e => e.Message).ShouldContain(message, StringComparer.Ordinal);
+    }
 }
