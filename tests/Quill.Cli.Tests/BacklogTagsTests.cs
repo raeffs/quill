@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using Quill.AzureDevOps;
 using Quill.Cli.Commands.Backlog;
+using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
@@ -58,7 +60,13 @@ public sealed class BacklogTagsTests : IDisposable
     public async Task InvokeAsync_InvalidTags_Returns3BeforeAnyRequest(string command, string line, string message)
     {
         await File.WriteAllTextAsync(_path, $"---\nid: 0\ntype: Task\ntitle: T\nparentId: 1\n{line}\n---\n\nBody\n", TestContext.Current.CancellationToken);
-        using var services = new ServiceCollection().AddLogging().AddSingleton(new QuillConfig()).BuildServiceProvider();
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(new QuillConfig())
+            .AddSingleton<HttpClient>()
+            .AddSingleton<IAzureDevOpsClient>(sp => new AzureDevOpsClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ"))
+            .AddSingleton<IIdentityClient>(sp => new AzureDevOpsIdentityClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL"))
+            .BuildServiceProvider();
         Console.SetOut(_output);
 
         var exitCode = await CliHost.InvokeAsync(["backlog", command, _path], services);
