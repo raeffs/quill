@@ -10,7 +10,7 @@ namespace Quill.Cli;
 [JsonSerializable(typeof(CreateResult))]
 [JsonSerializable(typeof(List<ChildItem>))]
 [JsonSerializable(typeof(List<SearchResult>))]
-[JsonSerializable(typeof(List<CommentResult>))]
+[JsonSerializable(typeof(IReadOnlyList<CommentResult>), TypeInfoPropertyName = "ListCommentResult")]
 [JsonSerializable(typeof(IReadOnlyList<PullRequestResult>), TypeInfoPropertyName = "ListPullRequestResult")]
 [JsonSerializable(typeof(IReadOnlyList<PullRequestRevisionResult>), TypeInfoPropertyName = "ListPullRequestRevisionResult")]
 [JsonSerializable(typeof(IReadOnlyList<PullRequestThreadResult>), TypeInfoPropertyName = "ListPullRequestThreadResult")]
