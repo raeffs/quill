@@ -26,7 +26,7 @@ public sealed class RichText(QuillConfig config, IWorkItemBatchFetcher fetcher, 
         return (StyleAndSanitize(html), linkIds);
     }
 
-    internal static string StyleAndSanitize(string html)
+    private static string StyleAndSanitize(string html)
     {
         var styledHtml = HtmlStyler.ApplyStyles(html);
         var sanitizer = new Ganss.Xss.HtmlSanitizer();

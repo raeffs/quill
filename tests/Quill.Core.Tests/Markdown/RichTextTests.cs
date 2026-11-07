@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
@@ -110,6 +111,33 @@ public class RichTextTests
     }
 
     [Fact]
+    public async Task ToMarkdownAsync_SameMissingItemTwice_LogsOneWarning()
+    {
+        var logger = new CapturingLogger();
+        var richText = new RichText(Config, new FakeAzureDevOpsClient(), logger);
+
+        await richText.ToMarkdownAsync($"<p>See {LinkTo123}.</p>", TestContext.Current.CancellationToken);
+        await richText.ToMarkdownAsync($"<p>Again {LinkTo123}.</p>", TestContext.Current.CancellationToken);
+
+        var entry = logger.Entries.ShouldHaveSingleItem();
+        entry.Level.ShouldBe(LogLevel.Warning);
+        entry.Message.ShouldContain("123");
+    }
+
+    [Fact]
+    public async Task ToMarkdownAsync_AfterFetchException_IsNotFetchedAgain()
+    {
+        var fake = new FakeAzureDevOpsClient { FetchException = new HttpRequestException() };
+        var richText = CreateRichText(fake);
+
+        await richText.ToMarkdownAsync($"<p>See {LinkTo123}.</p>", TestContext.Current.CancellationToken);
+        var second = await richText.ToMarkdownAsync($"<p>Again {LinkTo123}.</p>", TestContext.Current.CancellationToken);
+
+        fake.Calls.ShouldBe(["Fetch(123)"]);
+        second.ShouldContain("[#123](#123)");
+    }
+
+    [Fact]
     public async Task ToHtmlAsync_ThenToMarkdownAsync_SharesTheCache()
     {
         var fake = new FakeAzureDevOpsClient();
@@ -190,8 +218,6 @@ public class RichTextTests
 
         html.ShouldContain(
             """data-vss-mention="version:1.0" href="https://myserver.com/tfs/DefaultCollection/MyProject/_workitems/edit/456""");
-
-        // An unknown item keeps the original text
         html.ShouldContain(">auth work</a>");
         linkIds.ShouldBe([456], ignoreOrder: true);
     }
@@ -316,7 +342,6 @@ public class RichTextTests
 
         var markdown = await CreateRichText().ToMarkdownAsync(html, TestContext.Current.CancellationToken);
 
-        // An unknown item falls back to #{id}
         markdown.ShouldContain("[#456](#456)");
     }
 
@@ -372,7 +397,6 @@ public class RichTextTests
 
         var markdown = await CreateRichText().ToMarkdownAsync(html, TestContext.Current.CancellationToken);
 
-        // An unknown item falls back to #{id}
         markdown.ShouldContain("[#456](#456)");
     }
 
@@ -587,4 +611,18 @@ public class RichTextTests
         State = "New",
         AssignedToId = string.Empty,
     };
+
+    private sealed class CapturingLogger : ILogger<RichText>
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            Entries.Add((logLevel, formatter(state, exception)));
+    }
 }

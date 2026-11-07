@@ -22,7 +22,7 @@ public class ViewActionTests
     {
         var (prs, workItems, identity) = Clients(workItemRefs: []);
 
-        var row = await ViewAction.RunAsync(prs, workItems,  identity, new RichText(Config, workItems, NullLogger<RichText>.Instance), 12, false, TestContext.Current.CancellationToken);
+        var row = await ViewAction.RunAsync(prs, workItems, identity, new RichText(Config, workItems, NullLogger<RichText>.Instance), 12, false, TestContext.Current.CancellationToken);
 
         row.Threads.ShouldBeNull();
         prs.Calls.ShouldBe(["GetById(12)", "GetWorkItemRefs(12,repo)"]);
@@ -34,7 +34,7 @@ public class ViewActionTests
         var (prs, workItems, identity) = Clients(workItemRefs: []);
         prs.GetThreads = (_, _) => [];
 
-        var row = await ViewAction.RunAsync(prs, workItems,  identity, new RichText(Config, workItems, NullLogger<RichText>.Instance), 12, true, TestContext.Current.CancellationToken);
+        var row = await ViewAction.RunAsync(prs, workItems, identity, new RichText(Config, workItems, NullLogger<RichText>.Instance), 12, true, TestContext.Current.CancellationToken);
 
         row.Threads.ShouldNotBeNull();
         prs.Calls.ShouldBe(["GetById(12)", "GetWorkItemRefs(12,repo)", "GetThreads(12,repo)"]);
@@ -47,7 +47,7 @@ public class ViewActionTests
         workItems.Add(WorkItem(201));
         workItems.BatchFailedIds.Add(202);
 
-        var row = await ViewAction.RunAsync(prs, workItems,  identity, new RichText(Config, workItems, NullLogger<RichText>.Instance), 12, false, TestContext.Current.CancellationToken);
+        var row = await ViewAction.RunAsync(prs, workItems, identity, new RichText(Config, workItems, NullLogger<RichText>.Instance), 12, false, TestContext.Current.CancellationToken);
 
         row.WorkItems.ShouldNotBeNull();
         row.WorkItems.Select(w => w.Id).ShouldBe([201, 202, 203]);
