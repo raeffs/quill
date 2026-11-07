@@ -1,10 +1,12 @@
+using Quill.Core;
+
 namespace Quill.AzureDevOps;
 
 public static class AzureDevOpsConstants
 {
     public const string ApiVersion = "7.1-preview";
-    public const string RelatedLinkType = "System.LinkTypes.Related";
-    public const string PredecessorLinkType = "System.LinkTypes.Dependency-Reverse";
+    public const string RelatedLinkType = WorkItemLinkTypes.Related;
+    public const string PredecessorLinkType = WorkItemLinkTypes.Predecessor;
     public const string HierarchyForwardLinkType = "System.LinkTypes.Hierarchy-Forward";
     public const string FieldTitle = "System.Title";
     public const string FieldDescription = "System.Description";

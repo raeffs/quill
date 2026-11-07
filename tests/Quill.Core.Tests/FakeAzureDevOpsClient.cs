@@ -16,6 +16,8 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
     public List<string> Calls { get; } = [];
 #pragma warning restore CA1002, MA0016
 
+    public Action<WorkItemUpdatePatch> UpdateWorkItem { get; set; } = _ => { };
+
     public Func<string, int, IReadOnlyList<int>> QueryByWiql { get; set; } = (_, _) => throw new NotSupportedException();
 
     public Func<int, int?, IReadOnlyList<WorkItemComment>> GetComments { get; set; } = (_, _) => throw new NotSupportedException();
@@ -80,7 +82,8 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
     public Task UpdateWorkItemAsync(WorkItemUpdatePatch patch)
     {
         Calls.Add($"UpdateWorkItem({patch.Id})");
-        throw new NotSupportedException();
+        UpdateWorkItem(patch);
+        return Task.CompletedTask;
     }
 
     public Task<IReadOnlyList<WorkItemComment>> GetCommentsAsync(int id, int? limit = null, CancellationToken cancellationToken = default)

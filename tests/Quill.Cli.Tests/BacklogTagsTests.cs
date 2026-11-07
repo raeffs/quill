@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
 using Quill.Cli.Commands.Backlog;
 using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
@@ -39,7 +40,7 @@ public sealed class BacklogTagsTests : IDisposable
     {
         var parsed = FrontmatterParser.Parse($"---\nid: 1\ntitle: T\n{line}\n---\n\nBody\n");
 
-        PushCommand.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description", "tags"]);
+        BacklogPushAction.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description", "tags"]);
     }
 
     [Fact]
@@ -47,7 +48,7 @@ public sealed class BacklogTagsTests : IDisposable
     {
         var parsed = FrontmatterParser.Parse("---\nid: 1\ntitle: T\n---\n\nBody\n");
 
-        PushCommand.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description"]);
+        BacklogPushAction.UpdatedFieldsFor(parsed, predecessorsChanged: false).ShouldBe(["title", "description"]);
     }
 
     [Theory]

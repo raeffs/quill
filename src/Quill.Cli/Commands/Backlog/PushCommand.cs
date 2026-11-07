@@ -1,13 +1,10 @@
 using System.CommandLine;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Quill.AzureDevOps;
 using Quill.Cli;
 using Quill.Core;
-using Quill.Core.Markdown;
+using Quill.Core.Actions;
 using Quill.Core.Models;
-using Quill.Core.Validation;
 
 namespace Quill.Cli.Commands.Backlog;
 
@@ -22,103 +19,36 @@ internal static class PushCommand
             fileArg,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var filePath = parseResult.GetValue(fileArg)!;
-            await ExecuteAsync(serviceProvider, filePath);
+            return ExecuteAsync(serviceProvider, filePath, cancellationToken);
         });
 
         return command;
     }
 
-    internal static IReadOnlyList<string> UpdatedFieldsFor(ParsedMarkdownFile parsed, bool predecessorsChanged)
+    private static Task ExecuteAsync(
+        IServiceProvider serviceProvider, string filePath, CancellationToken cancellationToken)
     {
-        var fields = new List<string> { "title", "description" };
-
-        if (parsed.Tags is not null)
-        {
-            fields.Add("tags");
-        }
-
-        if (predecessorsChanged)
-        {
-            fields.Add("predecessors");
-        }
-
-        return fields;
-    }
-
-    private static async Task ExecuteAsync(IServiceProvider serviceProvider, string filePath)
-    {
-        try
-        {
-            var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Push");
-
-            if (!File.Exists(filePath))
+        return CommandHelpers.RunAsync(
+            async ct =>
             {
-                Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = $"File not found: {filePath}", Code = 3 }, CommandHelpers.Context.ErrorResult));
-                Environment.ExitCode = 3;
-                return;
-            }
-
-            var config = serviceProvider.GetRequiredService<QuillConfig>();
-            var content = await File.ReadAllTextAsync(filePath);
-            var parsed = FrontmatterParser.Parse(content);
-
-            var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
-            var identityClient = serviceProvider.GetRequiredService<AzureDevOpsIdentityClient>();
-
-            var workItem = await client.GetWorkItemAsync(parsed.Id);
-            var currentUser = await identityClient.GetCurrentUserAsync();
-
-            var validation = PushValidator.Validate(workItem, config, currentUser.Id);
-
-            if (!validation.IsValid)
-            {
-                var errorMsg = string.Join("; ", validation.Errors);
-                Console.WriteLine(JsonSerializer.Serialize(
-                    new ErrorResult { Error = errorMsg, Code = 1 }, CommandHelpers.Context.ErrorResult));
-                Environment.ExitCode = 1;
-                return;
-            }
-
-            var (html, linkIds) = await WorkItemDescription.ToHtmlAsync(parsed.Body, config, client, logger);
-
-            var predecessorChange = WorkItemPredecessors.Diff(workItem.Predecessors, parsed.Predecessors);
-
-            await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(parsed.Id, workItem.Type, parsed.Title, html)
-            {
-                Tags = parsed.Tags,
-                Rev = workItem.Rev,
-                RemoveRelationIndexes = predecessorChange.RemoveRelationIndexes,
-                AddRelations = [.. predecessorChange.Add.Select(id => new WorkItemRelation { RelationType = AzureDevOpsConstants.PredecessorLinkType, TargetId = id })],
-            });
-
-            var existingRelatedIds = workItem.Relations
-                .Where(r => string.Equals(r.RelationType, AzureDevOpsConstants.RelatedLinkType, StringComparison.Ordinal))
-                .Select(r => r.TargetId)
-                .ToHashSet();
-
-            var newRelations = linkIds.Where(id => !existingRelatedIds.Contains(id)).ToList();
-            foreach (var targetId in newRelations)
-            {
-                await client.AddRelationAsync(parsed.Id, targetId);
-            }
-
-            Console.WriteLine(JsonSerializer.Serialize(
-                new PushResult
+                if (!File.Exists(filePath))
                 {
-                    Id = parsed.Id,
-                    Title = parsed.Title,
-                    UpdatedFields = UpdatedFieldsFor(parsed, predecessorChange.HasChanges),
-                    RelationsAdded = newRelations,
-                },
-                CommandHelpers.Context.PushResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
+                    throw new FileNotFoundException($"File not found: {filePath}");
+                }
+
+                var content = await File.ReadAllTextAsync(filePath, ct);
+
+                return await BacklogPushAction.RunAsync(
+                    serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
+                    serviceProvider.GetRequiredService<IIdentityClient>(),
+                    serviceProvider.GetRequiredService<QuillConfig>(),
+                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Push"),
+                    content);
+            },
+            CommandHelpers.Context.PushResult,
+            cancellationToken);
     }
 }
