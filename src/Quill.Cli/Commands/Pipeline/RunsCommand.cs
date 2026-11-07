@@ -1,9 +1,7 @@
 using System.CommandLine;
-using System.Globalization;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pipeline;
@@ -17,13 +15,7 @@ internal static class RunsCommand
             Description = "Pipeline ID, from pipeline list.",
         };
 
-        pipelineOption.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var pipeline) && pipeline < 1)
-            {
-                result.AddError("--pipeline must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(pipelineOption, "--pipeline");
 
         var branchOption = new Option<string?>("--branch")
         {
@@ -51,13 +43,7 @@ internal static class RunsCommand
             DefaultValueFactory = _ => 50,
         };
 
-        limitOption.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var limit) && limit < 1)
-            {
-                result.AddError("--limit must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(limitOption, "--limit");
 
         var command = new Command("runs", "List pipeline runs, newest first, and print them as a JSON array")
         {
@@ -69,7 +55,7 @@ internal static class RunsCommand
             limitOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var query = new PipelineRunListQuery
             {
@@ -80,29 +66,13 @@ internal static class RunsCommand
                 Reason = parseResult.GetValue(reasonOption),
                 Top = parseResult.GetValue(limitOption),
             };
-            await ExecuteAsync(serviceProvider, query, cancellationToken);
+
+            return CommandHelpers.RunAsync(
+                ct => PipelineRunsAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), query, ct),
+                CommandHelpers.Context.ListPipelineRunResult,
+                cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        PipelineRunListQuery query,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
-
-            var runs = await buildClient.ListRunsAsync(query, cancellationToken);
-            var results = runs.Select(run => PipelineRunResultBuilder.Build(run)).ToList();
-
-            Console.WriteLine(JsonSerializer.Serialize(results, CommandHelpers.Context.ListPipelineRunResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
