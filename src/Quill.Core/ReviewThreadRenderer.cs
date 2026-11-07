@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 
@@ -8,9 +7,8 @@ public static class ReviewThreadRenderer
 {
     public static async Task<IReadOnlyList<PullRequestThreadResult>> RenderAsync(
         IEnumerable<PullRequestThread> threads,
-        QuillConfig config,
-        IAzureDevOpsClient workItems,
-        ILogger logger)
+        RichText richText,
+        CancellationToken cancellationToken)
     {
         var results = new List<PullRequestThreadResult>();
         foreach (var thread in threads)
@@ -18,10 +16,7 @@ public static class ReviewThreadRenderer
             var commentResults = new List<PullRequestCommentResult>(thread.Comments.Count);
             foreach (var comment in thread.Comments)
             {
-                var markdown = string.IsNullOrEmpty(comment.TextHtml)
-                    ? string.Empty
-                    : (await MarkdownConverter.ToMarkdownAsync(
-                        comment.TextHtml, config.ServerUrl, config.Collection, config.Project, workItems, logger)).TrimEnd();
+                var markdown = await richText.ToMarkdownAsync(comment.TextHtml, cancellationToken);
 
                 commentResults.Add(PullRequestThreadResultBuilder.BuildComment(comment, markdown));
             }

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 
 namespace Quill.Core.Actions.PullRequests;
@@ -9,9 +9,7 @@ public static class ThreadsAction
 {
     public static async Task<IReadOnlyList<PullRequestThreadResult>> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
-        IAzureDevOpsClient workItems,
-        QuillConfig config,
-        ILogger logger,
+        RichText richText,
         PrThreadsRequest request,
         CancellationToken cancellationToken)
     {
@@ -30,6 +28,6 @@ public static class ThreadsAction
             filtered = filtered.Take(request.Limit.Value);
         }
 
-        return await ReviewThreadRenderer.RenderAsync(filtered, config, workItems, logger);
+        return await ReviewThreadRenderer.RenderAsync(filtered, richText, cancellationToken);
     }
 }

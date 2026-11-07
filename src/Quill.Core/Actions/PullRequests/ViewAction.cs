@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 
@@ -8,11 +7,9 @@ public static class ViewAction
 {
     public static async Task<PullRequestViewResult> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
-        IAzureDevOpsClient workItems,
         IWorkItemBatchFetcher fetcher,
         IIdentityClient identity,
-        QuillConfig config,
-        ILogger logger,
+        RichText richText,
         int id,
         bool withThreads,
         CancellationToken cancellationToken)
@@ -20,10 +17,7 @@ public static class ViewAction
         var currentUser = await identity.GetCurrentUserAsync();
         var pullRequest = await pullRequests.GetByIdAsync(id, cancellationToken);
 
-        var description = string.IsNullOrEmpty(pullRequest.Description)
-            ? string.Empty
-            : (await MarkdownConverter.ToMarkdownAsync(
-                pullRequest.Description, config.ServerUrl, config.Collection, config.Project, workItems, logger)).TrimEnd();
+        var description = await richText.ToMarkdownAsync(pullRequest.Description, cancellationToken);
 
         var workItemIds = await pullRequests.GetWorkItemRefsAsync(id, pullRequest.RepoName, cancellationToken);
 
@@ -33,7 +27,7 @@ public static class ViewAction
         if (withThreads)
         {
             var rawThreads = await pullRequests.GetThreadsAsync(id, pullRequest.RepoName, cancellationToken);
-            threads = await ReviewThreadRenderer.RenderAsync(rawThreads, config, workItems, logger);
+            threads = await ReviewThreadRenderer.RenderAsync(rawThreads, richText, cancellationToken);
         }
 
         return PullRequestViewResultBuilder.Build(pullRequest, currentUser.Id, description, linkedWorkItems, threads);

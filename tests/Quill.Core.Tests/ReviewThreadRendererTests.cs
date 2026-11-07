@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -19,7 +20,7 @@ public class ReviewThreadRendererTests
     {
         var threads = new[] { Thread(1, "<p>first</p>"), Thread(2, string.Empty) };
 
-        var rows = await ReviewThreadRenderer.RenderAsync(threads, Config, new FakeAzureDevOpsClient(), NullLogger.Instance);
+        var rows = await ReviewThreadRenderer.RenderAsync(threads, new RichText(Config, new FakeAzureDevOpsClient(), NullLogger<RichText>.Instance), TestContext.Current.CancellationToken);
 
         rows.Select(r => r.Id).ShouldBe([1, 2]);
         rows[0].Comments.Single().Text.ShouldBe("first");

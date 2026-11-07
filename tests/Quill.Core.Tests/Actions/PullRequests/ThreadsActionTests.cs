@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Quill.Core.Actions.PullRequests;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Tests.Shared.Fakes;
 using Shouldly;
@@ -25,7 +26,7 @@ public class ThreadsActionTests
             GetThreads = (_, _) => [Thread(1, "active"), Thread(2, "closed"), Thread(3, "active"), Thread(4, "active")],
         };
 
-        var rows = await ThreadsAction.RunAsync(client, new FakeAzureDevOpsClient(), Config, NullLogger.Instance, new PrThreadsRequest(12, ["active"], 2), TestContext.Current.CancellationToken);
+        var rows = await ThreadsAction.RunAsync(client, new RichText(Config, new FakeAzureDevOpsClient(), NullLogger<RichText>.Instance), new PrThreadsRequest(12, ["active"], 2), TestContext.Current.CancellationToken);
 
         rows.Select(r => r.Id).ShouldBe([1, 3]);
         client.Calls.ShouldBe(["GetById(12)", "GetThreads(12,repo)"]);
