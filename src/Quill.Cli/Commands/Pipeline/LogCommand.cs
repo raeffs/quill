@@ -1,10 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Globalization;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 
 namespace Quill.Cli.Commands.Pipeline;
 
@@ -14,36 +13,18 @@ internal static class LogCommand
     {
         var runIdArg = new Argument<int>("runId") { Description = "The pipeline run ID" };
 
-        runIdArg.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var runId) && runId < 1)
-            {
-                result.AddError("runId must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(runIdArg, "runId");
 
         var logIdArg = new Argument<int>("logId") { Description = "The log ID, from pipeline view --with-stages" };
 
-        logIdArg.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var logId) && logId < 1)
-            {
-                result.AddError("logId must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(logIdArg, "logId");
 
         var startLineOption = new Option<int?>("--start-line")
         {
             Description = "First line to print. Lines count from 1.",
         };
 
-        startLineOption.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var startLine) && startLine < 1)
-            {
-                result.AddError("--start-line must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(startLineOption, "--start-line");
 
         var endLineOption = new Option<int?>("--end-line")
         {
@@ -55,13 +36,7 @@ internal static class LogCommand
             Description = "Print the last n lines. Cannot be combined with --start-line or --end-line.",
         };
 
-        tailOption.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var tail) && tail < 1)
-            {
-                result.AddError("--tail must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(tailOption, "--tail");
 
         var command = new Command("log", "Print a pipeline log, or a line range of it, to stdout as JSON")
         {
@@ -92,14 +67,19 @@ internal static class LogCommand
             }
         });
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
-            var runId = parseResult.GetValue(runIdArg);
-            var logId = parseResult.GetValue(logIdArg);
-            var startLine = parseResult.GetValue(startLineOption);
-            var endLine = parseResult.GetValue(endLineOption);
-            var tail = parseResult.GetValue(tailOption);
-            await ExecuteAsync(serviceProvider, runId, logId, startLine, endLine, tail, cancellationToken);
+            var request = new PipelineLogRequest(
+                parseResult.GetValue(runIdArg),
+                parseResult.GetValue(logIdArg),
+                parseResult.GetValue(startLineOption),
+                parseResult.GetValue(endLineOption),
+                parseResult.GetValue(tailOption));
+
+            return CommandHelpers.RunAsync(
+                ct => PipelineLogAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), request, ct),
+                CommandHelpers.Context.PipelineLogResult,
+                cancellationToken);
         });
 
         return command;
@@ -121,36 +101,5 @@ internal static class LogCommand
 
         value = parsed;
         return true;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        int runId,
-        int logId,
-        int? startLine,
-        int? endLine,
-        int? tail,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
-
-            if (tail is not null)
-            {
-                var lineCount = await buildClient.GetLogLineCountAsync(runId, logId, cancellationToken);
-                startLine = PipelineLogResultBuilder.TailStartLine(lineCount, tail.Value);
-                endLine = null;
-            }
-
-            var lines = await buildClient.GetLogLinesAsync(runId, logId, startLine, endLine, cancellationToken);
-            var result = PipelineLogResultBuilder.Build(runId, logId, startLine, lines);
-
-            Console.WriteLine(JsonSerializer.Serialize(result, CommandHelpers.Context.PipelineLogResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
