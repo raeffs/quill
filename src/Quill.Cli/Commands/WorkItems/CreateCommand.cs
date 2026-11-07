@@ -1,8 +1,8 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Quill.Core;
 using Quill.Core.Actions.WorkItems;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
 
@@ -115,8 +115,7 @@ internal static class CreateCommand
 
                 return await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
-                    serviceProvider.GetRequiredService<QuillConfig>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create"),
+                    serviceProvider.GetRequiredService<RichText>(),
                     new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags, validatedPredecessors));
             },
             CommandHelpers.Context.ViewResult,

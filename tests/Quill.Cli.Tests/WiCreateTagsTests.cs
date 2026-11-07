@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -74,6 +75,8 @@ public sealed class WiCreateTagsTests : IDisposable
             .AddSingleton(httpClient)
             .AddSingleton(new AzureDevOpsClient(httpClient, ServerUrl, Collection, Project))
             .AddSingleton<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>())
+            .AddSingleton<IWorkItemBatchFetcher>(sp => sp.GetRequiredService<AzureDevOpsClient>())
+            .AddSingleton<RichText>()
             .BuildServiceProvider();
         Console.SetOut(_output);
 

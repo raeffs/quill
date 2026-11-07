@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Core.Validation;
@@ -8,7 +7,7 @@ namespace Quill.Core.Actions.WorkItems;
 public static class CreateAction
 {
     public static async Task<ViewResult> RunAsync(
-        IAzureDevOpsClient client, QuillConfig config, ILogger logger, WorkItemCreateRequest request)
+        IAzureDevOpsClient client, RichText richText, WorkItemCreateRequest request)
     {
         var parent = await client.GetWorkItemAsync(request.ParentId);
 
@@ -22,7 +21,7 @@ public static class CreateAction
         List<int> linkIds = [];
         if (!string.IsNullOrEmpty(request.DescriptionMarkdown))
         {
-            (var html, linkIds) = await WorkItemDescription.ToHtmlAsync(request.DescriptionMarkdown, config, client, logger);
+            (var html, linkIds) = await richText.ToHtmlAsync(request.DescriptionMarkdown);
             descriptionHtml = string.IsNullOrEmpty(html) ? null : html;
         }
 
@@ -44,10 +43,7 @@ public static class CreateAction
 
         // Read the item back so the row is what `wi view` would print: server state, rewritten link text.
         var created = await client.GetWorkItemAsync(newId);
-        var body = string.IsNullOrEmpty(created.Description)
-            ? string.Empty
-            : (await MarkdownConverter.ToMarkdownAsync(
-                created.Description, config.ServerUrl, config.Collection, config.Project, client, logger)).TrimEnd();
+        var body = await richText.ToMarkdownAsync(created.Description);
 
         return ViewResultBuilder.Build(created, body, children: null);
     }

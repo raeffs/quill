@@ -1,8 +1,8 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Quill.Core;
 using Quill.Core.Actions.WorkItems;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.WorkItems;
@@ -33,8 +33,7 @@ internal static class ViewCommand
                 ct => ViewAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
-                    serviceProvider.GetRequiredService<QuillConfig>(),
-                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.View"),
+                    serviceProvider.GetRequiredService<RichText>(),
                     id,
                     withChildren,
                     ct),

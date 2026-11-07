@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 
@@ -8,8 +7,7 @@ public static class CommentsAction
 {
     public static async Task<IReadOnlyList<CommentResult>> RunAsync(
         IAzureDevOpsClient client,
-        QuillConfig config,
-        ILogger logger,
+        RichText richText,
         int id,
         int? limit,
         CancellationToken cancellationToken)
@@ -19,10 +17,7 @@ public static class CommentsAction
         var results = new List<CommentResult>(comments.Count);
         foreach (var comment in comments)
         {
-            var markdown = string.IsNullOrEmpty(comment.TextHtml)
-                ? string.Empty
-                : (await MarkdownConverter.ToMarkdownAsync(
-                    comment.TextHtml, config.ServerUrl, config.Collection, config.Project, client, logger)).TrimEnd();
+            var markdown = await richText.ToMarkdownAsync(comment.TextHtml, cancellationToken);
 
             results.Add(CommentsResultBuilder.Build(comment, markdown));
         }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Quill.Core.Actions.WorkItems;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -37,7 +38,7 @@ public class CommentsActionTests
             },
         };
 
-        var rows = await CommentsAction.RunAsync(client, Config, NullLogger.Instance, 5, 2, TestContext.Current.CancellationToken);
+        var rows = await CommentsAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), 5, 2, TestContext.Current.CancellationToken);
 
         seenLimit.ShouldBe(2);
         client.Calls.ShouldBe(["GetComments(5)"]);

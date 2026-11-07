@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 
@@ -9,18 +8,14 @@ public static class ViewAction
     public static async Task<ViewResult> RunAsync(
         IAzureDevOpsClient client,
         IWorkItemBatchFetcher fetcher,
-        QuillConfig config,
-        ILogger logger,
+        RichText richText,
         int id,
         bool withChildren,
         CancellationToken cancellationToken)
     {
         var workItem = await client.GetWorkItemAsync(id);
 
-        var body = string.IsNullOrEmpty(workItem.Description)
-            ? string.Empty
-            : (await MarkdownConverter.ToMarkdownAsync(
-                workItem.Description, config.ServerUrl, config.Collection, config.Project, client, logger)).TrimEnd();
+        var body = await richText.ToMarkdownAsync(workItem.Description, cancellationToken);
 
         IReadOnlyList<ChildItem>? children = null;
         if (withChildren)

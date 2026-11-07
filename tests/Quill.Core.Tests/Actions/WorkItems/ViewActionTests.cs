@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Quill.Core.Actions.WorkItems;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -21,7 +22,7 @@ public class ViewActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(WorkItem(5, [6, 7]));
 
-        var row = await ViewAction.RunAsync(client, client, Config, NullLogger.Instance, 5, false, TestContext.Current.CancellationToken);
+        var row = await ViewAction.RunAsync(client, client, new RichText(Config, client, NullLogger<RichText>.Instance), 5, false, TestContext.Current.CancellationToken);
 
         row.Children.ShouldBeNull();
         client.Calls.ShouldBe(["GetWorkItem(5)"]);
@@ -35,7 +36,7 @@ public class ViewActionTests
         client.Add(WorkItem(6, []));
         client.Add(WorkItem(7, []));
 
-        var row = await ViewAction.RunAsync(client, client, Config, NullLogger.Instance, 5, true, TestContext.Current.CancellationToken);
+        var row = await ViewAction.RunAsync(client, client, new RichText(Config, client, NullLogger<RichText>.Instance), 5, true, TestContext.Current.CancellationToken);
 
         row.Children.ShouldNotBeNull();
         row.Children.Count.ShouldBe(2);

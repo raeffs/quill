@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Quill.Core.Actions.WorkItems;
+using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -25,7 +26,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Product Backlog Item")));
+        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Product Backlog Item")));
 
         ex.Message.ShouldContain("'Product Backlog Item'");
         client.CreateCall.ShouldBeNull();
@@ -38,7 +39,7 @@ public class CreateActionTests
     {
         var client = Seed(parentState);
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         row.Id.ShouldBe(1000);
     }
@@ -48,7 +49,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         client.CreateCall.ShouldNotBeNull().AssignedToId.ShouldBeNull();
         row.AssignedTo.ShouldBeNull();
@@ -59,7 +60,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task", assignee: "Jane Doe"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "Jane Doe"));
 
         client.CreateCall.ShouldNotBeNull().AssignedToId.ShouldBe("Jane Doe");
         row.AssignedTo.ShouldBe("Jane Doe");
@@ -70,7 +71,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         client.CreateCall.ShouldNotBeNull().IterationPath.ShouldBe(ParentIterationPath);
     }
@@ -85,7 +86,7 @@ public class CreateActionTests
     {
         var client = Seed(parentType: parentType);
 
-        await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request(type));
+        await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request(type));
 
         client.CreateCall.ShouldNotBeNull().AreaPath.ShouldBe(ParentAreaPath);
     }
@@ -96,10 +97,21 @@ public class CreateActionTests
         var client = Seed();
 
         var row = await CreateAction.RunAsync(
-            client, Config, NullLogger.Instance, Request("Task", description: "See [the bug](#123)."));
+            client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123)."));
 
         row.RelatedIds.ShouldBe([123]);
         client.CreateCall.ShouldNotBeNull().DescriptionHtml.ShouldNotBeNull().ShouldContain("_workitems/edit/123");
+    }
+
+    [Fact]
+    public async Task RunAsync_DescriptionLink_FetchesOnce()
+    {
+        var client = Seed();
+
+        await CreateAction.RunAsync(
+            client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123)."));
+
+        client.Calls.Where(c => c.StartsWith("Fetch", StringComparison.Ordinal)).ShouldBe(["Fetch(123)"]);
     }
 
     [Fact]
@@ -107,7 +119,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         client.CreateCall.ShouldNotBeNull().DescriptionHtml.ShouldBeNull();
         row.Description.ShouldBe(string.Empty);
@@ -118,7 +130,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         var created = row.ShouldNotBeNull();
         created.Id.ShouldBe(1000);
@@ -134,7 +146,7 @@ public class CreateActionTests
     {
         var client = Seed(parentType: "Epic");
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Feature"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Feature"));
 
         row.Type.ShouldBe("Feature");
         var call = client.CreateCall.ShouldNotBeNull();
@@ -147,7 +159,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Feature")));
+        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Feature")));
 
         ex.Message.ShouldContain("'Product Backlog Item'");
         client.CreateCall.ShouldBeNull();
@@ -158,7 +170,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task", tags: ["a", "b"]));
+        await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", tags: ["a", "b"]));
 
         client.CreateCall.ShouldNotBeNull().Tags.ShouldBe(["a", "b"]);
     }
@@ -169,7 +181,7 @@ public class CreateActionTests
         var client = Seed();
 
         var row = await CreateAction.RunAsync(
-            client, Config, NullLogger.Instance, Request("Task", description: "See [the bug](#123).", tags: ["a", "b"]));
+            client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).", tags: ["a", "b"]));
 
         var created = row.ShouldNotBeNull();
         created.Tags.ShouldBe(["a", "b"]);
@@ -181,7 +193,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         row.Tags.ShouldBeEmpty();
     }
@@ -191,7 +203,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task", predecessors: [10, 11]));
+        await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", predecessors: [10, 11]));
 
         client.CreateCall.ShouldNotBeNull().Predecessors.ShouldBe([10, 11]);
     }
@@ -202,7 +214,7 @@ public class CreateActionTests
         var client = Seed();
 
         var row = await CreateAction.RunAsync(
-            client, Config, NullLogger.Instance, Request("Task", description: "See [the bug](#123).", predecessors: [10, 11]));
+            client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).", predecessors: [10, 11]));
 
         var created = row.ShouldNotBeNull();
         created.Predecessors.ShouldBe([10, 11]);
@@ -214,7 +226,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var row = await CreateAction.RunAsync(client, Config, NullLogger.Instance, Request("Task"));
+        var row = await CreateAction.RunAsync(client, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
         row.Predecessors.ShouldBeEmpty();
     }
