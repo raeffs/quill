@@ -2,12 +2,14 @@ using Quill.Core.Models;
 
 namespace Quill.Core.Tests;
 
-internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
+internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 {
     private readonly Dictionary<int, WorkItem> _workItems = [];
     private int _nextId = 1000;
 
     public WorkItemCreatePatch? CreateCall { get; private set; }
+
+    public HashSet<int> BatchFailedIds { get; } = [];
 
     public void Add(WorkItem workItem) => _workItems[workItem.Id] = workItem;
 
@@ -66,4 +68,11 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient
 
     public Task<IReadOnlyList<WorkItemComment>> GetCommentsAsync(int id, int? limit = null, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
+
+    public Task<BatchFetchResult> FetchAsync(IReadOnlyList<int> ids, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BatchFetchResult
+        {
+            Items = [.. ids.Where(_workItems.ContainsKey).Select(id => _workItems[id])],
+            BatchFailedIds = [.. ids.Where(BatchFailedIds.Contains)],
+        });
 }
