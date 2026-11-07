@@ -8,7 +8,7 @@ public static class PrViewAction
 {
     public static async Task<PullRequestViewResult> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
-        IAzureDevOpsClient workItemClient,
+        IAzureDevOpsClient workItems,
         IWorkItemBatchFetcher fetcher,
         IIdentityClient identity,
         QuillConfig config,
@@ -23,20 +23,20 @@ public static class PrViewAction
         var description = string.IsNullOrEmpty(pullRequest.Description)
             ? string.Empty
             : (await MarkdownConverter.ToMarkdownAsync(
-                pullRequest.Description, config.ServerUrl, config.Collection, config.Project, workItemClient, logger)).TrimEnd();
+                pullRequest.Description, config.ServerUrl, config.Collection, config.Project, workItems, logger)).TrimEnd();
 
         var workItemIds = await pullRequests.GetWorkItemRefsAsync(id, pullRequest.RepoName, cancellationToken);
 
-        var workItems = await BuildLinkedWorkItemsAsync(fetcher, workItemIds, cancellationToken);
+        var linkedWorkItems = await BuildLinkedWorkItemsAsync(fetcher, workItemIds, cancellationToken);
 
         IReadOnlyList<PullRequestThreadResult>? threads = null;
         if (withThreads)
         {
             var rawThreads = await pullRequests.GetThreadsAsync(id, pullRequest.RepoName, cancellationToken);
-            threads = await ReviewThreadRenderer.RenderAsync(rawThreads, config, workItemClient, logger);
+            threads = await ReviewThreadRenderer.RenderAsync(rawThreads, config, workItems, logger);
         }
 
-        return PullRequestViewResultBuilder.Build(pullRequest, currentUser.Id, description, workItems, threads);
+        return PullRequestViewResultBuilder.Build(pullRequest, currentUser.Id, description, linkedWorkItems, threads);
     }
 
     private static async Task<IReadOnlyList<PullRequestLinkedWorkItemResult>> BuildLinkedWorkItemsAsync(
