@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
+using Quill.Core;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -21,6 +22,18 @@ public class ServiceWiringTests
         provider.GetRequiredService<AzureDevOpsPullRequestClient>().ShouldNotBeNull();
         provider.GetRequiredService<AzureDevOpsIdentityClient>().ShouldNotBeNull();
         provider.GetRequiredService<AzureDevOpsBuildClient>().ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void AddQuillServices_ResolvesEveryClientInterface()
+    {
+        using var provider = BuildProvider(handler: null);
+
+        provider.GetRequiredService<IAzureDevOpsClient>().ShouldBeOfType<AzureDevOpsClient>();
+        provider.GetRequiredService<IWorkItemBatchFetcher>().ShouldBeOfType<AzureDevOpsClient>();
+        provider.GetRequiredService<IAzureDevOpsPullRequestClient>().ShouldBeOfType<AzureDevOpsPullRequestClient>();
+        provider.GetRequiredService<IIdentityClient>().ShouldBeOfType<AzureDevOpsIdentityClient>();
+        provider.GetRequiredService<IAzureDevOpsBuildClient>().ShouldBeOfType<AzureDevOpsBuildClient>();
     }
 
     [Fact]

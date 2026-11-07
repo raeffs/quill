@@ -68,4 +68,13 @@ public sealed class HandleErrorTests : IDisposable
 
         Environment.ExitCode.ShouldBe(2);
     }
+
+    [Fact]
+    public void HandleError_InvalidRequest_Returns1WithTheMessage()
+    {
+        CommandHelpers.HandleError(new InvalidRequestException("Frontmatter must contain a 'type' field."));
+
+        Environment.ExitCode.ShouldBe(1);
+        _output.ToString().ShouldBe("{\"error\":\"Frontmatter must contain a 'type' field.\",\"code\":1}" + Environment.NewLine);
+    }
 }

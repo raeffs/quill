@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Quill.Core;
 using Quill.Core.Models;
 
@@ -16,6 +18,22 @@ internal static class CommandHelpers
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     });
 
+    public static async Task RunAsync<TRow>(
+        Func<CancellationToken, Task<TRow>> action,
+        JsonTypeInfo<TRow> typeInfo,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var row = await action(cancellationToken);
+            Console.WriteLine(JsonSerializer.Serialize(row, typeInfo));
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException or InvalidRequestException)
+        {
+            HandleError(ex);
+        }
+    }
+
     public static void HandleError(Exception ex)
     {
         var (message, code) = ex switch
@@ -24,8 +42,9 @@ internal static class CommandHelpers
             InvalidOperationException => (ex.Message, 3),
             WorkItemRejectedException => (ex.Message, 1),
             PipelineRejectedException => (ex.Message, 1),
+            InvalidRequestException => (ex.Message, 1),
             HttpRequestException => ($"API error: {ex.Message}", 2),
-            _ => (ex.Message, 1),
+            _ => throw new UnreachableException(ex.GetType().Name, ex),
         };
 
         Console.WriteLine(JsonSerializer.Serialize(
