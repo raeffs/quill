@@ -1,10 +1,7 @@
 using System.CommandLine;
-using System.Globalization;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
-using Quill.Core.Models;
+using Quill.Core.Actions;
 
 namespace Quill.Cli.Commands.Pipeline;
 
@@ -14,13 +11,7 @@ internal static class ViewCommand
     {
         var runIdArg = new Argument<int>("runId") { Description = "The pipeline run ID to view" };
 
-        runIdArg.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var runId) && runId < 1)
-            {
-                result.AddError("runId must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(runIdArg, "runId");
 
         var withStagesOption = new Option<bool>("--with-stages")
         {
@@ -33,41 +24,17 @@ internal static class ViewCommand
             withStagesOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var runId = parseResult.GetValue(runIdArg);
             var withStages = parseResult.GetValue(withStagesOption);
-            await ExecuteAsync(serviceProvider, runId, withStages, cancellationToken);
+
+            return CommandHelpers.RunAsync(
+                ct => PipelineViewAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), runId, withStages, ct),
+                CommandHelpers.Context.PipelineRunResult,
+                cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        int runId,
-        bool withStages,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
-
-            var run = await buildClient.GetRunAsync(runId, cancellationToken);
-            IReadOnlyList<PipelineStageResult>? stages = null;
-            if (withStages)
-            {
-                var records = await buildClient.GetTimelineAsync(runId, cancellationToken);
-                stages = PipelineStageTreeBuilder.Build(records);
-            }
-
-            var result = PipelineRunResultBuilder.Build(run, stages);
-
-            Console.WriteLine(JsonSerializer.Serialize(result, CommandHelpers.Context.PipelineRunResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
