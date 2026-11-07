@@ -9,6 +9,9 @@ internal static class Validators
     public static void PositiveInteger(Argument<int> argument, string name) =>
         argument.Validators.Add(result => RejectBelow(result, 1, $"{name} must be a positive integer."));
 
+    public static void PositiveInteger(Option<int> option, string name) =>
+        option.Validators.Add(result => RejectBelow(result, 1, $"{name} must be a positive integer."));
+
     public static void PositiveInteger(Option<int?> option, string name) =>
         option.Validators.Add(result => RejectBelow(result, 1, $"{name} must be a positive integer."));
 

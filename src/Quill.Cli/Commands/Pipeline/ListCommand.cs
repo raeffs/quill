@@ -1,9 +1,7 @@
 using System.CommandLine;
-using System.Globalization;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pipeline;
@@ -28,13 +26,7 @@ internal static class ListCommand
             DefaultValueFactory = _ => 50,
         };
 
-        limitOption.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var limit) && limit < 1)
-            {
-                result.AddError("--limit must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(limitOption, "--limit");
 
         var command = new Command("list", "List pipelines and print them as a JSON array")
         {
@@ -43,7 +35,7 @@ internal static class ListCommand
             limitOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var query = new PipelineListQuery
             {
@@ -51,29 +43,13 @@ internal static class ListCommand
                 Folder = parseResult.GetValue(folderOption),
                 Top = parseResult.GetValue(limitOption),
             };
-            await ExecuteAsync(serviceProvider, query, cancellationToken);
+
+            return CommandHelpers.RunAsync(
+                ct => PipelineListAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), query, ct),
+                CommandHelpers.Context.ListPipelineResult,
+                cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        PipelineListQuery query,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
-
-            var pipelines = await buildClient.ListPipelinesAsync(query, cancellationToken);
-            var results = pipelines.Select(PipelineResultBuilder.Build).ToList();
-
-            Console.WriteLine(JsonSerializer.Serialize(results, CommandHelpers.Context.ListPipelineResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
