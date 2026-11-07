@@ -98,4 +98,15 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("5", "--depth", "abc")]
+    [InlineData("5", "--depth")]
+    [InlineData("5", "--depth", "0")]
+    public async Task InvokeAsync_WiTreeBadDepth_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["wi", "tree", .. args], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

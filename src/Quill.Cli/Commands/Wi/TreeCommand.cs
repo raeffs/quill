@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
 using Quill.Core.Actions;
@@ -31,9 +32,15 @@ internal static class TreeCommand
 
         command.Validators.Add(result =>
         {
-            if (!result.GetValue(allOption) && result.GetValue(depthOption) < 1)
+            var tokens = result.GetResult(depthOption)?.Tokens;
+            if (tokens is null || tokens.Count == 0 || result.GetValue(allOption))
             {
-                result.AddError("--depth must be ≥ 1.");
+                return;
+            }
+
+            if (int.TryParse(tokens[0].Value, CultureInfo.InvariantCulture, out var depth) && depth < 1)
+            {
+                result.AddError("--depth must be at least 1.");
             }
         });
 
