@@ -46,12 +46,25 @@ public class BacklogPushActionTests
         client.Calls.Contains("UpdateWorkItem(5)", StringComparer.Ordinal).ShouldBeFalse();
     }
 
-    private static WorkItem WorkItem(int id, string state) => new()
+    [Fact]
+    public async Task RunAsync_BodyLinksToExistingRelatedItem_AddsOnlyTheMissingRelation()
+    {
+        var client = new FakeAzureDevOpsClient();
+        client.Add(WorkItem(5, state: "New", relations: [new WorkItemRelation { RelationType = WorkItemLinkTypes.Related, TargetId = 100 }]));
+
+        var row = await BacklogPushAction.RunAsync(client, new ScriptedIdentityClient(), Config, NullLogger.Instance, "---\nid: 5\ntype: Task\ntitle: T\n---\n\n[a](#100) [b](#200)\n");
+
+        client.Calls.TakeLast(2).ShouldBe(["UpdateWorkItem(5)", "AddRelation(5,200)"]);
+        row.RelationsAdded.ShouldBe([200]);
+    }
+
+    private static WorkItem WorkItem(int id, string state, IReadOnlyList<WorkItemRelation>? relations = null) => new()
     {
         Id = id,
         Type = "Task",
         Title = "Old",
         State = state,
         AssignedToId = "user-1",
+        Relations = relations ?? [],
     };
 }
