@@ -52,4 +52,14 @@ public class PrThreadsCommandParsingTests
         // Assert
         parseResult.Errors.ShouldNotBeEmpty();
     }
+
+    [Fact]
+    public void Parse_LimitZero_IsParseError()
+    {
+        // Arrange + Act
+        var parseResult = CliHost.Parse(["pr", "threads", "12", "--limit", "0"], TestServices.Empty);
+
+        // Assert
+        parseResult.Errors.Select(e => e.Message).ShouldContain("--limit must be a positive integer.", StringComparer.Ordinal);
+    }
 }
