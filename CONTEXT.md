@@ -18,6 +18,13 @@ does next. It is not a copy of the API response. Row count decides nothing: a
 command that returns many rows emits detail rows when no command follows it.
 _Avoid_: full object, view shape
 
+**Action**:
+What a command does between reading its flags and printing its rows: the
+requests it sends to the server and the rules it applies to the answers. The
+command parses flags into a request, hands it to the action, and prints what
+comes back. Every command has exactly one action.
+_Avoid_: operation, handler, use case, logic
+
 ## Backlog
 
 **Backlog**:
