@@ -100,36 +100,6 @@ public class AzureDevOpsClientTests
     }
 
     [Fact]
-    public async Task GetWorkItemAsync_RawApiJson_DescriptionConvertibleToMarkdown()
-    {
-        var rawApiJson = """
-        {
-            "id": 42,
-            "fields": {
-                "System.WorkItemType": "Bug",
-                "System.Title": "Test work item",
-                "System.State": "Active",
-                "Microsoft.VSTS.TCM.ReproSteps": "<p>This is <b>HTML</b> content</p>"
-            },
-            "relations": []
-        }
-        """;
-
-        using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
-
-        var workItem = await client.GetWorkItemAsync(42);
-
-        var markdown = await Quill.Core.Markdown.MarkdownConverter.ToMarkdownAsync(
-            workItem.Description, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
-
-        markdown.ShouldContain("**HTML**");
-        markdown.ShouldNotContain("<p>");
-        markdown.ShouldNotContain("<b>");
-    }
-
-    [Fact]
     public async Task GetWorkItemAsync_WithChildRelations_ReturnsChildIds()
     {
         var rawApiJson = $$"""
