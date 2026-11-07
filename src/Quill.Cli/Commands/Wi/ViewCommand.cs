@@ -2,7 +2,7 @@ using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Wi;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Wi;
@@ -30,7 +30,7 @@ internal static class ViewCommand
             var withChildren = parseResult.GetValue(withChildrenOption);
 
             return CommandHelpers.RunAsync(
-                ct => WiViewAction.RunAsync(
+                ct => ViewAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),

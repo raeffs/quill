@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Wi;
 
 namespace Quill.Cli.Commands.Wi;
 
@@ -56,7 +56,7 @@ internal static class ListCommand
                 parseResult.GetValue(limitOption));
 
             return CommandHelpers.RunAsync(
-                ct => WiListAction.RunAsync(
+                ct => ListAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
                     request,

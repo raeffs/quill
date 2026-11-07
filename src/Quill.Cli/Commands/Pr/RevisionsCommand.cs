@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pr;
 
 namespace Quill.Cli.Commands.Pr;
 
@@ -21,7 +21,7 @@ internal static class RevisionsCommand
             var id = parseResult.GetValue(idArg);
 
             return CommandHelpers.RunAsync(
-                ct => PrRevisionsAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(), id, ct),
+                ct => RevisionsAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(), id, ct),
                 CommandHelpers.Context.ListPullRequestRevisionResult,
                 cancellationToken);
         });

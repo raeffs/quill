@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pipelines;
 
 namespace Quill.Cli.Commands.Pipeline;
 
@@ -39,7 +39,7 @@ internal static class WaitCommand
             var runId = parseResult.GetValue(runIdArg);
             var timeout = parseResult.GetValue(timeoutOption);
             return CommandHelpers.RunAsync(
-                ct => PipelineWaitAction.RunAsync(
+                ct => WaitAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(),
                     SystemWaitClock.Instance,
                     runId,

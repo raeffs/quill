@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Cli;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Backlog;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Backlog;
@@ -37,7 +37,7 @@ internal static class PullCommand
         return CommandHelpers.RunAsync(
             async ct =>
             {
-                var outcome = await BacklogPullAction.RunAsync(
+                var outcome = await PullAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),
                     serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Pull"),

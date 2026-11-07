@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pipelines;
 
 namespace Quill.Cli.Commands.Pipeline;
 
@@ -22,7 +22,7 @@ internal static class RetryCommand
         {
             var runId = parseResult.GetValue(runIdArg);
             return CommandHelpers.RunAsync(
-                ct => PipelineRetryAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), runId, ct),
+                ct => RetryAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), runId, ct),
                 CommandHelpers.Context.PipelineRunResult,
                 cancellationToken);
         });

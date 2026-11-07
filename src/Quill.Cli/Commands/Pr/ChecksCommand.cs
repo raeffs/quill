@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pr;
 
 namespace Quill.Cli.Commands.Pr;
 
@@ -23,7 +23,7 @@ internal static class ChecksCommand
             var id = parseResult.GetValue(idArg);
 
             return CommandHelpers.RunAsync(
-                ct => PrChecksAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(), id, ct),
+                ct => ChecksAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(), id, ct),
                 CommandHelpers.Context.PullRequestChecksResult,
                 cancellationToken);
         });

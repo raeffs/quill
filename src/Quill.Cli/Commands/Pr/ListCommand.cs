@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pr;
 
 namespace Quill.Cli.Commands.Pr;
 
@@ -90,7 +90,7 @@ internal static class ListCommand
                 Skip: parseResult.GetValue(skipOption));
 
             return CommandHelpers.RunAsync(
-                ct => PrListAction.RunAsync(
+                ct => ListAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
                     serviceProvider.GetRequiredService<IIdentityClient>(),
                     request,

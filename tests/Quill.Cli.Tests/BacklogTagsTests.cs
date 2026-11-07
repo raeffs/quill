@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
 using Quill.Cli.Commands.Backlog;
 using Quill.Core;
-using Quill.Core.Actions;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;

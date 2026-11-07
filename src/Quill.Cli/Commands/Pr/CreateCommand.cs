@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pr;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pr;
@@ -74,7 +74,7 @@ internal static class CreateCommand
                         throw new FileNotFoundException($"File not found: {descriptionFile}");
                     }
 
-                    return await PrCreateAction.RunAsync(
+                    return await CreateAction.RunAsync(
                         serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
                         new PullRequestCreateRequest
                         {

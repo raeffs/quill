@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Cli;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Backlog;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Backlog;
@@ -41,7 +41,7 @@ internal static class PushCommand
 
                 var content = await File.ReadAllTextAsync(filePath, ct);
 
-                return await BacklogPushAction.RunAsync(
+                return await PushAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IIdentityClient>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),

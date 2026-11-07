@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Wi;
 
 namespace Quill.Cli.Commands.Wi;
 
@@ -52,7 +52,7 @@ internal static class TreeCommand
             int? maxDepth = all ? null : depth;
 
             return CommandHelpers.RunAsync(
-                ct => WiTreeAction.RunAsync(
+                ct => TreeAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
                     id,

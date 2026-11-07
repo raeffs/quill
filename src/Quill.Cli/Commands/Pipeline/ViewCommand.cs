@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pipelines;
 
 namespace Quill.Cli.Commands.Pipeline;
 
@@ -30,7 +30,7 @@ internal static class ViewCommand
             var withStages = parseResult.GetValue(withStagesOption);
 
             return CommandHelpers.RunAsync(
-                ct => PipelineViewAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), runId, withStages, ct),
+                ct => ViewAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), runId, withStages, ct),
                 CommandHelpers.Context.PipelineRunResult,
                 cancellationToken);
         });

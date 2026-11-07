@@ -2,7 +2,7 @@ using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pr;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pr;
@@ -30,7 +30,7 @@ internal static class ViewCommand
             var withThreads = parseResult.GetValue(withThreadsOption);
 
             return CommandHelpers.RunAsync(
-                ct => PrViewAction.RunAsync(
+                ct => ViewAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),

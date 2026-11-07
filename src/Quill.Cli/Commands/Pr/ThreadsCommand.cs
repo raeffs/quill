@@ -2,7 +2,7 @@ using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pr;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pr;
@@ -41,7 +41,7 @@ internal static class ThreadsCommand
                 parseResult.GetValue(limitOption));
 
             return CommandHelpers.RunAsync(
-                ct => PrThreadsAction.RunAsync(
+                ct => ThreadsAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),

@@ -2,7 +2,7 @@ using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Wi;
 using Quill.Core.Models;
 using Quill.Core.Validation;
 
@@ -113,7 +113,7 @@ internal static class CreateCommand
                     throw new FileNotFoundException($"File not found: {descriptionFile}");
                 }
 
-                return await WiCreateAction.RunAsync(
+                return await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),
                     serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Create"),

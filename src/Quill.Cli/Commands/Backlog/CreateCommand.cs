@@ -2,7 +2,7 @@ using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Backlog;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Backlog;
@@ -43,7 +43,7 @@ internal static class CreateCommand
 
                 var content = await File.ReadAllTextAsync(filePath, ct);
 
-                var outcome = await BacklogCreateAction.RunAsync(
+                var outcome = await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IIdentityClient>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),

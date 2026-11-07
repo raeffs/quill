@@ -3,7 +3,7 @@ using System.CommandLine.Parsing;
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pipelines;
 
 namespace Quill.Cli.Commands.Pipeline;
 
@@ -77,7 +77,7 @@ internal static class LogCommand
                 parseResult.GetValue(tailOption));
 
             return CommandHelpers.RunAsync(
-                ct => PipelineLogAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), request, ct),
+                ct => LogAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), request, ct),
                 CommandHelpers.Context.PipelineLogResult,
                 cancellationToken);
         });

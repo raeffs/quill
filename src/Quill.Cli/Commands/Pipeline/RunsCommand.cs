@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Quill.Core;
-using Quill.Core.Actions;
+using Quill.Core.Actions.Pipelines;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pipeline;
@@ -68,7 +68,7 @@ internal static class RunsCommand
             };
 
             return CommandHelpers.RunAsync(
-                ct => PipelineRunsAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), query, ct),
+                ct => RunsAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), query, ct),
                 CommandHelpers.Context.ListPipelineRunResult,
                 cancellationToken);
         });
