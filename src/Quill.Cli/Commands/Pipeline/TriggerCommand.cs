@@ -1,9 +1,7 @@
 using System.CommandLine;
-using System.Globalization;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Quill.AzureDevOps;
 using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Pipeline;
@@ -14,13 +12,7 @@ internal static class TriggerCommand
     {
         var pipelineIdArg = new Argument<int>("pipelineId") { Description = "The pipeline ID, from pipeline list" };
 
-        pipelineIdArg.Validators.Add(result =>
-        {
-            if (result.Tokens.Count > 0 && int.TryParse(result.Tokens[0].Value, CultureInfo.InvariantCulture, out var pipelineId) && pipelineId < 1)
-            {
-                result.AddError("pipelineId must be a positive integer.");
-            }
-        });
+        Validators.PositiveInteger(pipelineIdArg, "pipelineId");
 
         var branchOption = new Option<string?>("--branch")
         {
@@ -82,7 +74,7 @@ internal static class TriggerCommand
             skipStageOption,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var parameters = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var token in parseResult.GetValue(parameterOption) ?? [])
@@ -99,29 +91,12 @@ internal static class TriggerCommand
                 StagesToSkip = parseResult.GetValue(skipStageOption) ?? [],
             };
 
-            await ExecuteAsync(serviceProvider, request, cancellationToken);
+            return CommandHelpers.RunAsync(
+                ct => PipelineTriggerAction.RunAsync(serviceProvider.GetRequiredService<IAzureDevOpsBuildClient>(), request, ct),
+                CommandHelpers.Context.PipelineRunResult,
+                cancellationToken);
         });
 
         return command;
-    }
-
-    private static async Task ExecuteAsync(
-        IServiceProvider serviceProvider,
-        PipelineTriggerRequest request,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var buildClient = serviceProvider.GetRequiredService<AzureDevOpsBuildClient>();
-
-            var run = await buildClient.QueueRunAsync(request, cancellationToken);
-            var result = PipelineRunResultBuilder.Build(run, null);
-
-            Console.WriteLine(JsonSerializer.Serialize(result, CommandHelpers.Context.PipelineRunResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
     }
 }
