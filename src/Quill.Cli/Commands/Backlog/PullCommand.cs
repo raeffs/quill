@@ -1,10 +1,9 @@
 using System.CommandLine;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Quill.AzureDevOps;
 using Quill.Cli;
-using Quill.Core.Markdown;
+using Quill.Core;
+using Quill.Core.Actions;
 using Quill.Core.Models;
 
 namespace Quill.Cli.Commands.Backlog;
@@ -22,62 +21,39 @@ internal static class PullCommand
             fileArg,
         };
 
-        command.SetAction(async (parseResult, cancellationToken) =>
+        command.SetAction((parseResult, cancellationToken) =>
         {
             var id = parseResult.GetValue(idArg);
             var filePath = parseResult.GetValue(fileArg)!;
-            await ExecuteAsync(serviceProvider, id, filePath);
+            return ExecuteAsync(serviceProvider, id, filePath, cancellationToken);
         });
 
         return command;
     }
 
-    private static async Task ExecuteAsync(IServiceProvider serviceProvider, int id, string filePath)
+    private static Task ExecuteAsync(
+        IServiceProvider serviceProvider, int id, string filePath, CancellationToken cancellationToken)
     {
-        try
-        {
-            var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Pull");
-            var config = serviceProvider.GetRequiredService<QuillConfig>();
-
-            var client = serviceProvider.GetRequiredService<AzureDevOpsClient>();
-
-            var workItem = await client.GetWorkItemAsync(id);
-
-            var markdownBody = string.IsNullOrEmpty(workItem.Description)
-                ? string.Empty
-                : await MarkdownConverter.ToMarkdownAsync(
-                    workItem.Description, config.ServerUrl, config.Collection, config.Project, client, logger);
-
-            var fileContent = FrontmatterParser.Write(
-                id: workItem.Id,
-                type: workItem.Type,
-                title: workItem.Title,
-                state: workItem.State,
-                body: markdownBody.TrimEnd(),
-                parentId: workItem.ParentId,
-                tags: workItem.Tags,
-                predecessors: workItem.Predecessors.Select(p => p.Id).ToList());
-
-            var directory = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrEmpty(directory))
+        return CommandHelpers.RunAsync(
+            async ct =>
             {
-                Directory.CreateDirectory(directory);
-            }
+                var outcome = await BacklogPullAction.RunAsync(
+                    serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
+                    serviceProvider.GetRequiredService<QuillConfig>(),
+                    serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Quill.Pull"),
+                    id);
 
-            await File.WriteAllTextAsync(filePath, fileContent);
-
-            Console.WriteLine(JsonSerializer.Serialize(
-                new PullResult
+                var directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory))
                 {
-                    Id = workItem.Id,
-                    Title = workItem.Title,
-                    File = filePath,
-                },
-                CommandHelpers.Context.PullResult));
-        }
-        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or HttpRequestException)
-        {
-            CommandHelpers.HandleError(ex);
-        }
+                    Directory.CreateDirectory(directory);
+                }
+
+                await File.WriteAllTextAsync(filePath, outcome.FileContent, ct);
+
+                return new PullResult { Id = outcome.Id, Title = outcome.Title, File = filePath };
+            },
+            CommandHelpers.Context.PullResult,
+            cancellationToken);
     }
 }
