@@ -7,7 +7,7 @@ namespace Quill.Core.Actions.WorkItems;
 public static class CreateAction
 {
     public static async Task<ViewResult> RunAsync(
-        IAzureDevOpsClient client, RichText richText, WorkItemCreateRequest request)
+        IAzureDevOpsClient client, IIdentityClient identity, RichText richText, WorkItemCreateRequest request)
     {
         var parent = await client.GetWorkItemAsync(request.ParentId);
 
@@ -15,6 +15,13 @@ public static class CreateAction
         if (!validation.IsValid)
         {
             throw new InvalidRequestException(string.Join("; ", validation.Errors));
+        }
+
+        string? assignedTo = null;
+        if (request.Assignee is not null)
+        {
+            var person = await new PersonResolver(identity).ResolveAsync("--assignee", request.Assignee, CancellationToken.None);
+            assignedTo = person.AssignedTo;
         }
 
         string? descriptionHtml = null;
@@ -29,7 +36,7 @@ public static class CreateAction
             request.Type,
             request.Title,
             request.ParentId,
-            AssignedToId: request.Assignee,
+            AssignedToId: assignedTo,
             DescriptionHtml: descriptionHtml,
             IterationPath: parent.IterationPath,
             AreaPath: parent.AreaPath,

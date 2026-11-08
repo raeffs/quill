@@ -47,7 +47,7 @@ internal static class CreateCommand
 
         var assigneeOption = new Option<string?>("--assignee")
         {
-            Description = "Name of the user to assign the work item to. Defaults to unassigned.",
+            Description = "Person to assign the work item to. Accepts @me, a display name, a unique name or an email address. Defaults to unassigned.",
         };
 
         var tagOption = new Option<string[]>("--tag")
@@ -115,6 +115,7 @@ internal static class CreateCommand
 
                 return await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
+                    serviceProvider.GetRequiredService<IIdentityClient>(),
                     serviceProvider.GetRequiredService<RichText>(),
                     new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags, validatedPredecessors));
             },

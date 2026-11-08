@@ -77,6 +77,8 @@ public sealed class WiCreateTagsTests : IDisposable
             .AddSingleton<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>())
             .AddSingleton<IWorkItemBatchFetcher>(sp => sp.GetRequiredService<AzureDevOpsClient>())
             .AddSingleton<RichText>()
+            .AddSingleton(new AzureDevOpsIdentityClient(httpClient, ServerUrl, Collection))
+            .AddSingleton<IIdentityClient>(sp => sp.GetRequiredService<AzureDevOpsIdentityClient>())
             .BuildServiceProvider();
         Console.SetOut(_output);
 
