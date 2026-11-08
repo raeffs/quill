@@ -4,11 +4,11 @@ namespace Quill.Core;
 
 public sealed class PersonResolver(IIdentityClient identity)
 {
-    private Task<CurrentUser>? connectionData;
+    private Task<CurrentUser>? _connectionData;
 
     public static bool IsMe(string value) => string.Equals(value.Trim(), "@me", StringComparison.OrdinalIgnoreCase);
 
-    public Task<CurrentUser> MeAsync() => connectionData ??= identity.GetCurrentUserAsync();
+    public Task<CurrentUser> MeAsync() => _connectionData ??= identity.GetCurrentUserAsync();
 
     public async Task<Person> ResolveAsync(string flag, string value, CancellationToken cancellationToken)
     {
