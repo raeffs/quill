@@ -10,6 +10,8 @@
 ### Changed
 
 - `backlog create --assigned-to` is now `--assignee`.
+- `wi list --assignee`, `wi create --assignee`: Resolve the person first. A value other than `@me` needs the Identity: Read PAT scope.
+- `pr list --reviewer`, `--author`, `wi list --assignee`, `wi create --assignee`, `backlog create --assignee`: A blank value exits 1. `backlog create --assignee ""` used to use the current user.
 - `pr list` (`--skip`, `--state`), `pr threads --limit`, `wi comments --limit`, `wi tree --depth`: Report a bad value as a usage error on stderr with exit code 3, like the `pipeline` commands, instead of a JSON error row on stdout.
 
 ## [2.2.0]
