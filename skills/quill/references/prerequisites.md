@@ -25,8 +25,11 @@ The install needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs 
 | `pipeline trigger`, `pipeline cancel`, `pipeline retry` | Build: Read & execute |
 | `pipeline tests` | Test Management: Read |
 | `pr checks` | Code: Read |
+| `--reviewer`, `--author` or `--assignee` with a value other than `@me` | Identity: Read |
 
 `pr view` also reads the linked work items, so it needs Work Items: Read. `pr create` links work items through the pull request and needs no work item scope, whether or not you pass `--work-item`.
+
+Without Identity: Read, a command that resolves a person exits 2, and the message names Identity: Read.
 
 A pipeline command answers `401 (Unauthorized)` with exit 2 when the PAT lacks its scope. The server sends 401 for a missing scope and for a bad PAT alike. If the same PAT serves `pr` and `wi` commands, the PAT is fine and the scope is missing.
 

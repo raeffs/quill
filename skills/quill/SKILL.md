@@ -67,7 +67,9 @@ These are the things the help output and a successful run do not tell you.
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Feature`, `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Feature needs an Epic parent, a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
-- `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user.
+- `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user unless you pass `--assignee`.
+- `--reviewer`, `--author` and `--assignee` accept `@me`, a display name, a unique name such as `CONTOSO\jdoe`, or an email address. The match is exact, so `Jane` does not find `Jane Doe`. Groups are not accepted.
+- A person flag whose value matches nobody exits 1 and names the flag and the value. A value that matches several people exits 1 and lists each display name with its unique name. Pass the unique name.
 - `wi create` takes a repeatable `--tag`, one value per flag. A tag must not contain `;` or `,` or be empty, and a bad value exits 3 before any request.
 - `wi create` takes a repeatable `--predecessor`, one ID per flag. A value that is not a positive integer, or a repeated ID, exits 3 before any request. The server rejects missing targets and cycles, which exits 1 and creates nothing.
 - `backlog create` and `wi create` give the new item its parent's area and iteration.
@@ -144,6 +146,6 @@ These are the things the help output and a successful run do not tell you.
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Validation failure (wrong state or assignee), or the server rejected a work item write or a pipeline trigger, cancel or retry |
+| 1 | Validation failure (wrong state or assignee, or a person flag that matches nobody or several people), or the server rejected a work item write or a pipeline trigger, cancel or retry |
 | 2 | API error (network, auth, server) |
 | 3 | Configuration or argument error |

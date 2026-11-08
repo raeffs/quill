@@ -5,10 +5,12 @@
 ### Added
 
 - `quill pr checks`: Prints a `verdict`: `blocked`, `waiting`, `ready`, or `null`.
+- `pr list --reviewer` and `--author`, `wi list --assignee`, `wi create --assignee`, `backlog create --assignee`: Accept `@me`, a display name, a unique name or an email address. A value that matches nobody or several people exits 1.
 
 ### Changed
 
-- `pr list` (`--reviewer`, `--author`, `--skip`, `--state`), `pr threads --limit`, `wi comments --limit`, `wi tree --depth`: Report a bad value as a usage error on stderr with exit code 3, like the `pipeline` commands, instead of a JSON error row on stdout.
+- `backlog create --assigned-to` is now `--assignee`.
+- `pr list` (`--skip`, `--state`), `pr threads --limit`, `wi comments --limit`, `wi tree --depth`: Report a bad value as a usage error on stderr with exit code 3, like the `pipeline` commands, instead of a JSON error row on stdout.
 
 ## [2.2.0]
 
