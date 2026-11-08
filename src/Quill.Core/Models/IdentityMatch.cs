@@ -6,4 +6,4 @@ public enum IdentitySearchFilter
     MailAddress,
 }
 
-public sealed record IdentityMatch(string Id, string DisplayName, string UniqueName, bool IsContainer);
+public sealed record IdentityMatch(string Id, string DisplayName, string? UniqueName, bool IsContainer);

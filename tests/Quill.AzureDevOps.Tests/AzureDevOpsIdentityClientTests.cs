@@ -111,6 +111,73 @@ public class AzureDevOpsIdentityClientTests
 
         ex.Message.ShouldEndWith("Resolving a person needs the Identity: Read PAT scope.");
     }
+
+    [Fact]
+    public async Task SearchAsync_MissingDomain_HasNoUniqueName()
+    {
+        var json = """{"value":[{"id":"a1b2c3d4-0000-4000-8000-000000000003","providerDisplayName":"John Roe","properties":{"Account":{"$type":"System.String","$value":"jroe"}}}]}""";
+        using var harness = new Harness(json);
+
+        var matches = await harness.Client.SearchAsync(IdentitySearchFilter.General, "John Roe", CancellationToken.None);
+
+        matches.Single().UniqueName.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task SearchAsync_MissingProperties_HasNoUniqueName()
+    {
+        var json = """{"value":[{"id":"a1b2c3d4-0000-4000-8000-000000000003","providerDisplayName":"John Roe"}]}""";
+        using var harness = new Harness(json);
+
+        var matches = await harness.Client.SearchAsync(IdentitySearchFilter.General, "John Roe", CancellationToken.None);
+
+        matches.ShouldBe([new IdentityMatch("a1b2c3d4-0000-4000-8000-000000000003", "John Roe", null, IsContainer: false)]);
+    }
+
+    [Fact]
+    public async Task SearchAsync_MissingValue_ReturnsEmpty()
+    {
+        using var harness = new Harness("""{"count":0}""");
+
+        var matches = await harness.Client.SearchAsync(IdentitySearchFilter.General, "nobody", CancellationToken.None);
+
+        matches.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task SearchAsync_NonObjectElement_IsSkipped()
+    {
+        var json = """{"value":["x",null,{"id":"a1b2c3d4-0000-4000-8000-000000000001","providerDisplayName":"Jane Doe"}]}""";
+        using var harness = new Harness(json);
+
+        var matches = await harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane", CancellationToken.None);
+
+        matches.Single().DisplayName.ShouldBe("Jane Doe");
+    }
+
+    [Theory]
+    [InlineData("""{"value":[{"providerDisplayName":"Jane Doe"}]}""")]
+    [InlineData("""{"value":[{"id":null,"providerDisplayName":"Jane Doe"}]}""")]
+    public async Task SearchAsync_MissingId_Throws(string json)
+    {
+        using var harness = new Harness(json);
+
+        var ex = await Should.ThrowAsync<InvalidOperationException>(
+            () => harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane", CancellationToken.None));
+
+        ex.Message.ShouldBe("Identity ID not found in identities response.");
+    }
+
+    [Fact]
+    public async Task SearchAsync_MissingDisplayName_Throws()
+    {
+        using var harness = new Harness("""{"value":[{"id":"a1b2c3d4-0000-4000-8000-000000000001"}]}""");
+
+        var ex = await Should.ThrowAsync<InvalidOperationException>(
+            () => harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane", CancellationToken.None));
+
+        ex.Message.ShouldBe("Identity display name not found in identities response.");
+    }
     private sealed class Harness : IDisposable
     {
         private readonly HttpClient _http;

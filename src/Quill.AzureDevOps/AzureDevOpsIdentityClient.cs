@@ -55,23 +55,44 @@ public class AzureDevOpsIdentityClient : IIdentityClient
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
 
         var matches = new List<IdentityMatch>();
-        foreach (var item in doc.RootElement.GetProperty("value").EnumerateArray())
+        if (!doc.RootElement.TryGetProperty("value", out var items) || items.ValueKind != JsonValueKind.Array)
         {
-            var id = item.GetProperty("id").GetString() ?? string.Empty;
-            var displayName = item.GetProperty("providerDisplayName").GetString() ?? string.Empty;
+            return matches;
+        }
+
+        foreach (var item in items.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var id = ReadString(item, "id")
+                ?? throw new InvalidOperationException("Identity ID not found in identities response.");
+            var displayName = ReadString(item, "providerDisplayName")
+                ?? throw new InvalidOperationException("Identity display name not found in identities response.");
             var isContainer = item.TryGetProperty("isContainer", out var container) && container.ValueKind == JsonValueKind.True;
-            var properties = item.GetProperty("properties");
-            var domain = ReadProperty(properties, "Domain");
-            var account = ReadProperty(properties, "Account");
-            var uniqueName = string.IsNullOrEmpty(domain) ? account : $@"{domain}\{account}";
+            var domain = ReadProperty(item, "Domain");
+            var account = ReadProperty(item, "Account");
+            var uniqueName = string.IsNullOrEmpty(domain) || string.IsNullOrEmpty(account) ? null : $@"{domain}\{account}";
             matches.Add(new IdentityMatch(id, displayName, uniqueName, isContainer));
         }
 
         return matches;
     }
 
-    private static string ReadProperty(JsonElement properties, string name) =>
-        properties.TryGetProperty(name, out var property) && property.TryGetProperty("$value", out var value)
+    private static string? ReadString(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static string ReadProperty(JsonElement item, string name) =>
+        item.TryGetProperty("properties", out var properties)
+        && properties.ValueKind == JsonValueKind.Object
+        && properties.TryGetProperty(name, out var property)
+        && property.ValueKind == JsonValueKind.Object
+        && property.TryGetProperty("$value", out var value)
+        && value.ValueKind == JsonValueKind.String
             ? value.GetString() ?? string.Empty
             : string.Empty;
 }
