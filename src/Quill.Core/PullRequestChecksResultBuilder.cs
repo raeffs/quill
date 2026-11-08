@@ -10,11 +10,36 @@ public static class PullRequestChecksResultBuilder
         return new PullRequestChecksResult
         {
             Id = pullRequest.Id,
+            Verdict = Judge(pullRequest, evaluations),
             Status = pullRequest.Status,
             MergeStatus = pullRequest.MergeStatus,
             IsDraft = pullRequest.IsDraft,
             Checks = evaluations.Select(BuildCheck).ToList(),
         };
+    }
+
+    private static string? Judge(PullRequest pullRequest, IReadOnlyList<PolicyEvaluation> evaluations)
+    {
+        if (pullRequest.Status is not "active")
+        {
+            return null;
+        }
+
+        var blockingStatuses = evaluations.Where(e => e.IsBlocking).Select(e => e.Status).ToList();
+
+        if (pullRequest.IsDraft
+            || pullRequest.MergeStatus is "conflicts" or "failure"
+            || blockingStatuses.Any(s => s is "rejected" or "broken"))
+        {
+            return "blocked";
+        }
+
+        if (pullRequest.MergeStatus is "queued" || blockingStatuses.Any(s => s is "queued" or "running"))
+        {
+            return "waiting";
+        }
+
+        return "ready";
     }
 
     private static PullRequestCheckResult BuildCheck(PolicyEvaluation evaluation)

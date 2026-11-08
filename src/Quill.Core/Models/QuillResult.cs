@@ -417,6 +417,9 @@ public class PullRequestChecksResult
     [JsonPropertyName("id")]
     public required int Id { get; init; }
 
+    [JsonPropertyName("verdict")]
+    public string? Verdict { get; init; }
+
     [JsonPropertyName("status")]
     public required string Status { get; init; }
 

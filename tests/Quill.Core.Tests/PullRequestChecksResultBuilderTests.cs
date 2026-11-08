@@ -149,6 +149,170 @@ public class PullRequestChecksResultBuilderTests
         result.Checks.Select(c => c.Name).ShouldBe(["Minimum reviewers", "Build", "Work item linking"]);
     }
 
+    [Theory]
+    [InlineData("completed")]
+    [InlineData("abandoned")]
+    public void Build_NotActive_VerdictIsNull(string status)
+    {
+        // Arrange
+        var pullRequest = MakePullRequest(status: status, isDraft: true, mergeStatus: "conflicts");
+
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(
+            pullRequest,
+            [MakeEvaluation(isBlocking: true, status: "rejected")]);
+
+        // Assert
+        result.Verdict.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Build_Draft_IsBlocked()
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(isDraft: true), []);
+
+        // Assert
+        result.Verdict.ShouldBe("blocked");
+    }
+
+    [Theory]
+    [InlineData("conflicts")]
+    [InlineData("failure")]
+    public void Build_BlockingMergeStatus_IsBlocked(string mergeStatus)
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(mergeStatus: mergeStatus), []);
+
+        // Assert
+        result.Verdict.ShouldBe("blocked");
+    }
+
+    [Theory]
+    [InlineData("rejected")]
+    [InlineData("broken")]
+    public void Build_BlockingCheckFailed_IsBlocked(string status)
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(
+            MakePullRequest(),
+            [MakeEvaluation(isBlocking: true, status: status)]);
+
+        // Assert
+        result.Verdict.ShouldBe("blocked");
+    }
+
+    [Fact]
+    public void Build_MergeStatusQueued_IsWaiting()
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(mergeStatus: "queued"), []);
+
+        // Assert
+        result.Verdict.ShouldBe("waiting");
+    }
+
+    [Theory]
+    [InlineData("queued")]
+    [InlineData("running")]
+    public void Build_BlockingCheckPending_IsWaiting(string status)
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(
+            MakePullRequest(),
+            [MakeEvaluation(isBlocking: true, status: status)]);
+
+        // Assert
+        result.Verdict.ShouldBe("waiting");
+    }
+
+    [Fact]
+    public void Build_BlockedBeatsWaiting()
+    {
+        // Arrange
+        var evaluations = new[]
+        {
+            MakeEvaluation(isBlocking: true, status: "running"),
+            MakeEvaluation(isBlocking: true, status: "rejected"),
+        };
+
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(), evaluations);
+
+        // Assert
+        result.Verdict.ShouldBe("blocked");
+    }
+
+    [Theory]
+    [InlineData("rejected")]
+    [InlineData("broken")]
+    [InlineData("queued")]
+    [InlineData("running")]
+    public void Build_NonBlockingCheck_IsIgnored(string status)
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(
+            MakePullRequest(),
+            [MakeEvaluation(isBlocking: false, status: status)]);
+
+        // Assert
+        result.Verdict.ShouldBe("ready");
+    }
+
+    [Fact]
+    public void Build_NoChecks_IsReady()
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(), []);
+
+        // Assert
+        result.Verdict.ShouldBe("ready");
+    }
+
+    [Fact]
+    public void Build_BlockingChecksApproved_IsReady()
+    {
+        // Arrange
+        var evaluations = new[]
+        {
+            MakeEvaluation(name: "Build", isBlocking: true, status: "approved"),
+            MakeEvaluation(name: "Minimum reviewers", isBlocking: true, status: "approved"),
+        };
+
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(mergeStatus: "succeeded"), evaluations);
+
+        // Assert
+        result.Verdict.ShouldBe("ready");
+    }
+
+    [Theory]
+    [InlineData("rejectedByPolicy")]
+    [InlineData("notSet")]
+    [InlineData("succeeded")]
+    public void Build_MergeStatusWithoutRule_IsReady(string mergeStatus)
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(MakePullRequest(mergeStatus: mergeStatus), []);
+
+        // Assert
+        result.Verdict.ShouldBe("ready");
+    }
+
+    [Theory]
+    [InlineData("notApplicable")]
+    [InlineData("someFutureStatus")]
+    public void Build_BlockingCheckUnknownStatus_IsReady(string status)
+    {
+        // Act
+        var result = PullRequestChecksResultBuilder.Build(
+            MakePullRequest(),
+            [MakeEvaluation(isBlocking: true, status: status)]);
+
+        // Assert
+        result.Verdict.ShouldBe("ready");
+    }
+
     private static JsonElement Json(string json)
     {
         return JsonDocument.Parse(json).RootElement.Clone();
@@ -173,14 +337,14 @@ public class PullRequestChecksResultBuilderTests
         };
     }
 
-    private static PullRequest MakePullRequest(string? mergeStatus = null, bool isDraft = false)
+    private static PullRequest MakePullRequest(string? mergeStatus = null, bool isDraft = false, string status = "active")
     {
         return new PullRequest
         {
             Id = 4711,
             Title = "Add the Contoso widget",
             AuthorDisplayName = "Jane Doe",
-            Status = "active",
+            Status = status,
             IsDraft = isDraft,
             RepoName = "Contoso.Widgets",
             SourceBranch = "feature/widget",

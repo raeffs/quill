@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `quill pr checks`: Prints a `verdict`: `blocked`, `waiting`, `ready`, or `null`.
+
 ### Changed
 
 - `pr list` (`--reviewer`, `--author`, `--skip`, `--state`), `pr threads --limit`, `wi comments --limit`, `wi tree --depth`: Report a bad value as a usage error on stderr with exit code 3, like the `pipeline` commands, instead of a JSON error row on stdout.

@@ -535,7 +535,7 @@ public class JsonEncodingTests
 
         using var document = JsonDocument.Parse(json);
         document.RootElement.EnumerateObject().Select(p => p.Name)
-            .ShouldBe(["id", "status", "mergeStatus", "isDraft", "checks"]);
+            .ShouldBe(["id", "verdict", "status", "mergeStatus", "isDraft", "checks"]);
         document.RootElement.GetProperty("checks")[0].EnumerateObject().Select(p => p.Name)
             .ShouldBe(["name", "isBlocking", "status", "startedDate", "completedDate", "context"]);
     }
@@ -548,6 +548,23 @@ public class JsonEncodingTests
             CommandHelpers.Context.PullRequestChecksResult);
 
         json.ShouldContain("\"mergeStatus\":null");
+    }
+
+    [Fact]
+    public void PullRequestChecksResult_NullVerdict_EmitsNull()
+    {
+        var result = new PullRequestChecksResult
+        {
+            Id = 4711,
+            Verdict = null,
+            Status = "completed",
+            IsDraft = false,
+            Checks = [],
+        };
+
+        var json = JsonSerializer.Serialize(result, CommandHelpers.Context.PullRequestChecksResult);
+
+        json.ShouldContain("\"verdict\":null");
     }
 
     [Fact]
@@ -719,6 +736,7 @@ public class JsonEncodingTests
         return new PullRequestChecksResult
         {
             Id = 4711,
+            Verdict = "ready",
             Status = "active",
             MergeStatus = null,
             IsDraft = false,
