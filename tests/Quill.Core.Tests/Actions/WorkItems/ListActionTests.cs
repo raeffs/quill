@@ -50,7 +50,7 @@ public class ListActionTests
             Search = (_, _) => [new IdentityMatch("id-1", "Jane Doe", @"CONTOSO\jdoe", false)],
         };
 
-        await ListAction.RunAsync(client, client, identity, new WiListRequest(null, "Jane", [], [], 20), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(client, client, identity, new WiListRequest(null, "Jane Doe", [], [], 20), TestContext.Current.CancellationToken);
 
         wiql.ShouldNotBeNull().ShouldContain(@"[System.AssignedTo] = 'Jane Doe <CONTOSO\jdoe>'");
     }
@@ -92,7 +92,7 @@ public class ListActionTests
             Search = (_, _) => [new IdentityMatch("id", "Pat O'Brien", @"CONTOSO\pobrien", false)],
         };
 
-        await ListAction.RunAsync(client, client, identity, new WiListRequest(null, "Pat", [], [], 20), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(client, client, identity, new WiListRequest(null, "Pat O'Brien", [], [], 20), TestContext.Current.CancellationToken);
 
         wiql.ShouldNotBeNull().ShouldContain(@"'Pat O''Brien <CONTOSO\pobrien>'");
     }

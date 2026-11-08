@@ -71,7 +71,7 @@ public class PersonResolverTests
             ],
         };
 
-        var person = await new PersonResolver(identity).ResolveAsync("--assignee", "John", TestContext.Current.CancellationToken);
+        var person = await new PersonResolver(identity).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
 
         person.Id.ShouldBe("id-2");
     }
@@ -119,6 +119,53 @@ public class PersonResolverTests
         ex.Message.ShouldBe(@"--reviewer 'Jane Doe' matches 2 people: Jane Doe (CONTOSO\jdoe), Jane Doe (CONTOSO\jdoe2). Pass the unique name.");
     }
 
+    [Fact]
+    public async Task ResolveAsync_SamePersonTwice_ReturnsThatPerson()
+    {
+        var identity = new ScriptedIdentityClient
+        {
+            Search = (_, _) =>
+            [
+                Match("id-2", "John Roe", @"CONTOSO\jroe"),
+                Match("id-2", "John Roe", @"CONTOSO\jroe"),
+            ],
+        };
+
+        var person = await new PersonResolver(identity).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+
+        person.Id.ShouldBe("id-2");
+    }
+
+    [Fact]
+    public async Task ResolveAsync_NoUniqueName_PersonHasNone()
+    {
+        var identity = new ScriptedIdentityClient
+        {
+            Search = (_, _) => [Match("id-2", "John Roe", null)],
+        };
+
+        var person = await new PersonResolver(identity).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+
+        person.ShouldBe(new Person("id-2", "John Roe", null));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_TwoPeopleWithoutUniqueName_ListsDisplayNamesOnly()
+    {
+        var identity = new ScriptedIdentityClient
+        {
+            Search = (_, _) =>
+            [
+                Match("id-1", "John Roe", null),
+                Match("id-2", "John Roe", @"CONTOSO\jroe2"),
+            ],
+        };
+
+        var ex = await Should.ThrowAsync<InvalidRequestException>(
+            () => new PersonResolver(identity).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe(@"--assignee 'John Roe' matches 2 people: John Roe, John Roe (CONTOSO\jroe2). Pass the unique name.");
+    }
     [Theory]
     [InlineData("")]
     [InlineData("  ")]
@@ -145,6 +192,6 @@ public class PersonResolverTests
         new Person("id", "Jane Doe", null).AssignedTo.ShouldBe("Jane Doe");
     }
 
-    private static IdentityMatch Match(string id, string name, string unique, bool isContainer = false)
+    private static IdentityMatch Match(string id, string name, string? unique, bool isContainer = false)
         => new(id, name, unique, isContainer);
 }

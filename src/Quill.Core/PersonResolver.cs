@@ -26,7 +26,7 @@ public sealed class PersonResolver(IIdentityClient identity)
 
         var filter = trimmed.Contains('@', StringComparison.Ordinal) ? IdentitySearchFilter.MailAddress : IdentitySearchFilter.General;
         var hits = await identity.SearchAsync(filter, trimmed, cancellationToken);
-        var people = hits.Where(hit => !hit.IsContainer).ToList();
+        var people = hits.Where(hit => !hit.IsContainer).DistinctBy(hit => hit.Id, StringComparer.Ordinal).ToList();
 
         if (people.Count == 0)
         {
@@ -37,7 +37,7 @@ public sealed class PersonResolver(IIdentityClient identity)
 
         if (people.Count > 1)
         {
-            var listed = string.Join(", ", people.Select(p => $"{p.DisplayName} ({p.UniqueName})"));
+            var listed = string.Join(", ", people.Select(p => p.UniqueName is null ? p.DisplayName : $"{p.DisplayName} ({p.UniqueName})"));
             throw new InvalidRequestException($"{flag} '{trimmed}' matches {people.Count} people: {listed}. Pass the unique name.");
         }
 

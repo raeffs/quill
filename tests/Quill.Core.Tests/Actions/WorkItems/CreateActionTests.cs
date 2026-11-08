@@ -103,11 +103,11 @@ public class CreateActionTests
             Search = (_, _) =>
             [
                 new IdentityMatch("id-2", "John Roe", @"CONTOSO\jroe", false),
-                new IdentityMatch("id-3", "John Roeder", @"CONTOSO\jroeder", false),
+                new IdentityMatch("id-3", "John Roe", @"CONTOSO\jroe2", false),
             ],
         };
 
-        await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "John")));
+        await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "John Roe")));
 
         client.CreateCall.ShouldBeNull();
     }
