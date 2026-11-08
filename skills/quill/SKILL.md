@@ -43,7 +43,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 | `pr view` | You want one pull request with its description and its linked work items. |
 | `pr threads` | You want the review comments on a pull request, with the file and the line the code sits on now. |
 | `pr revisions` | You want to know what changed since you last reviewed. Lists one row per push, with the commits git needs to diff them. |
-| `pr checks` | You want to know whether the checks that gate a pull request passed, build validation included. |
+| `pr checks` | You want to know whether a pull request can merge, and if not, why. Prints a `verdict` and the checks that gate the merge, build validation included. |
 | `pr create` | You finished a branch and want a pull request open on it. Opens a draft. |
 
 ### pipeline
@@ -87,6 +87,8 @@ These are the things the help output and a successful run do not tell you.
 - `pipeline tests` prints `[]` for a run without tests and for an unknown run ID alike. `pipeline view` reports a missing run.
 - `pipeline tests --with-results` returns at most 1000 results per test run without `--limit`. When a test run returns exactly `--limit` results, page with `--skip` or widen `--limit`.
 - On `pr checks`, a `Build` check's `context.buildId` is the run ID. Call `pipeline view <buildId> --with-stages` for the run and its failed tasks. `context.buildIsNotCurrent` and `context.isExpired` tell you the check ran against code that is gone. `context` is `null` while the check is `queued`.
+- On `pr checks`, `verdict` is `blocked` when someone must act: the author, a reviewer or an administrator. A draft, a merge conflict, and a blocking check at `rejected` or `broken` all give `blocked`. It is `waiting` when nothing remains but to wait for a blocking check or the merge attempt. It is `ready` when nothing blocks the merge, and `null` when the pull request is not active. Read the rejected rows to see who must act. A reviewer policy that waits for approvals can read `rejected`.
+- The `verdict` does not see staleness. A `blocked` verdict can rest on a `Build` check whose `context.buildIsNotCurrent` or `context.isExpired` is true. Read the row before you debug the failure.
 - A check is not a CI run. `pr checks` also carries reviewer minimums, work item links and comment requirements. Filtering for the build and reporting "all checks passed" is wrong.
 - `issues` lists the first ten errors and the first ten warnings of a task. `errorCount` and `warningCount` count them all.
 - A pipeline without a `stages:` block has one stage named `__default`.

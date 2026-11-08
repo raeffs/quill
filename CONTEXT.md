@@ -95,10 +95,10 @@ DevOps tracked nothing, and the current position repeats the original one.
 _Avoid_: confidence, accuracy, tracking status
 
 **Vote**:
-A reviewer's verdict on a pull request. It is one of five: approved, approved
+A reviewer's judgement on a pull request. It is one of five: approved, approved
 with suggestions, waiting for the author, rejected, or no vote. Quill names
 these; Azure DevOps numbers them.
-_Avoid_: score, rating
+_Avoid_: score, rating, verdict
 
 **Waiting for the author**:
 A reviewer has read the pull request and wants changes. Under *no vote* the
@@ -123,6 +123,17 @@ The act that ends a draft. It assigns the reviewers policy requires, evaluates
 the policies, and opens voting. A pull request cannot return to draft without
 discarding every vote it has collected.
 _Avoid_: undraft, open, ready for review
+
+**Check**:
+A policy evaluation that can gate the merge of a pull request. Quill says
+*check*; the server and the adapter say *policy evaluation*.
+_Avoid_: policy, status, CI run
+
+**Verdict**:
+Quill's judgement on whether a pull request can merge. It is one of blocked
+(someone must act), waiting (nothing to do but wait), ready, or none when the
+pull request is not active.
+_Avoid_: state, result
 
 ## Pipelines
 
@@ -182,10 +193,10 @@ _Avoid_: run, suite, test batch
 
 **Test result**:
 What one test did within a test run. It is never a bare *result*, which is
-the verdict of a run.
+what a run concluded.
 _Avoid_: result, test case, test
 
 **Outcome**:
-The verdict of a test result. Azure DevOps names it: passed, failed, not
+What a test result concluded. Azure DevOps names it: passed, failed, not
 executed, and others. A run has a result; a test result has an outcome.
 _Avoid_: result, status, verdict
