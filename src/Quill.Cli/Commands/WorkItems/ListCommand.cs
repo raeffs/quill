@@ -16,7 +16,7 @@ internal static class ListCommand
 
         var assigneeOption = new Option<string?>("--assignee")
         {
-            Description = "Assignee filter. Accepts @me or a display name.",
+            Description = "Assignee filter. Accepts @me, a display name, a unique name or an email address.",
         };
 
         var stateOption = new Option<string[]>("--state")
@@ -59,6 +59,7 @@ internal static class ListCommand
                 ct => ListAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
+                    serviceProvider.GetRequiredService<IIdentityClient>(),
                     request,
                     ct),
                 CommandHelpers.Context.ListSearchResult,
