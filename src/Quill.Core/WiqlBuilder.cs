@@ -34,7 +34,7 @@ public static class WiqlBuilder
         if (hasAssignee)
         {
             var trimmed = assignee!.Trim();
-            clauses.Add(string.Equals(trimmed, "@me", StringComparison.OrdinalIgnoreCase)
+            clauses.Add(PersonResolver.IsMe(trimmed)
                 ? "[System.AssignedTo] = @Me"
                 : $"[System.AssignedTo] = '{Escape(trimmed)}'");
         }
