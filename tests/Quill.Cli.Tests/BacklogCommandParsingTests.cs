@@ -26,14 +26,22 @@ public class BacklogCommandParsingTests
     }
 
     [Fact]
-    public void Parse_BacklogCreate_AcceptsAssignedTo()
+    public void Parse_BacklogCreate_AcceptsAssignee()
     {
-        var parseResult = CliHost.Parse(["backlog", "create", "new.md", "--assigned-to", "Jane Doe"], TestServices.Empty);
+        var parseResult = CliHost.Parse(["backlog", "create", "new.md", "--assignee", "Jane Doe"], TestServices.Empty);
 
         parseResult.Errors.ShouldBeEmpty();
         parseResult.CommandResult.Command.Name.ShouldBe("create");
         parseResult.GetValue<string>("file-path").ShouldBe("new.md");
-        parseResult.GetValue<string?>("--assigned-to").ShouldBe("Jane Doe");
+        parseResult.GetValue<string?>("--assignee").ShouldBe("Jane Doe");
+    }
+
+    [Fact]
+    public void Parse_BacklogCreate_RejectsAssignedTo()
+    {
+        var parseResult = CliHost.Parse(["backlog", "create", "new.md", "--assigned-to", "Jane Doe"], TestServices.Empty);
+
+        parseResult.Errors.ShouldNotBeEmpty();
     }
 
     [Theory]

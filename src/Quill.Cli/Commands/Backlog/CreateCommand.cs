@@ -12,26 +12,26 @@ internal static class CreateCommand
     public static Command Create(IServiceProvider serviceProvider)
     {
         var fileArg = new Argument<string>("file-path") { Description = "Path to the markdown file with frontmatter" };
-        var assignedToOption = new Option<string?>("--assigned-to") { Description = "Name of the user to assign the work item to. Defaults to the authenticated PAT user." };
+        var assigneeOption = new Option<string?>("--assignee") { Description = "Person to assign the work item to. Accepts @me, a display name, a unique name or an email address. Defaults to @me." };
 
         var command = new Command("create", "Create a new work item on Azure DevOps from a markdown file")
         {
             fileArg,
-            assignedToOption,
+            assigneeOption,
         };
 
         command.SetAction((parseResult, cancellationToken) =>
         {
             var filePath = parseResult.GetValue(fileArg)!;
-            var assignedTo = parseResult.GetValue(assignedToOption);
-            return ExecuteAsync(serviceProvider, filePath, assignedTo, cancellationToken);
+            var assignee = parseResult.GetValue(assigneeOption);
+            return ExecuteAsync(serviceProvider, filePath, assignee, cancellationToken);
         });
 
         return command;
     }
 
     private static Task ExecuteAsync(
-        IServiceProvider serviceProvider, string filePath, string? assignedTo, CancellationToken cancellationToken)
+        IServiceProvider serviceProvider, string filePath, string? assignee, CancellationToken cancellationToken)
     {
         return CommandHelpers.RunAsync(
             async ct =>
@@ -48,7 +48,7 @@ internal static class CreateCommand
                     serviceProvider.GetRequiredService<IIdentityClient>(),
                     serviceProvider.GetRequiredService<RichText>(),
                     content,
-                    assignedTo);
+                    assignee);
 
                 await File.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
 

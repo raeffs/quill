@@ -13,7 +13,7 @@ public static class CreateAction
         IIdentityClient identity,
         RichText richText,
         string fileContent,
-        string? assignedTo)
+        string? assignee)
     {
         var parsed = FrontmatterParser.Parse(fileContent);
 
@@ -43,7 +43,8 @@ public static class CreateAction
         }
 
         var parentWorkItem = await client.GetWorkItemAsync(parsed.ParentId.Value);
-        var currentUser = await identity.GetCurrentUserAsync();
+        var resolver = new PersonResolver(identity);
+        var currentUser = await resolver.MeAsync();
 
         var validation = ParentValidator.Validate(parsed.Type, parentWorkItem, currentUser.Id);
         if (!validation.IsValid)
@@ -51,7 +52,7 @@ public static class CreateAction
             throw new InvalidRequestException(string.Join("; ", validation.Errors));
         }
 
-        var assignee = string.IsNullOrWhiteSpace(assignedTo) ? currentUser.DisplayName : assignedTo;
+        var person = await resolver.ResolveAsync("--assignee", assignee ?? "@me", CancellationToken.None);
 
         var (descriptionHtml, linkIds) = await richText.ToHtmlAsync(parsed.Body);
 
@@ -59,7 +60,7 @@ public static class CreateAction
             parsed.Type,
             parsed.Title,
             parsed.ParentId.Value,
-            AssignedToId: assignee,
+            AssignedToId: person.AssignedTo,
             DescriptionHtml: string.IsNullOrEmpty(descriptionHtml) ? null : descriptionHtml,
             IterationPath: parentWorkItem.IterationPath,
             AreaPath: parentWorkItem.AreaPath,

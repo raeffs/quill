@@ -53,25 +53,42 @@ public class CreateActionTests
     {
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
+        var identity = new ScriptedIdentityClient();
 
-        var outcome = await CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null);
+        var outcome = await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null);
 
         outcome.Row.Id.ShouldBe(1000);
         outcome.Row.Title.ShouldBe("T");
         outcome.FileContent.ShouldStartWith("---");
         outcome.FileContent.ShouldContain("id: 1000");
         client.CreateCall!.AssignedToId.ShouldBe("Jane Doe");
+        identity.Calls.ShouldBe(["GetCurrentUser"]);
     }
 
     [Fact]
-    public async Task RunAsync_AssignedTo_OverridesTheCurrentUser()
+    public async Task RunAsync_NamedAssignee_WritesTheCombinedForm()
+    {
+        var client = new FakeAzureDevOpsClient();
+        client.Add(Parent());
+        var identity = new ScriptedIdentityClient
+        {
+            Search = (_, _) => [new IdentityMatch("id-2", "John Roe", @"CONTOSO\jroe", false)],
+        };
+
+        await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "John Roe");
+
+        client.CreateCall!.AssignedToId.ShouldBe(@"John Roe <CONTOSO\jroe>");
+    }
+
+    [Fact]
+    public async Task RunAsync_UnknownAssignee_CreatesNothing()
     {
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        await CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "John Roe");
+        await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "Nobody"));
 
-        client.CreateCall!.AssignedToId.ShouldBe("John Roe");
+        client.CreateCall.ShouldBeNull();
     }
 
     private static WorkItem Parent(string assignedToId = "user-1") => new()
