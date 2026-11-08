@@ -31,6 +31,19 @@ the agent as markdown and turns markdown back into it, so a linked work item
 names its type and title in both.
 _Avoid_: HTML field, body, content
 
+## People
+
+**Person**:
+A human the server knows, never a group. An agent names a person by
+`@me`, a display name, a unique name or an email address, and the name must
+match exactly one person.
+_Avoid_: user, identity, account
+
+**Unique name**:
+The name that tells one person from every other, such as `CONTOSO\jdoe`. Two
+people can share a display name, but never a unique name.
+_Avoid_: account name, alias, login
+
 ## Backlog
 
 **Backlog**:
