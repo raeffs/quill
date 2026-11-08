@@ -95,6 +95,16 @@ public class PrListCommandParsingTests
     }
 
     [Fact]
+    public void Parse_NamedReviewerAndAuthor_PassThrough()
+    {
+        var parseResult = CliHost.Parse(["pr", "list", "--reviewer", "Jane Doe", "--author", @"CONTOSO\jroe"], TestServices.Empty);
+
+        parseResult.Errors.ShouldBeEmpty();
+        parseResult.GetValue<string?>("--reviewer").ShouldBe("Jane Doe");
+        parseResult.GetValue<string?>("--author").ShouldBe(@"CONTOSO\jroe");
+    }
+
+    [Fact]
     public void Parse_IncludeDrafts_IsNotAnOption()
     {
         // Arrange + Act
@@ -105,8 +115,6 @@ public class PrListCommandParsingTests
     }
 
     [Theory]
-    [InlineData("--reviewer", "bob", "--reviewer accepts only '@me' in this release.")]
-    [InlineData("--author", "bob", "--author accepts only '@me' in this release.")]
     [InlineData("--skip", "-1", "--skip must not be negative.")]
     [InlineData("--state", "open", "--state must be one of: active, completed, abandoned, all.")]
     public void Parse_RejectedFlagValue_ProducesTheMessage(string flag, string value, string message)

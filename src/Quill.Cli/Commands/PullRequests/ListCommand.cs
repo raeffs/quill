@@ -13,12 +13,12 @@ internal static class ListCommand
     {
         var reviewerOption = new Option<string?>("--reviewer")
         {
-            Description = "Reviewer filter. Only @me is accepted in this release.",
+            Description = "Reviewer filter. Accepts @me, a display name, a unique name or an email address.",
         };
 
         var authorOption = new Option<string?>("--author")
         {
-            Description = "Author filter. Only @me is accepted in this release.",
+            Description = "Author filter. Accepts @me, a display name, a unique name or an email address.",
         };
 
         var stateOption = new Option<string?>("--state")
@@ -54,8 +54,6 @@ internal static class ListCommand
         };
 
         Validators.NotNegative(skipOption, "--skip");
-        AcceptOnlyMe(reviewerOption, "--reviewer");
-        AcceptOnlyMe(authorOption, "--author");
         stateOption.Validators.Add(result =>
         {
             var value = result.GetValueOrDefault<string?>();
@@ -80,8 +78,8 @@ internal static class ListCommand
         command.SetAction((parseResult, cancellationToken) =>
         {
             var request = new PrListRequest(
-                ReviewerIsMe: parseResult.GetValue(reviewerOption) is not null,
-                AuthorIsMe: parseResult.GetValue(authorOption) is not null,
+                Reviewer: parseResult.GetValue(reviewerOption),
+                Author: parseResult.GetValue(authorOption),
                 State: parseResult.GetValue(stateOption)!,
                 Repo: parseResult.GetValue(repoOption),
                 SourceBranch: parseResult.GetValue(sourceBranchOption),
@@ -101,14 +99,4 @@ internal static class ListCommand
 
         return command;
     }
-
-    private static void AcceptOnlyMe(Option<string?> option, string name) =>
-        option.Validators.Add(result =>
-        {
-            var value = result.GetValueOrDefault<string?>();
-            if (value is not null && !string.Equals(value, "@me", StringComparison.Ordinal))
-            {
-                result.AddError($"{name} accepts only '@me' in this release.");
-            }
-        });
 }

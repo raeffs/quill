@@ -3,8 +3,8 @@ using Quill.Core.Models;
 namespace Quill.Core.Actions.PullRequests;
 
 public sealed record PrListRequest(
-    bool ReviewerIsMe,
-    bool AuthorIsMe,
+    string? Reviewer,
+    string? Author,
     string State,
     string? Repo,
     string? SourceBranch,
@@ -20,13 +20,19 @@ public static class ListAction
         PrListRequest request,
         CancellationToken cancellationToken)
     {
-        var currentUser = await identity.GetCurrentUserAsync();
-        var userId = currentUser.Id;
+        var resolver = new PersonResolver(identity);
+        var reviewer = request.Reviewer is null
+            ? null
+            : await resolver.ResolveAsync("--reviewer", request.Reviewer, cancellationToken);
+        var author = request.Author is null
+            ? null
+            : await resolver.ResolveAsync("--author", request.Author, cancellationToken);
+        var currentUser = await resolver.MeAsync();
 
         var query = new PullRequestListQuery
         {
-            CreatorId = request.AuthorIsMe ? userId : null,
-            ReviewerId = request.ReviewerIsMe ? userId : null,
+            CreatorId = author?.Id,
+            ReviewerId = reviewer?.Id,
             Status = request.State,
             Repo = request.Repo,
             SourceBranch = request.SourceBranch,
@@ -38,7 +44,7 @@ public static class ListAction
         var results = await pullRequests.ListAsync(query, cancellationToken);
 
         return results
-            .Select(pr => PullRequestResultBuilder.Build(pr, userId))
+            .Select(pr => PullRequestResultBuilder.Build(pr, currentUser.Id))
             .ToList();
     }
 }
