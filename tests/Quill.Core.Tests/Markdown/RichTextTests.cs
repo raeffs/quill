@@ -400,6 +400,43 @@ public class RichTextTests
         markdown.ShouldContain("[#456](#456)");
     }
 
+    [Theory]
+    [InlineData("https://tfs.contoso.com:8080/tfs/DefaultCollection/MyProject/_workitems/edit/1002")]
+    [InlineData("https://devops.contoso.com/DefaultCollection/MyProject/_workitems/edit/1002")]
+    [InlineData("http://tfs.contoso.com/DefaultCollection/MyProject/_workitems/edit/1002")]
+    [InlineData("https://tfs.contoso.com:8080/tfs/DefaultCollection/6c1f3d2e-0000-4000-8000-000000000001/_workitems/edit/1002")]
+    public async Task ToMarkdownAsync_WithWorkItemLinkOnAnotherHost_RewritesToHashLink(string url)
+    {
+        var html = $"""<p><a href="{url}">Product Backlog Item 1002: Retire the legacy resource group</a></p>""";
+
+        var markdown = await CreateRichText().ToMarkdownAsync(html, TestContext.Current.CancellationToken);
+
+        markdown.ShouldBe("[#1002](#1002)");
+    }
+
+    [Fact]
+    public async Task ToMarkdownAsync_WithTwoForeignHostLinksOnOneLine_RewritesBoth()
+    {
+        var html = """<p><a href="https://tfs.contoso.com:8080/tfs/DefaultCollection/MyProject/_workitems/edit/1002">one</a> and <a href="https://tfs.contoso.com:8080/tfs/DefaultCollection/MyProject/_workitems/edit/1003">two</a></p>""";
+
+        var markdown = await CreateRichText().ToMarkdownAsync(html, TestContext.Current.CancellationToken);
+
+        markdown.ShouldBe("[#1002](#1002) and [#1003](#1003)");
+    }
+
+    [Theory]
+    [InlineData("https://tfs.contoso.com:8080/tfs/OtherCollection/MyProject/_workitems/edit/1002")]
+    [InlineData("https://tfs.contoso.com:8080/tfs/MyDefaultCollection/MyProject/_workitems/edit/1002")]
+    [InlineData("https://tfs.contoso.com:8080/tfs/defaultcollection/MyProject/_workitems/edit/1002")]
+    public async Task ToMarkdownAsync_WithWorkItemLinkInAnotherCollection_KeepsFullUrl(string url)
+    {
+        var html = $"""<p><a href="{url}">Product Backlog Item 1002</a></p>""";
+
+        var markdown = await CreateRichText().ToMarkdownAsync(html, TestContext.Current.CancellationToken);
+
+        markdown.ShouldBe($"[Product Backlog Item 1002]({url})");
+    }
+
     [Fact]
     public async Task ToHtmlAsync_EmptyMarkdown_ReturnsEmptyString()
     {

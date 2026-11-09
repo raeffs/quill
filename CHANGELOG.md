@@ -14,6 +14,10 @@
 - `pr list --reviewer`, `--author`, `wi list --assignee`, `wi create --assignee`, `backlog create --assignee`: A blank value exits 1. `backlog create --assignee ""` used to use the current user.
 - `pr list` (`--skip`, `--state`), `pr threads --limit`, `wi comments --limit`, `wi tree --depth`: Report a bad value as a usage error on stderr with exit code 3, like the `pipeline` commands, instead of a JSON error row on stdout.
 
+### Fixed
+
+- `backlog pull` and the commands that print a description or comment now convert a work item link on any host to the `(#id)` form. A link written before a server move used to stay a full URL.
+
 ## [2.2.0]
 
 ### Added

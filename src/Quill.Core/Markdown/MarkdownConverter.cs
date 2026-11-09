@@ -71,7 +71,6 @@ internal static partial class MarkdownConverter
 
     internal static async Task<string> ToMarkdownAsync(
         string html,
-        string serverUrl,
         string collection,
         string project,
         Func<IReadOnlyCollection<int>, Task<IReadOnlyDictionary<int, WorkItem>>> resolve)
@@ -93,9 +92,9 @@ internal static partial class MarkdownConverter
         markdown = TodoUncheckedRegex().Replace(markdown, "- [ ] ");
         markdown = TodoCheckedRegex().Replace(markdown, "- [x] ");
 
-        // The [^/]+ segment matches both project-name and GUID-based URLs.
-        var serverUrlEscaped = Regex.Escape($"{serverUrl.TrimEnd('/')}/{collection}");
-        var pattern = $@"\[((?:[^\[\]]|\[[^\]]*\])+)\]\({serverUrlEscaped}/[^/]+/_workitems/edit/(\d+)\)";
+        // The [^/\s()]+ segment matches both project-name and GUID-based URLs.
+        var collectionEscaped = Regex.Escape(collection);
+        var pattern = $@"\[((?:[^\[\]]|\[[^\]]*\])+)\]\(https?://[^\s()]*/{collectionEscaped}/[^/\s()]+/_workitems/edit/(\d+)\)";
         var regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(5));
 
         var linkIds = regex.Matches(markdown)

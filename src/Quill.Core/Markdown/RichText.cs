@@ -15,7 +15,7 @@ public sealed class RichText(QuillConfig config, IWorkItemBatchFetcher fetcher, 
         }
 
         var markdown = await MarkdownConverter.ToMarkdownAsync(
-            html, config.ServerUrl, config.Collection, config.Project, ids => LookUpAsync(ids, cancellationToken));
+            html, config.Collection, config.Project, ids => LookUpAsync(ids, cancellationToken));
         return markdown.TrimEnd();
     }
 
