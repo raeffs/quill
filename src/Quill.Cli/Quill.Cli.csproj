@@ -44,6 +44,11 @@
          without it, so packing a RID package *is* the AOT compile. -->
     <PublishAot>true</PublishAot>
     <ToolPackageRuntimeIdentifiers>linux-x64;win-x64;any</ToolPackageRuntimeIdentifiers>
+    <!-- The meta pack must stay a pointer. Since SDK 11 a pack without a RID also
+         builds the RID packages the host can compile, and that inner build fails
+         NETSDK1047 because restore has no linux-x64 target. The workflows pack
+         each RID in its own invocation, so the inner builds are only cost. -->
+    <CreateRidSpecificToolPackages Condition="'$(RuntimeIdentifier)' == ''">false</CreateRidSpecificToolPackages>
     <!-- Permanent. The default collapses each package's internals into a single
          IL2104 and hides the detail any future AOT investigation depends on. -->
     <TrimmerSingleWarn>false</TrimmerSingleWarn>

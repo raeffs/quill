@@ -12,7 +12,6 @@
     <PackageReference Include="HtmlSanitizer" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="ColorCode.Core" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="ReverseMarkdown" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

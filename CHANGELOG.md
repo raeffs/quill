@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Installing needs the .NET 11 SDK. The portable build needs the .NET 11 runtime.
 - `backlog create --assigned-to` is now `--assignee`.
 - `wi list --assignee`, `wi create --assignee`: Resolve the person first. A value other than `@me` needs the Identity: Read PAT scope.
 - `pr list --reviewer`, `--author`, `wi list --assignee`, `wi create --assignee`, `backlog create --assignee`: A blank value exits 1. `backlog create --assignee ""` used to use the current user.

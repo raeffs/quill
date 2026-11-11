@@ -6,13 +6,13 @@ Reads work items and pull requests as JSON. Edits work items as markdown.
 
 ## Install
 
-Installing needs the .NET 10 SDK. Earlier SDKs fail with an `unsupported runner` error.
+Installing needs the .NET 11 SDK. Earlier SDKs fail with an `unsupported runner` error.
 
 ```sh
 dotnet tool install -g Raeffs.Quill
 ```
 
-On `linux-x64` and `win-x64`, quill is a native binary and runs without a .NET runtime. Other platforms get a portable build that needs the .NET 10 runtime.
+On `linux-x64` and `win-x64`, quill is a native binary and runs without a .NET runtime. Other platforms get a portable build that needs the .NET 11 runtime.
 
 ## Update
 

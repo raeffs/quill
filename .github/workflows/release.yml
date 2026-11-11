@@ -117,12 +117,12 @@ jobs:
 
           dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -o artifacts
 
-          # rm -rf bin obj, NOT dotnet clean. The meta pack above leaves a 40 MB
-          # bin/Release/net10.0/linux-x64/native/Quill.Cli.dbg behind, and dotnet
-          # clean removes neither native/ nor publish/, so a later RID pack in the
-          # same tree would copy that stale symbol file into its package. This job
-          # only packs `any`, but the rule is the same one pr-validation.yml relies
-          # on and is kept identical on purpose.
+          # rm -rf bin obj, NOT dotnet clean. Under SDK 10 the meta pack left a
+          # 40 MB bin/Release/net10.0/linux-x64/native/Quill.Cli.dbg behind, and
+          # dotnet clean removes neither native/ nor publish/, so a later RID pack
+          # in the same tree copied that stale symbol file into its package. This
+          # job only packs `any`, but the rule is the same one pr-validation.yml
+          # relies on and is kept identical on purpose.
           rm -rf src/Quill.Cli/bin src/Quill.Cli/obj
           dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -r any -o artifacts
 

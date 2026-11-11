@@ -68,12 +68,13 @@ jobs:
           dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -o artifacts
 
           # rm -rf bin obj between packs, NOT dotnet clean. PackTool globs
-          # $(PublishDir)/**/*, and the meta pack above leaves a 40 MB
-          # bin/Release/net10.0/linux-x64/native/Quill.Cli.dbg behind. dotnet clean
-          # removes neither native/ nor publish/, so the linux-x64 pack would copy
-          # that stale .dbg into the package and ship 17 MB instead of 7 MB — even
-          # with DebugType=none, which only suppresses a symbol file it generates
-          # itself. Measured, not theoretical.
+          # $(PublishDir)/**/*, and dotnet clean removes neither native/ nor
+          # publish/. Under SDK 10 the meta pack left a 40 MB
+          # bin/Release/net10.0/linux-x64/native/Quill.Cli.dbg behind, and the
+          # linux-x64 pack copied that stale .dbg into the package and shipped
+          # 17 MB instead of 7 MB — even with DebugType=none, which only suppresses
+          # a symbol file it generates itself. Measured, not theoretical. The
+          # meta pack no longer compiles, but the rule stays.
           rm -rf src/Quill.Cli/bin src/Quill.Cli/obj
           dotnet pack src/Quill.Cli/Quill.Cli.csproj --configuration Release -r any -o artifacts
 
