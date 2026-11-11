@@ -315,7 +315,7 @@ public class PullRequestChecksResultBuilderTests
 
     private static JsonElement Json(string json)
     {
-        return JsonDocument.Parse(json).RootElement.Clone();
+        return JsonElement.Parse(json);
     }
 
     private static PolicyEvaluation MakeEvaluation(
