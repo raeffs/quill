@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: docker
+    runs-on: small
     container:
       image: ghcr.io/raeffs/dotnet-sdk-runner:11.0.100-node26-28
     steps:
@@ -15,7 +15,7 @@ jobs:
         run: dotnet build --configuration Release
 
   test:
-    runs-on: docker
+    runs-on: small
     container:
       image: ghcr.io/raeffs/dotnet-sdk-runner:11.0.100-node26-28
     steps:
@@ -24,7 +24,7 @@ jobs:
         run: dotnet test --configuration Release
 
   format:
-    runs-on: docker
+    runs-on: small
     container:
       image: ghcr.io/raeffs/dotnet-sdk-runner:11.0.100-node26-28
     steps:
@@ -33,7 +33,7 @@ jobs:
         run: dotnet format --verify-no-changes
 
   version:
-    runs-on: docker
+    runs-on: small
     container:
       image: ghcr.io/raeffs/dotnet-sdk-runner:11.0.100-node26-28
     steps:
@@ -52,7 +52,7 @@ jobs:
           fi
 
   pack:
-    runs-on: docker
+    runs-on: large
     container:
       image: ghcr.io/raeffs/dotnet-sdk-runner:11.0.100-node26-28
     steps:
