@@ -36,7 +36,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize build response.");
+            ?? throw new DefectException("Failed to deserialize build response.");
 
         return ToPipelineRun(dto);
     }
@@ -73,7 +73,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var queued = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize queued run response.");
+            ?? throw new DefectException("Failed to deserialize queued run response.");
 
         try
         {
@@ -135,7 +135,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         }
 
         var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.TimelineResponse)
-            ?? throw new InvalidOperationException("Failed to deserialize timeline response.");
+            ?? throw new DefectException("Failed to deserialize timeline response.");
 
         return dto.Records.Select(ToTimelineRecord).ToList();
     }
@@ -179,7 +179,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         }
 
         var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.BuildLogLinesResponse)
-            ?? throw new InvalidOperationException("Failed to deserialize build log response.");
+            ?? throw new DefectException("Failed to deserialize build log response.");
 
         return dto.Value.ToList();
     }
@@ -195,7 +195,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildLogListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize build log list response.");
+            ?? throw new DefectException("Failed to deserialize build log list response.");
 
         var log = dto.Value.FirstOrDefault(entry => entry.Id == logId)
             ?? throw new RejectedException($"Log {logId} not found in run {runId}.");
@@ -249,7 +249,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize build list response.");
+            ?? throw new DefectException("Failed to deserialize build list response.");
 
         return dto.Value.Select(ToPipelineRun).ToList();
     }
@@ -283,7 +283,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildDefinitionListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize build definition list response.");
+            ?? throw new DefectException("Failed to deserialize build definition list response.");
 
         return dto.Value
             .Select(definition => new Pipeline
@@ -305,7 +305,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.TestRunListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize test run list response.");
+            ?? throw new DefectException("Failed to deserialize test run list response.");
 
         return dto.Value
             .Select(run => new TestRun
@@ -355,7 +355,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.TestResultListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize test result list response.");
+            ?? throw new DefectException("Failed to deserialize test result list response.");
 
         return dto.Value
             .Select(result => new TestCaseResult
@@ -389,7 +389,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize build response.");
+            ?? throw new DefectException("Failed to deserialize build response.");
 
         return ToPipelineRun(dto);
     }

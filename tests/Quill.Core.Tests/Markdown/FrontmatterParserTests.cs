@@ -39,7 +39,7 @@ public class FrontmatterParserTests
     }
 
     [Fact]
-    public void Parse_MissingId_ThrowsInvalidOperationException()
+    public void Parse_MissingId_ThrowsUsageException()
     {
         var content = """
             ---
@@ -51,18 +51,18 @@ public class FrontmatterParserTests
 
         var act = () => FrontmatterParser.Parse(content);
 
-        Should.Throw<InvalidOperationException>(act)
+        Should.Throw<UsageException>(act)
             .Message.ShouldContain("id");
     }
 
     [Fact]
-    public void Parse_NoFrontmatter_ThrowsInvalidOperationException()
+    public void Parse_NoFrontmatter_ThrowsUsageException()
     {
         var content = "Just a plain markdown file.";
 
         var act = () => FrontmatterParser.Parse(content);
 
-        Should.Throw<InvalidOperationException>(act);
+        Should.Throw<UsageException>(act);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class FrontmatterParserTests
     }
 
     [Fact]
-    public void Parse_MissingTitle_ThrowsInvalidOperationException()
+    public void Parse_MissingTitle_ThrowsUsageException()
     {
         var content = """
             ---
@@ -97,12 +97,12 @@ public class FrontmatterParserTests
 
         var act = () => FrontmatterParser.Parse(content);
 
-        Should.Throw<InvalidOperationException>(act)
+        Should.Throw<UsageException>(act)
             .Message.ShouldContain("title");
     }
 
     [Fact]
-    public void Parse_MissingClosingDelimiter_ThrowsInvalidOperationException()
+    public void Parse_MissingClosingDelimiter_ThrowsUsageException()
     {
         var content = """
             ---
@@ -112,7 +112,7 @@ public class FrontmatterParserTests
 
         var act = () => FrontmatterParser.Parse(content);
 
-        Should.Throw<InvalidOperationException>(act)
+        Should.Throw<UsageException>(act)
             .Message.ShouldContain("closing delimiter");
     }
 
@@ -295,9 +295,9 @@ public class FrontmatterParserTests
     [InlineData("tags: [\"a,b\"]")]
     [InlineData("tags: [\"\"]")]
     [InlineData("tags: [~]")]
-    public void Parse_InvalidTag_ThrowsInvalidOperationException(string line)
+    public void Parse_InvalidTag_ThrowsUsageException(string line)
     {
-        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(FileWith(line)));
+        Should.Throw<UsageException>(() => FrontmatterParser.Parse(FileWith(line)));
     }
 
     [Theory]
@@ -305,25 +305,25 @@ public class FrontmatterParserTests
     [InlineData("tags: a; b")]
     [InlineData("tags: [[a]]")]
     [InlineData("tags: {a: b}")]
-    public void Parse_ScalarTags_ThrowsInvalidOperationException(string line)
+    public void Parse_ScalarTags_ThrowsUsageException(string line)
     {
-        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(FileWith(line)));
+        Should.Throw<UsageException>(() => FrontmatterParser.Parse(FileWith(line)));
     }
 
     [Fact]
     public void Parse_ScalarTags_ErrorNamesTheFileLine()
     {
-        var ex = Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(FileWith("tags: a")));
+        var ex = Should.Throw<UsageException>(() => FrontmatterParser.Parse(FileWith("tags: a")));
 
         ex.Message.ShouldContain("line 4");
     }
 
     [Fact]
-    public void Parse_NonIntegerId_ThrowsInvalidOperationException()
+    public void Parse_NonIntegerId_ThrowsUsageException()
     {
         var content = "---\nid: abc\ntitle: T\n---\n\nBody\n";
 
-        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse(content));
+        Should.Throw<UsageException>(() => FrontmatterParser.Parse(content));
     }
 
     [Fact]
@@ -387,9 +387,9 @@ public class FrontmatterParserTests
     [InlineData("[[1]]")]
     [InlineData("5")]
     [InlineData("{a: 1}")]
-    public void Parse_InvalidPredecessors_ThrowsInvalidOperationException(string value)
+    public void Parse_InvalidPredecessors_ThrowsUsageException(string value)
     {
-        Should.Throw<InvalidOperationException>(() => FrontmatterParser.Parse($"---\nid: 1\ntitle: T\npredecessors: {value}\n---\n\nBody\n"));
+        Should.Throw<UsageException>(() => FrontmatterParser.Parse($"---\nid: 1\ntitle: T\npredecessors: {value}\n---\n\nBody\n"));
     }
 
     [Fact]

@@ -124,7 +124,7 @@ public class ListActionTests
             ],
         };
 
-        await Should.ThrowAsync<InvalidRequestException>(() =>
+        await Should.ThrowAsync<RejectedException>(() =>
             ListAction.RunAsync(prs, identity, new PrListRequest(null, "Jane Doe", "active", null, null, null, 20, null), TestContext.Current.CancellationToken));
 
         prs.Calls.ShouldBeEmpty();

@@ -81,7 +81,7 @@ public class PersonResolverTests
     {
         var identity = new ScriptedIdentityClient();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(
+        var ex = await Should.ThrowAsync<RejectedException>(
             () => new PersonResolver(identity).ResolveAsync("--assignee", "Jane", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--assignee 'Jane' matches nobody.");
@@ -95,7 +95,7 @@ public class PersonResolverTests
             Search = (_, _) => [Match("id-3", "Contoso Team", @"CONTOSO\team", isContainer: true)],
         };
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(
+        var ex = await Should.ThrowAsync<RejectedException>(
             () => new PersonResolver(identity).ResolveAsync("--reviewer", "Contoso Team", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--reviewer 'Contoso Team' matches only groups. Groups are not accepted; name a person.");
@@ -113,7 +113,7 @@ public class PersonResolverTests
             ],
         };
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(
+        var ex = await Should.ThrowAsync<RejectedException>(
             () => new PersonResolver(identity).ResolveAsync("--reviewer", "Jane Doe", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe(@"--reviewer 'Jane Doe' matches 2 people: Jane Doe (CONTOSO\jdoe), Jane Doe (CONTOSO\jdoe2). Pass the unique name.");
@@ -161,7 +161,7 @@ public class PersonResolverTests
             ],
         };
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(
+        var ex = await Should.ThrowAsync<RejectedException>(
             () => new PersonResolver(identity).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe(@"--assignee 'John Roe' matches 2 people: John Roe, John Roe (CONTOSO\jroe2). Pass the unique name.");
@@ -173,7 +173,7 @@ public class PersonResolverTests
     {
         var identity = new ScriptedIdentityClient();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(
+        var ex = await Should.ThrowAsync<UsageException>(
             () => new PersonResolver(identity).ResolveAsync("--assignee", value, TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--assignee must not be empty.");

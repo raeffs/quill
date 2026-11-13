@@ -20,7 +20,7 @@ public static class FrontmatterParser
         var trimmedFirst = lines[0].Trim();
         if (!string.Equals(trimmedFirst, Delimiter, StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("Markdown file must start with YAML frontmatter (---).");
+            throw new UsageException("Markdown file must start with YAML frontmatter (---).");
         }
 
         var endIndex = -1;
@@ -35,7 +35,7 @@ public static class FrontmatterParser
 
         if (endIndex == -1)
         {
-            throw new InvalidOperationException("Frontmatter closing delimiter (---) not found.");
+            throw new UsageException("Frontmatter closing delimiter (---) not found.");
         }
 
         var yamlContent = string.Join('\n', lines[1..endIndex]);
@@ -48,16 +48,16 @@ public static class FrontmatterParser
         }
         catch (YamlException ex)
         {
-            throw new InvalidOperationException($"Invalid frontmatter at line {ex.Start.Line + 1}: {ex.InnerException?.Message ?? ex.Message}", ex);
+            throw new UsageException($"Invalid frontmatter at line {ex.Start.Line + 1}: {ex.InnerException?.Message ?? ex.Message}", ex);
         }
 
         // Id is nullable precisely so this stays distinguishable from `id: 0`,
         // which is what a file awaiting creation carries.
         var id = frontmatter?.Id
-            ?? throw new InvalidOperationException("Frontmatter must contain an 'id' field.");
+            ?? throw new UsageException("Frontmatter must contain an 'id' field.");
 
         var title = frontmatter.Title
-            ?? throw new InvalidOperationException("Frontmatter must contain a 'title' field.");
+            ?? throw new UsageException("Frontmatter must contain a 'title' field.");
 
         return new ParsedMarkdownFile(
             id,

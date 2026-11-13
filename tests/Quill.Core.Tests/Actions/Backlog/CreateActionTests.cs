@@ -30,7 +30,7 @@ public class CreateActionTests
     {
         var client = new FakeAzureDevOpsClient();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), $"---\n{frontmatter}\n---\n\nbody\n", null));
+        var ex = await Should.ThrowAsync<UsageException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), $"---\n{frontmatter}\n---\n\nbody\n", null));
 
         ex.Message.ShouldBe(message);
         client.Calls.ShouldBeEmpty();
@@ -42,7 +42,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent(assignedToId: "other-user-id"));
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null));
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null));
 
         ex.Message.ShouldBe("Parent work item assignee does not match the current user.");
         client.CreateCall.ShouldBeNull();
@@ -86,7 +86,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "Nobody"));
+        await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "Nobody"));
 
         client.CreateCall.ShouldBeNull();
     }

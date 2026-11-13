@@ -14,7 +14,7 @@ public static class CreateAction
         var validation = ParentValidator.ValidateType(request.Type, parent);
         if (!validation.IsValid)
         {
-            throw new InvalidRequestException(string.Join("; ", validation.Errors));
+            throw new RejectedException(string.Join("; ", validation.Errors));
         }
 
         string? assignedTo = null;

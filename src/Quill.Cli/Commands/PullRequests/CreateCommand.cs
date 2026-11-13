@@ -71,7 +71,7 @@ internal static class CreateCommand
                     var description = await ReadDescriptionAsync(descriptionFile, ct);
                     if (description is null && descriptionFile is not null)
                     {
-                        throw new FileNotFoundException($"File not found: {descriptionFile}");
+                        throw new UsageException($"File not found: {descriptionFile}");
                     }
 
                     return await CreateAction.RunAsync(

@@ -15,7 +15,7 @@ public sealed class PersonResolver(IIdentityClient identity)
         var trimmed = value.Trim();
         if (trimmed.Length == 0)
         {
-            throw new InvalidRequestException($"{flag} must not be empty.");
+            throw new UsageException($"{flag} must not be empty.");
         }
 
         if (IsMe(trimmed))
@@ -30,7 +30,7 @@ public sealed class PersonResolver(IIdentityClient identity)
 
         if (people.Count == 0)
         {
-            throw new InvalidRequestException(hits.Count == 0
+            throw new RejectedException(hits.Count == 0
                 ? $"{flag} '{trimmed}' matches nobody."
                 : $"{flag} '{trimmed}' matches only groups. Groups are not accepted; name a person.");
         }
@@ -38,7 +38,7 @@ public sealed class PersonResolver(IIdentityClient identity)
         if (people.Count > 1)
         {
             var listed = string.Join(", ", people.Select(p => p.UniqueName is null ? p.DisplayName : $"{p.DisplayName} ({p.UniqueName})"));
-            throw new InvalidRequestException($"{flag} '{trimmed}' matches {people.Count} people: {listed}. Pass the unique name.");
+            throw new RejectedException($"{flag} '{trimmed}' matches {people.Count} people: {listed}. Pass the unique name.");
         }
 
         var match = people[0];

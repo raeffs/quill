@@ -24,12 +24,12 @@ public static class WorkItemPredecessors
 
             if (id <= 0)
             {
-                throw new InvalidOperationException($"Predecessor '{text}' must be a positive work item ID.");
+                throw new UsageException($"Predecessor '{text}' must be a positive work item ID.");
             }
 
             if (validated.Contains(id))
             {
-                throw new InvalidOperationException($"Predecessor '{text}' is listed more than once.");
+                throw new UsageException($"Predecessor '{text}' is listed more than once.");
             }
 
             validated.Add(id);

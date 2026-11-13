@@ -24,7 +24,7 @@ public class WorkItemTagsTests
     [InlineData(null)]
     public void Normalize_InvalidTag_Throws(string? tag)
     {
-        Should.Throw<InvalidOperationException>(() => WorkItemTags.Normalize(["ok", tag]));
+        Should.Throw<UsageException>(() => WorkItemTags.Normalize(["ok", tag]));
     }
 
     [Fact]

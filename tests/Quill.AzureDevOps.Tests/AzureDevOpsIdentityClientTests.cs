@@ -163,7 +163,7 @@ public class AzureDevOpsIdentityClientTests
     {
         using var harness = new Harness(json);
 
-        var ex = await Should.ThrowAsync<InvalidOperationException>(
+        var ex = await Should.ThrowAsync<DefectException>(
             () => harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane", CancellationToken.None));
 
         ex.Message.ShouldBe("Identity ID not found in identities response.");
@@ -174,7 +174,7 @@ public class AzureDevOpsIdentityClientTests
     {
         using var harness = new Harness("""{"value":[{"id":"a1b2c3d4-0000-4000-8000-000000000001"}]}""");
 
-        var ex = await Should.ThrowAsync<InvalidOperationException>(
+        var ex = await Should.ThrowAsync<DefectException>(
             () => harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane", CancellationToken.None));
 
         ex.Message.ShouldBe("Identity display name not found in identities response.");

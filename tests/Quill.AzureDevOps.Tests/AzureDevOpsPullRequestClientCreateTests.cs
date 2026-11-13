@@ -226,7 +226,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     }
 
     [Fact]
-    public async Task CreateAsync_RepositoryHasNoDefaultBranch_ThrowsInvalidOperationException()
+    public async Task CreateAsync_RepositoryHasNoDefaultBranch_ThrowsRejectedException()
     {
         // Arrange
         using var handler = new ScriptedCreateHandler(["""{"name":"importer"}""", CreatedJson]);
@@ -245,7 +245,7 @@ public class AzureDevOpsPullRequestClientCreateTests
             TestContext.Current.CancellationToken);
 
         // Assert
-        await Should.ThrowAsync<InvalidOperationException>(act);
+        await Should.ThrowAsync<RejectedException>(act);
     }
 
     [Fact]

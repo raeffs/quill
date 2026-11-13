@@ -102,7 +102,7 @@ public class ListActionTests
     {
         var client = new FakeAzureDevOpsClient();
 
-        var exception = await Should.ThrowAsync<InvalidRequestException>(() =>
+        var exception = await Should.ThrowAsync<RejectedException>(() =>
             ListAction.RunAsync(client, client, new ScriptedIdentityClient(), new WiListRequest(null, "Jane", [], [], 20), TestContext.Current.CancellationToken));
 
         exception.Message.ShouldBe("--assignee 'Jane' matches nobody.");

@@ -87,7 +87,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request list response.");
+            ?? throw new DefectException("Failed to deserialize pull request list response.");
 
         var results = new List<PullRequest>(dto.Value.Count);
         foreach (var item in dto.Value)
@@ -108,7 +108,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request response.");
+            ?? throw new DefectException("Failed to deserialize pull request response.");
 
         return MapToPullRequest(dto);
     }
@@ -128,7 +128,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PolicyEvaluationListResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize policy evaluations response.");
+            ?? throw new DefectException("Failed to deserialize policy evaluations response.");
 
         var results = new List<PolicyEvaluation>(dto.Value.Count);
         foreach (var item in dto.Value)
@@ -170,7 +170,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestThreadsResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request threads response.");
+            ?? throw new DefectException("Failed to deserialize pull request threads response.");
 
         var results = new List<PullRequestThread>(dto.Value.Count);
         foreach (var thread in dto.Value)
@@ -282,7 +282,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestWorkItemRefsResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request work item refs response.");
+            ?? throw new DefectException("Failed to deserialize pull request work item refs response.");
 
         var ids = new List<int>(dto.Value.Count);
         foreach (var item in dto.Value)
@@ -334,7 +334,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize created pull request response.");
+            ?? throw new DefectException("Failed to deserialize created pull request response.");
 
         return MapToPullRequest(dto);
     }
@@ -347,10 +347,10 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.GitRepositoryResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize repository response.");
+            ?? throw new DefectException("Failed to deserialize repository response.");
 
         return string.IsNullOrEmpty(dto.DefaultBranch)
-            ? throw new InvalidOperationException(
+            ? throw new RejectedException(
                 $"Repository '{repo}' has no default branch. Pass --target-branch.")
             : dto.DefaultBranch;
     }
@@ -389,7 +389,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestIterationsResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize pull request iterations response.");
+            ?? throw new DefectException("Failed to deserialize pull request iterations response.");
 
         _iterationsByPullRequest[key] = dto.Value;
         return dto.Value;
@@ -532,7 +532,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
     private PullRequest MapToPullRequest(PullRequestItemResponse dto)
     {
         var repoName = dto.Repository?.Name
-            ?? throw new InvalidOperationException($"Pull request {dto.PullRequestId.ToString(CultureInfo.InvariantCulture)} has no repository.");
+            ?? throw new DefectException($"Pull request {dto.PullRequestId.ToString(CultureInfo.InvariantCulture)} has no repository.");
         var webUrl = $"{_serverUrl}/{_collection}/{_project}/_git/{repoName}/pullrequest/{dto.PullRequestId.ToString(CultureInfo.InvariantCulture)}";
 
         var dtoReviewers = dto.Reviewers ?? [];

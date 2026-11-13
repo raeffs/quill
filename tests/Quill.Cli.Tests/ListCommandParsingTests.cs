@@ -74,7 +74,7 @@ public class ListCommandParsingTests
     [Fact]
     public void Parse_NoFilter_ThrowsProvideAtLeastOneFilter()
     {
-        var ex = Should.Throw<InvalidOperationException>(() =>
+        var ex = Should.Throw<UsageException>(() =>
             BuildWiql(CliHost.Parse(["wi", "list"], TestServices.Empty)));
 
         ex.Message.ShouldBe("provide at least one filter");

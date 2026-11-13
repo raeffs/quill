@@ -27,7 +27,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Product Backlog Item")));
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Product Backlog Item")));
 
         ex.Message.ShouldContain("'Product Backlog Item'");
         client.CreateCall.ShouldBeNull();
@@ -107,7 +107,7 @@ public class CreateActionTests
             ],
         };
 
-        await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "John Roe")));
+        await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "John Roe")));
 
         client.CreateCall.ShouldBeNull();
     }
@@ -205,7 +205,7 @@ public class CreateActionTests
     {
         var client = Seed();
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Feature")));
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Feature")));
 
         ex.Message.ShouldContain("'Product Backlog Item'");
         client.CreateCall.ShouldBeNull();

@@ -37,7 +37,7 @@ public class ConfigLoaderTests
     }
 
     [Fact]
-    public void Load_MissingFile_ThrowsFileNotFoundException()
+    public void Load_MissingFile_ThrowsUsageException()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var fallbackDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -48,7 +48,7 @@ public class ConfigLoaderTests
 
             var act = () => ConfigLoader.Load(tempDir, fallbackDir);
 
-            Should.Throw<FileNotFoundException>(act)
+            Should.Throw<UsageException>(act)
                 .Message.ShouldContain(".quill.json");
         }
         finally
@@ -137,7 +137,7 @@ public class ConfigLoaderTests
     }
 
     [Fact]
-    public void Load_HttpUrl_ThrowsInvalidOperationException()
+    public void Load_HttpUrl_ThrowsUsageException()
     {
         var json = """
         {
@@ -157,7 +157,7 @@ public class ConfigLoaderTests
 
             var act = () => ConfigLoader.Load(tempDir);
 
-            Should.Throw<InvalidOperationException>(act)
+            Should.Throw<UsageException>(act)
                 .Message.ShouldContain("HTTPS");
         }
         finally
@@ -224,7 +224,7 @@ public class ConfigLoaderTests
     }
 
     [Fact]
-    public void Load_MissingRequiredField_ThrowsInvalidOperationException()
+    public void Load_MissingRequiredField_ThrowsUsageException()
     {
         var json = """
         {
@@ -240,7 +240,7 @@ public class ConfigLoaderTests
 
             var act = () => ConfigLoader.Load(tempDir);
 
-            Should.Throw<InvalidOperationException>(act);
+            Should.Throw<UsageException>(act);
         }
         finally
         {

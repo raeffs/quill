@@ -16,12 +16,12 @@ public static class WorkItemTags
 
             if (string.IsNullOrEmpty(trimmed))
             {
-                throw new InvalidOperationException("A tag must not be empty.");
+                throw new UsageException("A tag must not be empty.");
             }
 
             if (trimmed.Contains(';', StringComparison.Ordinal) || trimmed.Contains(',', StringComparison.Ordinal))
             {
-                throw new InvalidOperationException($"Tag '{trimmed}' must not contain ';' or ','.");
+                throw new UsageException($"Tag '{trimmed}' must not contain ';' or ','.");
             }
 
             if (!normalized.Contains(trimmed, StringComparer.Ordinal))

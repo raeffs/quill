@@ -36,7 +36,7 @@ internal static class PushCommand
             {
                 if (!File.Exists(filePath))
                 {
-                    throw new FileNotFoundException($"File not found: {filePath}");
+                    throw new UsageException($"File not found: {filePath}");
                 }
 
                 var content = await File.ReadAllTextAsync(filePath, ct);

@@ -55,7 +55,7 @@ public class PushActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(WorkItem(5, state: "Done"));
 
-        var ex = await Should.ThrowAsync<InvalidRequestException>(() => PushAction.RunAsync(client, new ScriptedIdentityClient(), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\n---\n\nbody\n"));
+        var ex = await Should.ThrowAsync<RejectedException>(() => PushAction.RunAsync(client, new ScriptedIdentityClient(), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\n---\n\nbody\n"));
 
         ex.Message.ShouldBe("Work item state 'Done' is not in allowed states: [New]");
         client.Calls.Contains("UpdateWorkItem(5)", StringComparer.Ordinal).ShouldBeFalse();

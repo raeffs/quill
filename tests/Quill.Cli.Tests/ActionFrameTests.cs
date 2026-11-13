@@ -54,7 +54,7 @@ public sealed class ActionFrameTests : IDisposable
     public async Task InvokeAsync_ConfigMissing_PrintsTheErrorRowAndExits3()
     {
         await using var services = new ServiceCollection()
-            .AddSingleton<IAzureDevOpsBuildClient>(_ => throw new FileNotFoundException("Config file not found: .quill.json"))
+            .AddSingleton<IAzureDevOpsBuildClient>(_ => throw new UsageException("Config file not found: .quill.json"))
             .BuildServiceProvider();
 
         var exitCode = await CliHost.InvokeAsync(["pipeline", "tests", "4201"], services);

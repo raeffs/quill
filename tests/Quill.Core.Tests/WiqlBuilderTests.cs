@@ -8,7 +8,7 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithNoInputs_Throws()
     {
-        var ex = Should.Throw<InvalidOperationException>(() =>
+        var ex = Should.Throw<UsageException>(() =>
             WiqlBuilder.Build(null, null, [], [], 50));
 
         ex.Message.ShouldBe("provide at least one filter");
@@ -17,7 +17,7 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithWhitespaceOnlyInputs_Throws()
     {
-        Should.Throw<InvalidOperationException>(() =>
+        Should.Throw<UsageException>(() =>
             WiqlBuilder.Build("   ", " ", [], [], 50));
     }
 

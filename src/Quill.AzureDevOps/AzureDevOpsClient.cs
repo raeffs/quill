@@ -80,7 +80,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.WiqlQueryResponse, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize WIQL query response.");
+            ?? throw new DefectException("Failed to deserialize WIQL query response.");
 
         return dto.WorkItems.Select(w => w.Id).ToList();
     }
@@ -92,7 +92,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         var response = await _httpClient.GetAsync(url);
 
         var dto = await response.Content.ReadFromJsonAsync(AzureDevOpsJsonContext.Default.WorkItemResponse)
-            ?? throw new InvalidOperationException("Failed to deserialize work item response.");
+            ?? throw new DefectException("Failed to deserialize work item response.");
 
         return MapToWorkItem(dto);
     }
@@ -212,7 +212,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 
             var dto = await response.Content.ReadFromJsonAsync(
                 AzureDevOpsJsonContext.Default.CommentsResponse, cancellationToken)
-                ?? throw new InvalidOperationException("Failed to deserialize comments response.");
+                ?? throw new DefectException("Failed to deserialize comments response.");
 
             foreach (var c in dto.Comments)
             {
@@ -320,7 +320,7 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         {
             var dto = await response.Content.ReadFromJsonAsync(
                 AzureDevOpsJsonContext.Default.WorkItemsBatchResponse, cancellationToken)
-                ?? throw new InvalidOperationException("Failed to deserialize work items batch response.");
+                ?? throw new DefectException("Failed to deserialize work items batch response.");
             var items = new List<WorkItem>(dto.Value.Count);
             foreach (var itemDto in dto.Value)
             {

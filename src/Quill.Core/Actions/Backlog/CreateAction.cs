@@ -19,27 +19,27 @@ public static class CreateAction
 
         if (parsed.Id != 0)
         {
-            throw new InvalidRequestException("Work item id must be 0 for creation.");
+            throw new UsageException("Work item id must be 0 for creation.");
         }
 
         if (string.IsNullOrWhiteSpace(parsed.Title))
         {
-            throw new InvalidRequestException("Frontmatter must contain a non-empty 'title' field.");
+            throw new UsageException("Frontmatter must contain a non-empty 'title' field.");
         }
 
         if (string.IsNullOrWhiteSpace(parsed.Type))
         {
-            throw new InvalidRequestException("Frontmatter must contain a 'type' field.");
+            throw new UsageException("Frontmatter must contain a 'type' field.");
         }
 
         if (!WorkItemHierarchy.ChildTypes.Contains(parsed.Type, StringComparer.OrdinalIgnoreCase))
         {
-            throw new InvalidRequestException($"Type must be one of: {string.Join(", ", WorkItemHierarchy.ChildTypes)}.");
+            throw new UsageException($"Type must be one of: {string.Join(", ", WorkItemHierarchy.ChildTypes)}.");
         }
 
         if (parsed.ParentId is null or 0)
         {
-            throw new InvalidRequestException("Frontmatter must contain a non-zero 'parentId' field.");
+            throw new UsageException("Frontmatter must contain a non-zero 'parentId' field.");
         }
 
         var parentWorkItem = await client.GetWorkItemAsync(parsed.ParentId.Value);
@@ -49,7 +49,7 @@ public static class CreateAction
         var validation = ParentValidator.Validate(parsed.Type, parentWorkItem, currentUser.Id);
         if (!validation.IsValid)
         {
-            throw new InvalidRequestException(string.Join("; ", validation.Errors));
+            throw new RejectedException(string.Join("; ", validation.Errors));
         }
 
         var person = await resolver.ResolveAsync("--assignee", assignee ?? "@me", CancellationToken.None);

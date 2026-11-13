@@ -48,9 +48,6 @@ internal static class CommandHelpers
         {
             DefectException => Defect(ex),
             QuillException quill => (ex.Message, quill.ExitCode),
-            FileNotFoundException => (ex.Message, 3),
-            InvalidOperationException => (ex.Message, 3),
-            InvalidRequestException => (ex.Message, 1),
             _ => Defect(ex),
         };
 

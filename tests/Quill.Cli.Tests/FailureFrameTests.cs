@@ -94,6 +94,23 @@ public sealed class FailureFrameTests : IDisposable
         _error.ToString().ShouldContain("System.NotSupportedException: nope");
     }
 
+    [Theory]
+    [InlineData(typeof(InvalidOperationException))]
+    [InlineData(typeof(FileNotFoundException))]
+    public async Task RunAsync_GeneralDotNetException_IsADefect(Type type)
+    {
+        var exception = (Exception)Activator.CreateInstance(type, "boom")!;
+
+        await CommandHelpers.RunAsync<CreateResult>(
+            _ => throw exception,
+            CommandHelpers.Context.CreateResult,
+            TestContext.Current.CancellationToken);
+
+        Environment.ExitCode.ShouldBe(4);
+        using var row = JsonDocument.Parse(_output.ToString());
+        row.RootElement.GetProperty("code").GetInt32().ShouldBe(4);
+    }
+
     [Fact]
     public async Task RunAsync_DefectMessageWithQuotesAndNewlines_WritesOneJsonLine()
     {

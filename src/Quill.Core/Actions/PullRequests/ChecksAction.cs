@@ -12,7 +12,7 @@ public static class ChecksAction
         var pullRequest = await pullRequests.GetByIdAsync(id, cancellationToken);
         if (string.IsNullOrEmpty(pullRequest.ProjectId))
         {
-            throw new InvalidOperationException($"Pull request {id} has no project.");
+            throw new DefectException($"Pull request {id} has no project.");
         }
 
         var evaluations = await pullRequests.GetPolicyEvaluationsAsync(

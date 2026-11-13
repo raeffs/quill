@@ -26,10 +26,10 @@ public class AzureDevOpsIdentityClient : IIdentityClient
         var authenticatedUser = doc.RootElement.GetProperty("authenticatedUser");
 
         var id = authenticatedUser.GetProperty("id").GetString()
-            ?? throw new InvalidOperationException("Authenticated user ID not found in connection data.");
+            ?? throw new DefectException("Authenticated user ID not found in connection data.");
 
         var displayName = authenticatedUser.GetProperty("providerDisplayName").GetString()
-            ?? throw new InvalidOperationException("Authenticated user display name not found in connection data.");
+            ?? throw new DefectException("Authenticated user display name not found in connection data.");
 
         return new CurrentUser(id, displayName);
     }
@@ -66,9 +66,9 @@ public class AzureDevOpsIdentityClient : IIdentityClient
             }
 
             var id = ReadString(item, "id")
-                ?? throw new InvalidOperationException("Identity ID not found in identities response.");
+                ?? throw new DefectException("Identity ID not found in identities response.");
             var displayName = ReadString(item, "providerDisplayName")
-                ?? throw new InvalidOperationException("Identity display name not found in identities response.");
+                ?? throw new DefectException("Identity display name not found in identities response.");
             var isContainer = item.TryGetProperty("isContainer", out var container) && container.ValueKind == JsonValueKind.True;
             var domain = ReadProperty(item, "Domain");
             var account = ReadProperty(item, "Account");

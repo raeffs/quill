@@ -21,7 +21,7 @@ public static class PushAction
         var validation = PushValidator.Validate(workItem, config, currentUser.Id);
         if (!validation.IsValid)
         {
-            throw new InvalidRequestException(string.Join("; ", validation.Errors));
+            throw new RejectedException(string.Join("; ", validation.Errors));
         }
 
         var (html, linkIds) = await richText.ToHtmlAsync(parsed.Body);

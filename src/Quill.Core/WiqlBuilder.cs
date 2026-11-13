@@ -16,7 +16,7 @@ public static class WiqlBuilder
 
         if (!hasTitle && !hasAssignee && !hasStates && !hasTypes)
         {
-            throw new InvalidOperationException("provide at least one filter");
+            throw new UsageException("provide at least one filter");
         }
 
         if (limit <= 0)

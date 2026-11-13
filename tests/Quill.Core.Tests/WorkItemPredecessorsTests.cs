@@ -20,7 +20,7 @@ public class WorkItemPredecessorsTests
     [InlineData(1, 1, 1)]
     public void Validate_InvalidIds_Throw(int named, params int[] ids)
     {
-        var ex = Should.Throw<InvalidOperationException>(() => WorkItemPredecessors.Validate(ids));
+        var ex = Should.Throw<UsageException>(() => WorkItemPredecessors.Validate(ids));
 
         ex.Message.ShouldContain(named.ToString(System.Globalization.CultureInfo.InvariantCulture));
     }

@@ -14,36 +14,36 @@ public static class ConfigLoader
     internal static QuillConfig Load(string directory, string fallbackDirectory)
     {
         var filePath = ResolveConfigFile(directory, fallbackDirectory)
-            ?? throw new FileNotFoundException(
+            ?? throw new UsageException(
                 $"Configuration file not found: .quill.json (searched in {directory} and {fallbackDirectory})");
 
         var json = File.ReadAllText(filePath);
         var config = JsonSerializer.Deserialize(json, ConfigJsonContext.Default.QuillConfig)
-            ?? throw new InvalidOperationException("Failed to parse .quill.json");
+            ?? throw new UsageException("Failed to parse .quill.json");
 
         if (string.IsNullOrWhiteSpace(config.ServerUrl))
         {
-            throw new InvalidOperationException("serverUrl is required in .quill.json");
+            throw new UsageException("serverUrl is required in .quill.json");
         }
 
         if (!config.ServerUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("serverUrl must use HTTPS.");
+            throw new UsageException("serverUrl must use HTTPS.");
         }
 
         if (string.IsNullOrWhiteSpace(config.Collection))
         {
-            throw new InvalidOperationException("collection is required in .quill.json");
+            throw new UsageException("collection is required in .quill.json");
         }
 
         if (string.IsNullOrWhiteSpace(config.Project))
         {
-            throw new InvalidOperationException("project is required in .quill.json");
+            throw new UsageException("project is required in .quill.json");
         }
 
         if (config.AllowedStates is null || config.AllowedStates.Count == 0)
         {
-            throw new InvalidOperationException("allowedStates is required in .quill.json");
+            throw new UsageException("allowedStates is required in .quill.json");
         }
 
         return config;

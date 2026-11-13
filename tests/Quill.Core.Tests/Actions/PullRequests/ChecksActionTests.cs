@@ -27,7 +27,7 @@ public class ChecksActionTests
     {
         var client = new ScriptedPullRequestClient { GetById = id => PullRequest(id, projectId: string.Empty, codeReviewId: 99) };
 
-        await Should.ThrowAsync<InvalidOperationException>(() => ChecksAction.RunAsync(client, 12, TestContext.Current.CancellationToken));
+        await Should.ThrowAsync<DefectException>(() => ChecksAction.RunAsync(client, 12, TestContext.Current.CancellationToken));
 
         client.Calls.ShouldBe(["GetById(12)"]);
     }
