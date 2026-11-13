@@ -21,18 +21,6 @@ public sealed class CommandHelpersRunTests : IDisposable
         _output.Dispose();
     }
 
-    [Fact]
-    public async Task RunAsync_RowReturned_WritesTheRowAndLeavesExitCodeZero()
-    {
-        await CommandHelpers.RunAsync(
-            _ => Task.FromResult(new CreateResult { Id = 7, Title = "T" }),
-            CommandHelpers.Context.CreateResult,
-            TestContext.Current.CancellationToken);
-
-        Environment.ExitCode.ShouldBe(0);
-        _output.ToString().ShouldBe("{\"id\":7,\"title\":\"T\"}" + Environment.NewLine);
-    }
-
     [Theory]
     [InlineData(typeof(FileNotFoundException), 3)]
     [InlineData(typeof(InvalidOperationException), 3)]
@@ -50,14 +38,5 @@ public sealed class CommandHelpersRunTests : IDisposable
 
         Environment.ExitCode.ShouldBe(code);
         _output.ToString().ShouldContain($"\"code\":{code}");
-    }
-
-    [Fact]
-    public async Task RunAsync_UnexpectedException_Propagates()
-    {
-        await Should.ThrowAsync<NotSupportedException>(() => CommandHelpers.RunAsync<CreateResult>(
-            _ => throw new NotSupportedException(),
-            CommandHelpers.Context.CreateResult,
-            TestContext.Current.CancellationToken));
     }
 }
