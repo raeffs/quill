@@ -154,6 +154,26 @@ public class AzureDevOpsClientBatchTests
     }
 
     [Fact]
+    public async Task FetchAsync_ChunkFailsWith408ThenSucceeds_ReturnsItems()
+    {
+        var responseJson = BuildBatchResponse([10, 11]);
+
+        using var handler = new RecordingHandler(
+        [
+            new FakeResponse(HttpStatusCode.RequestTimeout, "timeout"),
+            new FakeResponse(HttpStatusCode.OK, responseJson),
+        ]);
+        using var httpClient = TestHttp.Client(handler);
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
+
+        result.Items.Count.ShouldBe(2);
+        result.BatchFailedIds.ShouldBeEmpty();
+        handler.Requests.Count.ShouldBe(2);
+    }
+
+    [Fact]
     public async Task FetchAsync_RetryAlsoFails_ReturnsBatchFailedIds()
     {
         using var handler = new RecordingHandler(
