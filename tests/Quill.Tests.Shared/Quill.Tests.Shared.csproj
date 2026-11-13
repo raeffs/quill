@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Quill.Core\Quill.Core.csproj" />
+    <ProjectReference Include="..\..\src\Quill.AzureDevOps\Quill.AzureDevOps.csproj" />
   </ItemGroup>
 
 </Project>
