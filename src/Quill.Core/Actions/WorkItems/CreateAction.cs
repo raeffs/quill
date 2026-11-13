@@ -43,15 +43,36 @@ public static class CreateAction
             Tags: request.Tags,
             Predecessors: request.Predecessors));
 
-        foreach (var targetId in linkIds)
-        {
-            await client.AddRelationAsync(newId, targetId);
-        }
+        await CreatedWorkItem.LinkAsync(client, newId, linkIds);
 
         // Read the item back so the row is what `wi view` would print: server state, rewritten link text.
-        var created = await client.GetWorkItemAsync(newId);
+        var created = await ReadBackAsync(client, newId);
         var body = await richText.ToMarkdownAsync(created.Description);
 
         return ViewResultBuilder.Build(created, body, children: null);
+    }
+
+    private static async Task<WorkItem> ReadBackAsync(IAzureDevOpsClient client, int id)
+    {
+        try
+        {
+            return await client.GetWorkItemAsync(id);
+        }
+        catch (UnavailableException exception)
+        {
+            throw new UnavailableException(CreatedWorkItem.Failed(id, "reading it failed", exception), exception.RetryAfter, exception);
+        }
+        catch (RejectedException exception)
+        {
+            throw new RejectedException(CreatedWorkItem.Failed(id, "reading it failed", exception), exception);
+        }
+        catch (DeniedException exception)
+        {
+            throw new DeniedException(CreatedWorkItem.Failed(id, "reading it failed", exception), exception);
+        }
+        catch (UsageException exception)
+        {
+            throw new UsageException(CreatedWorkItem.Failed(id, "reading it failed", exception), exception);
+        }
     }
 }

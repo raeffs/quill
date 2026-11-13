@@ -20,6 +20,10 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
 
     public Action<WorkItemUpdatePatch> UpdateWorkItem { get; set; } = _ => { };
 
+    public Action<int> GetWorkItem { get; set; } = _ => { };
+
+    public Action<int, int> AddRelation { get; set; } = (_, _) => { };
+
     public Func<string, int, IReadOnlyList<int>> QueryByWiql { get; set; } = (_, _) => throw new NotSupportedException();
 
     public Func<int, int?, IReadOnlyList<WorkItemComment>> GetComments { get; set; } = (_, _) => throw new NotSupportedException();
@@ -29,6 +33,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
     public Task<WorkItem> GetWorkItemAsync(int id)
     {
         Calls.Add($"GetWorkItem({id})");
+        GetWorkItem(id);
         return _workItems.TryGetValue(id, out var workItem)
             ? Task.FromResult(workItem)
             : throw new RejectedException($"Work item {id} not found.");
@@ -61,6 +66,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
     public Task AddRelationAsync(int sourceId, int targetId)
     {
         Calls.Add($"AddRelation({sourceId},{targetId})");
+        AddRelation(sourceId, targetId);
         var source = _workItems[sourceId];
         _workItems[sourceId] = new WorkItem
         {

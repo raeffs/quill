@@ -277,6 +277,71 @@ public class CreateActionTests
         row.Predecessors.ShouldBeEmpty();
     }
 
+    [Fact]
+    public async Task RunAsync_LinkRejectedAfterCreate_NamesTheCreatedItem()
+    {
+        var client = Seed();
+        var rejected = new RejectedException("Work item 123 cannot be linked.");
+        client.AddRelation = (_, _) => throw rejected;
+
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(
+            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).")));
+
+        ex.Message.ShouldBe("Created work item 1000, but linking it failed: Work item 123 cannot be linked.");
+        ex.InnerException.ShouldBeSameAs(rejected);
+    }
+
+    [Theory]
+    [InlineData(typeof(DeniedException))]
+    [InlineData(typeof(UsageException))]
+    public async Task RunAsync_LinkFailsAfterCreate_KeepsTheFailureMode(Type type)
+    {
+        var client = Seed();
+        var failure = (QuillException)Activator.CreateInstance(type, "The link failed.")!;
+        client.AddRelation = (_, _) => throw failure;
+
+        var ex = await Should.ThrowAsync<QuillException>(() => CreateAction.RunAsync(
+            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).")));
+
+        ex.ShouldBeOfType(type);
+        ex.Message.ShouldBe("Created work item 1000, but linking it failed: The link failed.");
+        ex.InnerException.ShouldBeSameAs(failure);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReadBackUnavailable_NamesTheCreatedItemAndKeepsRetryAfter()
+    {
+        var client = Seed();
+        var unavailable = new UnavailableException("The server is busy.", TimeSpan.FromSeconds(30));
+        client.GetWorkItem = id =>
+        {
+            if (id == 1000)
+            {
+                throw unavailable;
+            }
+        };
+
+        var ex = await Should.ThrowAsync<UnavailableException>(() => CreateAction.RunAsync(
+            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task")));
+
+        ex.Message.ShouldBe("Created work item 1000, but reading it failed: The server is busy.");
+        ex.RetryAfter.ShouldBe(TimeSpan.FromSeconds(30));
+        ex.InnerException.ShouldBeSameAs(unavailable);
+    }
+
+    [Fact]
+    public async Task RunAsync_DefectAfterCreate_PassesThroughUnchanged()
+    {
+        var client = Seed();
+        var defect = new DefectException("Failed to deserialize work item response.");
+        client.AddRelation = (_, _) => throw defect;
+
+        var ex = await Should.ThrowAsync<DefectException>(() => CreateAction.RunAsync(
+            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).")));
+
+        ex.ShouldBeSameAs(defect);
+    }
+
     private static WorkItemCreateRequest Request(
         string type,
         string? description = null,

@@ -50,7 +50,14 @@ internal static class CreateCommand
                     content,
                     assignee);
 
-                await UserFile.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
+                try
+                {
+                    await UserFile.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
+                }
+                catch (UsageException exception)
+                {
+                    throw new UsageException($"Created work item {outcome.Row.Id}, but writing the file failed: {exception.Message}", exception);
+                }
 
                 return outcome.Row;
             },

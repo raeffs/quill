@@ -35,7 +35,15 @@ public sealed class BacklogPredecessorsTests : IDisposable
     {
         Console.SetOut(_originalOut);
         Environment.ExitCode = 0;
-        File.Delete(_path);
+        if (Directory.Exists(_path))
+        {
+            Directory.Delete(_path);
+        }
+        else
+        {
+            File.Delete(_path);
+        }
+
         _output.Dispose();
     }
 
@@ -193,6 +201,27 @@ public sealed class BacklogPredecessorsTests : IDisposable
         FrontmatterParser.Parse(await ReadFileAsync()).Id.ShouldBe(id);
     }
 
+    [Fact]
+    public async Task Create_WriteBackFails_NamesTheCreatedItem()
+    {
+        using var server = new ScriptedServer("[]")
+        {
+            OnPatch = () =>
+            {
+                File.Delete(_path);
+                Directory.CreateDirectory(_path);
+            },
+        };
+        await WriteFileAsync(0, string.Empty);
+
+        (await RunAsync(server, "create", _path)).ShouldBe(3);
+
+        using var output = JsonDocument.Parse(_output.ToString());
+        output.RootElement.GetProperty("error").GetString()
+            .ShouldStartWith($"Created work item 1000, but writing the file failed: Cannot write {_path}: ");
+        output.RootElement.GetProperty("code").GetInt32().ShouldBe(3);
+    }
+
     private async Task WriteFileAsync(int id, string line, string body = "Body") =>
         await File.WriteAllTextAsync(_path, $"---\nid: {id}\ntype: Task\ntitle: T\nparentId: 42\n{line}\n---\n\n{body}\n", TestContext.Current.CancellationToken);
 
@@ -228,6 +257,8 @@ public sealed class BacklogPredecessorsTests : IDisposable
 
         public bool RejectPatches { get; init; }
 
+        public Action OnPatch { get; init; } = () => { };
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -236,6 +267,7 @@ public sealed class BacklogPredecessorsTests : IDisposable
             if (request.Method == HttpMethod.Patch)
             {
                 Patches.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
+                OnPatch();
                 return RejectPatches
                     ? Json("""{"message": "TF401232: cycle"}""", HttpStatusCode.BadRequest)
                     : Json("""{"id": 1000, "fields": {}}""");
