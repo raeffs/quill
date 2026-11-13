@@ -17,7 +17,15 @@ public static class ConfigLoader
             ?? throw new UsageException(
                 $"Configuration file not found: .quill.json (searched in {directory} and {fallbackDirectory})");
 
-        var json = File.ReadAllText(filePath);
+        string json;
+        try
+        {
+            json = File.ReadAllText(filePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new UsageException($"Cannot read {filePath}: {ex.Message}", ex);
+        }
         QuillConfig? config;
         try
         {

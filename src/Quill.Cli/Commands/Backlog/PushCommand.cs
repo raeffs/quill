@@ -39,7 +39,7 @@ internal static class PushCommand
                     throw new UsageException($"File not found: {filePath}");
                 }
 
-                var content = await File.ReadAllTextAsync(filePath, ct);
+                var content = await UserFile.ReadAllTextAsync(filePath, ct);
 
                 return await PushAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),

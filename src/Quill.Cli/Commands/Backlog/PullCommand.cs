@@ -47,10 +47,10 @@ internal static class PullCommand
                 var directory = Path.GetDirectoryName(filePath);
                 if (!string.IsNullOrEmpty(directory))
                 {
-                    Directory.CreateDirectory(directory);
+                    UserFile.CreateDirectory(directory);
                 }
 
-                await File.WriteAllTextAsync(filePath, outcome.FileContent, ct);
+                await UserFile.WriteAllTextAsync(filePath, outcome.FileContent, ct);
 
                 return new PullResult { Id = outcome.Id, Title = outcome.Title, File = filePath };
             },

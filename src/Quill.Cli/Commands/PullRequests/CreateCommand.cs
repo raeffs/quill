@@ -106,6 +106,6 @@ internal static class CreateCommand
             return await Console.In.ReadToEndAsync(cancellationToken);
         }
 
-        return File.Exists(path) ? await File.ReadAllTextAsync(path, cancellationToken) : null;
+        return File.Exists(path) ? await UserFile.ReadAllTextAsync(path, cancellationToken) : null;
     }
 }

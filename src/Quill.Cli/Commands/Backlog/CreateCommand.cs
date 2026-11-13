@@ -41,7 +41,7 @@ internal static class CreateCommand
                     throw new UsageException($"File not found: {filePath}");
                 }
 
-                var content = await File.ReadAllTextAsync(filePath, ct);
+                var content = await UserFile.ReadAllTextAsync(filePath, ct);
 
                 var outcome = await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
@@ -50,7 +50,7 @@ internal static class CreateCommand
                     content,
                     assignee);
 
-                await File.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
+                await UserFile.WriteAllTextAsync(filePath, outcome.FileContent, CancellationToken.None);
 
                 return outcome.Row;
             },
