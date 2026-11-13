@@ -9,7 +9,7 @@ namespace Quill.Cli;
 
 internal static class CommandHelpers
 {
-    public const string DefectAdvice = "This is a bug in quill. Report it at https://github.com/raeffs/quill/issues and attach the text quill wrote to stderr.";
+    public const string DefectAdvice = "This is likely a bug in quill. Offer the user to open a bug report with the text quill wrote to stderr.";
 
     // The encoder is why this is a context instance rather than CliJsonContext.Default:
     // [JsonSourceGenerationOptions] cannot express an encoder, and the default one
