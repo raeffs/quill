@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -14,7 +15,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -45,7 +46,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -71,7 +72,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -103,7 +104,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -129,7 +130,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -153,7 +154,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -174,7 +175,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -193,7 +194,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -234,7 +235,7 @@ public class AzureDevOpsPullRequestClientTests
         """;
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -303,7 +304,7 @@ public class AzureDevOpsPullRequestClientTests
         """;
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -351,7 +352,7 @@ public class AzureDevOpsPullRequestClientTests
         """;
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -411,7 +412,7 @@ public class AzureDevOpsPullRequestClientTests
         """;
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -436,11 +437,11 @@ public class AzureDevOpsPullRequestClientTests
     }
 
     [Fact]
-    public async Task ListAsync_Non2xx_ThrowsHttpRequestException()
+    public async Task ListAsync_Unauthorized_ThrowsDenied()
     {
         // Arrange
         using var handler = new FakeHttpHandler("""{"message":"Unauthorized"}""", HttpStatusCode.Unauthorized);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -457,7 +458,7 @@ public class AzureDevOpsPullRequestClientTests
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        await Should.ThrowAsync<HttpRequestException>(act);
+        await Should.ThrowAsync<DeniedException>(act);
     }
 
     [Theory]
@@ -467,7 +468,7 @@ public class AzureDevOpsPullRequestClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(EmptyEnvelope, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -527,7 +528,7 @@ public class AzureDevOpsPullRequestClientTests
         }
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 

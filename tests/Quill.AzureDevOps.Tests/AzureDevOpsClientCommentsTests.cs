@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -33,7 +34,7 @@ public class AzureDevOpsClientCommentsTests
         """;
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
@@ -67,7 +68,7 @@ public class AzureDevOpsClientCommentsTests
         """;
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
@@ -83,7 +84,7 @@ public class AzureDevOpsClientCommentsTests
         """;
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
@@ -105,7 +106,7 @@ public class AzureDevOpsClientCommentsTests
         """;
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
@@ -130,7 +131,7 @@ public class AzureDevOpsClientCommentsTests
         """;
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var comments = await client.GetCommentsAsync(123, limit: 2, cancellationToken: TestContext.Current.CancellationToken);
@@ -168,7 +169,7 @@ public class AzureDevOpsClientCommentsTests
         """;
 
         using var handler = new ScriptedHttpHandler([page1, page2]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
@@ -184,7 +185,7 @@ public class AzureDevOpsClientCommentsTests
     public async Task GetCommentsAsync_InvalidId_ThrowsArgumentOutOfRangeException(int id)
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         Func<Task> act = () => client.GetCommentsAsync(id);
@@ -198,7 +199,7 @@ public class AzureDevOpsClientCommentsTests
     public async Task GetCommentsAsync_InvalidLimit_ThrowsArgumentOutOfRangeException(int limit)
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         Func<Task> act = () => client.GetCommentsAsync(1, limit);
@@ -207,15 +208,15 @@ public class AzureDevOpsClientCommentsTests
     }
 
     [Fact]
-    public async Task GetCommentsAsync_Non2xx_ThrowsHttpRequestException()
+    public async Task GetCommentsAsync_NotFound_ThrowsRejected()
     {
         using var handler = new FakeHttpHandler("""{"message":"nope"}""", HttpStatusCode.NotFound);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         Func<Task> act = () => client.GetCommentsAsync(999);
 
-        await Should.ThrowAsync<HttpRequestException>(act);
+        await Should.ThrowAsync<RejectedException>(act);
     }
 }
 

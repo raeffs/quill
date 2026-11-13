@@ -56,7 +56,7 @@ public class ServiceWiringTests
         using var provider = BuildProvider(handler);
 
         var client = provider.GetRequiredService<AzureDevOpsClient>();
-        await Should.ThrowAsync<HttpRequestException>(() => client.GetWorkItemAsync(1));
+        await Should.ThrowAsync<UnavailableException>(() => client.GetWorkItemAsync(1));
 
         // Collection must precede Project; a transposed mapping would emit /PROJ/COL/.
         handler.LastRequestUri.ShouldNotBeNull();
@@ -70,7 +70,7 @@ public class ServiceWiringTests
         using var provider = BuildProvider(handler);
 
         var client = provider.GetRequiredService<AzureDevOpsPullRequestClient>();
-        await Should.ThrowAsync<HttpRequestException>(() => client.GetByIdAsync(1));
+        await Should.ThrowAsync<UnavailableException>(() => client.GetByIdAsync(1));
 
         handler.LastRequestUri.ShouldNotBeNull();
         handler.LastRequestUri.AbsoluteUri.ShouldContain($"/{Collection}/{Project}/_apis/git/pullrequests/1");
@@ -83,10 +83,37 @@ public class ServiceWiringTests
         using var provider = BuildProvider(handler);
 
         var client = provider.GetRequiredService<AzureDevOpsBuildClient>();
-        await Should.ThrowAsync<HttpRequestException>(() => client.GetRunAsync(1));
+        await Should.ThrowAsync<UnavailableException>(() => client.GetRunAsync(1));
 
         handler.LastRequestUri.ShouldNotBeNull();
         handler.LastRequestUri.AbsoluteUri.ShouldContain($"/{Collection}/{Project}/_apis/build/builds/1");
+    }
+
+    [Fact]
+    public async Task AddQuillServices_ClassifiesTheFailuresOfEveryTypedClient()
+    {
+        using var handler = new CapturingHandler();
+        using var provider = BuildProvider(handler);
+        const string expected = "The server answered 500 (Internal Server Error).";
+
+        (await Should.ThrowAsync<UnavailableException>(() => provider.GetRequiredService<AzureDevOpsClient>().GetWorkItemAsync(1))).Message.ShouldBe(expected);
+        (await Should.ThrowAsync<UnavailableException>(() => provider.GetRequiredService<AzureDevOpsPullRequestClient>().GetByIdAsync(1))).Message.ShouldBe(expected);
+        (await Should.ThrowAsync<UnavailableException>(() => provider.GetRequiredService<AzureDevOpsBuildClient>().GetRunAsync(1))).Message.ShouldBe(expected);
+        (await Should.ThrowAsync<UnavailableException>(() => provider.GetRequiredService<AzureDevOpsIdentityClient>().GetCurrentUserAsync())).Message.ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData(nameof(AzureDevOpsClient))]
+    [InlineData(nameof(AzureDevOpsPullRequestClient))]
+    [InlineData(nameof(AzureDevOpsIdentityClient))]
+    [InlineData(nameof(AzureDevOpsBuildClient))]
+    public void AddQuillServices_LeavesTheTimeoutToTheHandler(string name)
+    {
+        using var provider = BuildProvider(handler: null);
+
+        using var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(name);
+
+        httpClient.Timeout.ShouldBe(Timeout.InfiniteTimeSpan);
     }
 
     private static ServiceProvider BuildProvider(CapturingHandler? handler)

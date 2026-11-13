@@ -68,7 +68,7 @@ public sealed class RichText(QuillConfig config, IWorkItemBatchFetcher fetcher, 
                 _workItems[workItem.Id] = workItem;
             }
         }
-        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        catch (QuillException ex) when (ex is not DefectException)
         {
             failure = ex;
         }

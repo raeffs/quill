@@ -644,7 +644,7 @@ public class AzureDevOpsPullRequestClientThreadPositionsTests
     ]);
 
     private static HttpClient NewHttpClient(RecordingHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(
         httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

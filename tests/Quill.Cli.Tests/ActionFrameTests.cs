@@ -41,7 +41,7 @@ public sealed class ActionFrameTests : IDisposable
     [Fact]
     public async Task InvokeAsync_ActionRejected_PrintsTheErrorRowAndExits1()
     {
-        var fake = new ScriptedBuildClient { ListTestRuns = _ => throw new PipelineRejectedException("Run 4201 was deleted (400)") };
+        var fake = new ScriptedBuildClient { ListTestRuns = _ => throw new RejectedException("Run 4201 was deleted (400)") };
         await using var services = new ServiceCollection().AddSingleton<IAzureDevOpsBuildClient>(fake).BuildServiceProvider();
 
         var exitCode = await CliHost.InvokeAsync(["pipeline", "tests", "4201"], services);

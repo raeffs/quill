@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Quill.Core;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -32,7 +33,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -59,7 +60,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -88,7 +89,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -114,7 +115,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -145,7 +146,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -175,7 +176,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new ScriptedCreateHandler(["""{"defaultBranch":"refs/heads/develop"}""", CreatedJson]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -204,7 +205,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new ScriptedCreateHandler([CreatedJson]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -229,7 +230,7 @@ public class AzureDevOpsPullRequestClientCreateTests
     {
         // Arrange
         using var handler = new ScriptedCreateHandler(["""{"name":"importer"}""", CreatedJson]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -248,17 +249,17 @@ public class AzureDevOpsPullRequestClientCreateTests
     }
 
     [Fact]
-    public async Task CreateAsync_ServerRejects_SurfacesTheServerMessage()
+    public async Task CreateAsync_ActivePullRequestExists_ThrowsRejected()
     {
         // Arrange
         var errorJson = """
         {
-            "message": "Invalid argument value.\r\nParameter name: A description for a pull request must not be longer than 4000 characters.",
-            "typeKey": "InvalidArgumentValueException"
+            "message": "TF401179: An active pull request for the source and target branch already exists.",
+            "typeKey": "GitPullRequestExistsException"
         }
         """;
-        using var handler = new FakeHttpHandler(errorJson, HttpStatusCode.BadRequest);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var handler = new FakeHttpHandler(errorJson, HttpStatusCode.Conflict);
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -274,33 +275,8 @@ public class AzureDevOpsPullRequestClientCreateTests
             TestContext.Current.CancellationToken);
 
         // Assert
-        var ex = await Should.ThrowAsync<HttpRequestException>(act);
-        ex.Message.ShouldContain("must not be longer than 4000 characters");
-    }
-
-    [Fact]
-    public async Task CreateAsync_ServerRejectsWithNoBody_ReportsTheStatusCode()
-    {
-        // Arrange
-        using var handler = new FakeHttpHandler(string.Empty, HttpStatusCode.Unauthorized);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
-
-        // Act
-        Func<Task> act = () => client.CreateAsync(
-            new PullRequestCreateRequest
-            {
-                Repo = "importer",
-                SourceBranch = "feature/importer",
-                TargetBranch = "main",
-                Title = "Add the importer",
-            },
-            TestContext.Current.CancellationToken);
-
-        // Assert
-        var ex = await Should.ThrowAsync<HttpRequestException>(act);
-        ex.Message.ShouldContain("401");
+        var ex = await Should.ThrowAsync<RejectedException>(act);
+        ex.Message.ShouldBe("TF401179: An active pull request for the source and target branch already exists. (409)");
     }
 }
 

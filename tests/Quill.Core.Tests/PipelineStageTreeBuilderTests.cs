@@ -304,7 +304,7 @@ public class PipelineStageTreeBuilderTests
     private static async Task<IReadOnlyList<TimelineRecord>> LoadAsync(string fileName)
     {
         using var handler = new FakeHttpHandler(Fixtures.Read(fileName), HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler);
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
         return await client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
     }

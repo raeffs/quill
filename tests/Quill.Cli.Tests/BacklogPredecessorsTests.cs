@@ -6,6 +6,7 @@ using Quill.AzureDevOps;
 using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
+using Quill.Tests.Shared;
 using Shouldly;
 
 namespace Quill.Cli.Tests;
@@ -201,7 +202,7 @@ public sealed class BacklogPredecessorsTests : IDisposable
     private async Task<int> RunAsync(ScriptedServer server, params string[] args)
     {
 #pragma warning disable CA2000 // The service provider disposes the client that holds it
-        var httpClient = new HttpClient(server, disposeHandler: false);
+        var httpClient = TestHttp.Client(server);
 #pragma warning restore CA2000
         await using var services = new ServiceCollection()
             .AddLogging()

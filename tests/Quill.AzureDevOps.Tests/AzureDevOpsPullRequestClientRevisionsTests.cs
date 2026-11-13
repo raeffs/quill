@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using Quill.Core;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -150,7 +151,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
     }
 
     [Fact]
-    public async Task GetRevisionsAsync_Non2xx_ThrowsHttpRequestException()
+    public async Task GetRevisionsAsync_NotFound_ThrowsRejected()
     {
         // Arrange
         using var handler = new RecordingHandler(
@@ -164,7 +165,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
         Func<Task> act = () => client.GetRevisionsAsync(4711, "importer", TestContext.Current.CancellationToken);
 
         // Assert
-        await Should.ThrowAsync<HttpRequestException>(act);
+        await Should.ThrowAsync<RejectedException>(act);
     }
 
     [Theory]
@@ -174,7 +175,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -190,7 +191,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -205,7 +206,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
         new([new FakeResponse(HttpStatusCode.OK, iterationsJson)]);
 
     private static HttpClient NewHttpClient(RecordingHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(
         httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -38,7 +39,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CompletedBuild, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -56,7 +57,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(CompletedBuild, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -85,7 +86,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(QueuedBuild, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -100,13 +101,13 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task GetRunAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    public async Task GetRunAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -114,8 +115,8 @@ public class AzureDevOpsBuildClientTests
         var act = () => client.GetRunAsync(4201, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(status);
+        var exception = await Should.ThrowAsync<QuillException>(act);
+        exception.ShouldBeOfType(mode);
     }
 
     [Fact]
@@ -123,7 +124,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -140,7 +141,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -159,7 +160,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -179,7 +180,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -205,7 +206,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -224,7 +225,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -237,13 +238,13 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task ListPipelinesAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    public async Task ListPipelinesAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -252,8 +253,8 @@ public class AzureDevOpsBuildClientTests
             new PipelineListQuery { Top = 50 }, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(status);
+        var exception = await Should.ThrowAsync<QuillException>(act);
+        exception.ShouldBeOfType(mode);
     }
 
     [Fact]
@@ -316,7 +317,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -352,7 +353,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -370,7 +371,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -389,7 +390,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -402,13 +403,13 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.BadRequest)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task ListRunsAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    [InlineData(HttpStatusCode.BadRequest, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    public async Task ListRunsAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -417,8 +418,8 @@ public class AzureDevOpsBuildClientTests
             new PipelineRunListQuery { Top = 50 }, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(status);
+        var exception = await Should.ThrowAsync<QuillException>(act);
+        exception.ShouldBeOfType(mode);
     }
 
     [Fact]
@@ -426,7 +427,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(Fixtures.Read("timeline-matrix.json"), HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -444,7 +445,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(Fixtures.Read("timeline-matrix.json"), HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -491,7 +492,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(Fixtures.Read("timeline-matrix.json"), HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -515,7 +516,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         var body = $$"""{"records":[{"id":"a","type":"Task","name":"n","state":"completed","issues":[{{issueJson}}]}]}""";
         using var handler = new FakeHttpHandler(body, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -533,7 +534,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(string.Empty, HttpStatusCode.NoContent);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -549,7 +550,7 @@ public class AzureDevOpsBuildClientTests
     {
         // Arrange
         using var handler = new FakeHttpHandler(string.Empty, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -561,13 +562,13 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task GetTimelineAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    public async Task GetTimelineAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -575,8 +576,8 @@ public class AzureDevOpsBuildClientTests
         var act = () => client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(status);
+        var exception = await Should.ThrowAsync<QuillException>(act);
+        exception.ShouldBeOfType(mode);
     }
 
     [Fact]
@@ -671,9 +672,9 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task GetLogLinesAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    public async Task GetLogLinesAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
@@ -684,8 +685,8 @@ public class AzureDevOpsBuildClientTests
         var act = () => client.GetLogLinesAsync(4201, 12, null, null, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(status);
+        var exception = await Should.ThrowAsync<QuillException>(act);
+        exception.ShouldBeOfType(mode);
     }
 
     [Fact]
@@ -721,28 +722,26 @@ public class AzureDevOpsBuildClientTests
     }
 
     [Fact]
-    public async Task GetLogLineCountAsync_UnknownLogId_ThrowsNotFound()
+    public async Task GetLogLineCountAsync_UnknownLogId_ThrowsRejected()
     {
         // Arrange
-        using var handler = new ScriptedHttpHandler([LogList]);
+        using var handler = new ScriptedHttpHandler(["""{"count":1,"value":[{"id":1,"lineCount":40}]}"""]);
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var act = () => client.GetLogLineCountAsync(4201, 99, TestContext.Current.CancellationToken);
+        var act = () => client.GetLogLineCountAsync(4201, 12, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        exception.Message.ShouldContain("99");
-        exception.Message.ShouldContain("4201");
+        var exception = await Should.ThrowAsync<RejectedException>(act);
+        exception.Message.ShouldBe("Log 12 not found in run 4201.");
         handler.Requests.Count.ShouldBe(1);
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task GetLogLineCountAsync_ErrorStatus_ThrowsHttpRequestExceptionWithStatus(HttpStatusCode status)
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    public async Task GetLogLineCountAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
@@ -753,13 +752,13 @@ public class AzureDevOpsBuildClientTests
         var act = () => client.GetLogLineCountAsync(4201, 12, TestContext.Current.CancellationToken);
 
         // Assert
-        var exception = await Should.ThrowAsync<HttpRequestException>(act);
-        exception.StatusCode.ShouldBe(status);
+        var exception = await Should.ThrowAsync<QuillException>(act);
+        exception.ShouldBeOfType(mode);
     }
 
     private static HttpClient CreateHttpClient(HttpMessageHandler handler)
     {
-        return new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        return TestHttp.Client(handler);
     }
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient)
@@ -782,7 +781,7 @@ public class AzureDevOpsBuildClientTests
     private static async Task<string> RequestUrlForRunsAsync(PipelineRunListQuery query)
     {
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsBuildClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 

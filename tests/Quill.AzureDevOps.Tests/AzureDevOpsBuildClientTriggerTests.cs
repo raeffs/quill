@@ -143,66 +143,66 @@ public class AzureDevOpsBuildClientTriggerTests
             .ShouldBe(["Test", "Deploy"]);
     }
 
-    [Theory]
-    [InlineData(HttpStatusCode.BadRequest)]
-    [InlineData(HttpStatusCode.Conflict)]
-    public async Task QueueRunAsync_Rejected_ThrowsPipelineRejectedExceptionWithServerMessage(HttpStatusCode status)
+    [Fact]
+    public async Task QueueRunAsync_ReadFailsWith503_ThrowsUnavailableNamingTheQueuedRun()
     {
         // Arrange
-        using var handler = new SequenceHttpHandler((status, """{"message":"Unexpected parameter 'colour'."}"""));
+        using var handler = new RecordingHandler(
+        [
+            new FakeResponse(HttpStatusCode.OK, """{"id":4202}"""),
+            new FakeResponse(HttpStatusCode.ServiceUnavailable, string.Empty, RetryAfterSeconds: 7),
+        ]);
+        using var httpClient = TestHttp.Client(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<UnavailableException>(
+            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldStartWith("Queued run 4202, but reading it failed: ");
+        exception.RetryAfter.ShouldBe(TimeSpan.FromSeconds(7));
+        exception.InnerException.ShouldBeOfType<UnavailableException>();
+    }
+
+    [Fact]
+    public async Task QueueRunAsync_ReadFailsWith418_ThrowsDefectWithoutThePrefix()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler(
+            (HttpStatusCode.OK, """{"id":4202}"""),
+            ((HttpStatusCode)418, string.Empty));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
+        var exception = await Should.ThrowAsync<DefectException>(
             () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
 
         // Assert
-        exception.Message.ShouldBe($"Unexpected parameter 'colour'. ({(int)status})");
+        exception.Message.ShouldNotContain("Queued run");
+    }
+
+    [Fact]
+    public async Task QueueRunAsync_InvalidStateChange500_ThrowsRejected()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler(
+            (HttpStatusCode.InternalServerError, """{"message":"Pipeline 42 cannot be run because it is disabled.","typeKey":"BuildStatusInvalidChangeException"}"""));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<RejectedException>(
+            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldBe("Pipeline 42 cannot be run because it is disabled. (500)");
         handler.Requests.Count.ShouldBe(1);
     }
 
     [Fact]
-    public async Task QueueRunAsync_RejectedWithoutMessage_ThrowsGenericRejection()
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.BadRequest, string.Empty));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
-            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.Message.ShouldBe("The server rejected the pipeline run (400)");
-    }
-
-    [Theory]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    [InlineData(HttpStatusCode.Forbidden)]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.TooManyRequests)]
-    [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task QueueRunAsync_ApiError_ThrowsPlainHttpRequestException(HttpStatusCode status)
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler((status, """{"message":"Some server message."}"""));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<HttpRequestException>(
-            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.GetType().ShouldBe(typeof(HttpRequestException));
-        exception.StatusCode.ShouldBe(status);
-        handler.Requests.Count.ShouldBe(1);
-    }
-
-    [Fact]
-    public async Task QueueRunAsync_ReadFails_ErrorNamesTheQueuedRun()
+    public async Task QueueRunAsync_ReadFailsWith404_ThrowsRejectedNamingTheQueuedRun()
     {
         // Arrange
         using var handler = new SequenceHttpHandler(
@@ -212,20 +212,38 @@ public class AzureDevOpsBuildClientTriggerTests
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<HttpRequestException>(
+        var exception = await Should.ThrowAsync<RejectedException>(
             () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
 
         // Assert
-        exception.ShouldNotBeOfType<PipelineRejectedException>();
         exception.Message.ShouldStartWith("Queued run 4202, but reading it failed: ");
-        exception.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        exception.InnerException.ShouldBeOfType<RejectedException>();
+    }
+
+    [Fact]
+    public async Task QueueRunAsync_ReadFailsWith401_ThrowsDeniedNamingTheQueuedRun()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler(
+            (HttpStatusCode.OK, """{"id":4202}"""),
+            (HttpStatusCode.Unauthorized, string.Empty));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<DeniedException>(
+            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldStartWith("Queued run 4202, but reading it failed: ");
+        exception.InnerException.ShouldBeOfType<DeniedException>();
     }
 
     private static SequenceHttpHandler SuccessHandler() =>
         new((HttpStatusCode.OK, QueuedAnswer), (HttpStatusCode.OK, RunAnswer));
 
     private static HttpClient CreateHttpClient(SequenceHttpHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
         new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

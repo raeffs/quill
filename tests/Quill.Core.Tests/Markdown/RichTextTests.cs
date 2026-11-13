@@ -127,7 +127,7 @@ public class RichTextTests
     [Fact]
     public async Task ToMarkdownAsync_AfterFetchException_IsNotFetchedAgain()
     {
-        var fake = new FakeAzureDevOpsClient { FetchException = new HttpRequestException() };
+        var fake = new FakeAzureDevOpsClient { FetchException = new UnavailableException() };
         var richText = CreateRichText(fake);
 
         await richText.ToMarkdownAsync($"<p>See {LinkTo123}.</p>", TestContext.Current.CancellationToken);
@@ -162,8 +162,9 @@ public class RichTextTests
     }
 
     [Theory]
-    [InlineData(typeof(HttpRequestException))]
-    [InlineData(typeof(InvalidOperationException))]
+    [InlineData(typeof(UnavailableException))]
+    [InlineData(typeof(DeniedException))]
+    [InlineData(typeof(RejectedException))]
     public async Task FetchThrows_FallsBackForEveryLink(Type exceptionType)
     {
         var fake = new FakeAzureDevOpsClient();
@@ -177,6 +178,15 @@ public class RichTextTests
         markdown.ShouldContain("[#456](#456)");
         html.ShouldContain(">the bug</a>");
         linkIds.ShouldBe([123]);
+    }
+
+    [Fact]
+    public async Task ToMarkdownAsync_LookupDefect_IsNotSwallowed()
+    {
+        var fake = new FakeAzureDevOpsClient { FetchException = new DefectException("Failed to deserialize work items batch response.") };
+        var richText = CreateRichText(fake);
+
+        await Should.ThrowAsync<DefectException>(() => richText.ToMarkdownAsync($"<p>See {LinkTo123}.</p>", TestContext.Current.CancellationToken));
     }
 
     [Fact]

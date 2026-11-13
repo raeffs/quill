@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -26,7 +27,7 @@ public class AzureDevOpsIdentityClientTests
         """;
 
         using var handler = new FakeHttpHandler(connectionDataJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsIdentityClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection);
 
         // Act
@@ -106,10 +107,10 @@ public class AzureDevOpsIdentityClientTests
     {
         using var harness = new Harness(string.Empty, HttpStatusCode.Unauthorized);
 
-        var ex = await Should.ThrowAsync<HttpRequestException>(
+        var ex = await Should.ThrowAsync<DeniedException>(
             () => harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane", CancellationToken.None));
 
-        ex.Message.ShouldEndWith("Resolving a person needs the Identity: Read PAT scope.");
+        ex.Message.ShouldEndWith(" Resolving a person needs the Identity: Read PAT scope.");
     }
 
     [Fact]
@@ -185,7 +186,7 @@ public class AzureDevOpsIdentityClientTests
         public Harness(string body, HttpStatusCode status = HttpStatusCode.OK)
         {
             Handler = new FakeHttpHandler(body, status);
-            _http = new HttpClient(Handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+            _http = TestHttp.Client(Handler);
             Client = new AzureDevOpsIdentityClient(_http, TestConstants.ServerUrl, TestConstants.Collection);
         }
 

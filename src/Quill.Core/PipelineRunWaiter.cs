@@ -14,7 +14,7 @@ public sealed class PipelineRunWaiter(IAzureDevOpsBuildClient client, IWaitClock
 
         var deadline = clock.GetUtcNow() + timeout;
         PipelineRun? last = null;
-        HttpRequestException? lastError = null;
+        UnavailableException? lastError = null;
 
         while (true)
         {
@@ -27,40 +27,25 @@ public sealed class PipelineRunWaiter(IAzureDevOpsBuildClient client, IWaitClock
                     return last;
                 }
             }
-            catch (HttpRequestException ex) when (IsTransient(ex))
+            catch (UnavailableException ex)
             {
                 lastError = ex;
-                if (ex is RetryAfterHttpRequestException retryAfter && retryAfter.RetryAfter > wait)
+                if (ex.RetryAfter is { } retryAfter && retryAfter > wait)
                 {
-                    wait = retryAfter.RetryAfter;
+                    wait = retryAfter;
                 }
-            }
-            catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
-            {
-                lastError = new HttpRequestException(ex.Message, ex);
             }
 
             var left = deadline - clock.GetUtcNow();
             if (left <= TimeSpan.Zero)
             {
-                return last ?? throw new HttpRequestException(
+                return last ?? throw new UnavailableException(
                     string.Create(CultureInfo.InvariantCulture, $"No poll of run {runId} succeeded before the timeout: {lastError?.Message}"),
-                    lastError,
-                    lastError?.StatusCode);
+                    lastError?.RetryAfter,
+                    lastError);
             }
 
             await clock.DelayAsync(wait < left ? wait : left, cancellationToken);
         }
-    }
-
-    private static bool IsTransient(HttpRequestException ex)
-    {
-        if (ex.StatusCode is not { } status)
-        {
-            return true;
-        }
-
-        var code = (int)status;
-        return code is 408 or 429 or >= 500;
     }
 }

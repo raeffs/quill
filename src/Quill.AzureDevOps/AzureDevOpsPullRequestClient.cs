@@ -84,7 +84,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         var url = $"{baseUrl}?{string.Join('&', parameters)}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestListResponse, cancellationToken)
@@ -106,7 +105,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/pullrequests/{prId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
@@ -127,7 +125,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/policy/evaluations?artifactId={artifactId}&api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PolicyEvaluationListResponse, cancellationToken)
@@ -170,7 +167,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         var url = $"{PullRequestRoot(prId, repo)}/threads?{scope}api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestThreadsResponse, cancellationToken)
@@ -283,7 +279,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}/workitems?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestWorkItemRefsResponse, cancellationToken)
@@ -336,7 +331,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync(url, content, cancellationToken);
-        await EnsureSuccessWithServerMessageAsync(response, cancellationToken);
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
@@ -345,36 +339,11 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return MapToPullRequest(dto);
     }
 
-    private static async Task EnsureSuccessWithServerMessageAsync(
-        HttpResponseMessage response,
-        CancellationToken cancellationToken)
-    {
-        if (response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        var message = ServerErrorMessage.Read(body);
-
-        if (message is null)
-        {
-            response.EnsureSuccessStatusCode();
-            return;
-        }
-
-        throw new HttpRequestException(
-            $"{message} ({((int)response.StatusCode).ToString(CultureInfo.InvariantCulture)})",
-            inner: null,
-            response.StatusCode);
-    }
-
     private async Task<string> GetDefaultBranchAsync(string repo, CancellationToken cancellationToken)
     {
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.GitRepositoryResponse, cancellationToken)
@@ -417,7 +386,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
         var url = $"{PullRequestRoot(prId, repo)}/iterations?api-version={AzureDevOpsConstants.ApiVersion}";
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.PullRequestIterationsResponse, cancellationToken)

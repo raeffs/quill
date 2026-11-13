@@ -16,6 +16,7 @@ public class FailureModeHandlerTests
     [InlineData(404, typeof(RejectedException))]
     [InlineData(409, typeof(RejectedException))]
     [InlineData(422, typeof(RejectedException))]
+    [InlineData(412, typeof(RejectedException))]
     [InlineData(401, typeof(DeniedException))]
     [InlineData(403, typeof(DeniedException))]
     [InlineData(408, typeof(UnavailableException))]

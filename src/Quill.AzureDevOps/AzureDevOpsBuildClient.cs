@@ -33,7 +33,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        ThrowIfFailed(response);
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
@@ -69,8 +68,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.RunPipelineBody);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        using var response = await _httpClient.PostAsync(url, content, cancellationToken);
-        await EnsureAcceptedAsync(response, "The server rejected the pipeline run", cancellationToken);
+        using var runRequest = RunChangeRequest(HttpMethod.Post, url, content);
+        using var response = await _httpClient.SendAsync(runRequest, cancellationToken);
 
         var queued = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken)
@@ -80,12 +79,17 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         {
             return await GetRunAsync(queued.Id, cancellationToken);
         }
-        catch (HttpRequestException exception)
+        catch (UnavailableException exception)
         {
-            throw new HttpRequestException(
-                $"Queued run {queued.Id}, but reading it failed: {exception.Message}",
-                exception,
-                exception.StatusCode);
+            throw new UnavailableException(ReadFailed(queued.Id, exception), exception.RetryAfter, exception);
+        }
+        catch (RejectedException exception)
+        {
+            throw new RejectedException(ReadFailed(queued.Id, exception), exception);
+        }
+        catch (DeniedException exception)
+        {
+            throw new DeniedException(ReadFailed(queued.Id, exception), exception);
         }
     }
 
@@ -97,7 +101,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             runId,
             string.Empty,
             new UpdateBuildBody { Status = "cancelling" },
-            $"The server rejected the cancel of run {runId.ToString(CultureInfo.InvariantCulture)}",
             cancellationToken);
     }
 
@@ -109,7 +112,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             runId,
             "&retry=true",
             new UpdateBuildBody(),
-            $"The server rejected the retry of run {runId.ToString(CultureInfo.InvariantCulture)}",
             cancellationToken);
     }
 
@@ -120,7 +122,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/timeline?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         if (response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
         {
@@ -165,7 +166,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         if (response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
         {
@@ -192,14 +192,13 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildLogListResponse, cancellationToken)
             ?? throw new InvalidOperationException("Failed to deserialize build log list response.");
 
         var log = dto.Value.FirstOrDefault(entry => entry.Id == logId)
-            ?? throw new HttpRequestException($"Log {logId} not found in run {runId}.", inner: null, HttpStatusCode.NotFound);
+            ?? throw new RejectedException($"Log {logId} not found in run {runId}.");
 
         return log.LineCount;
     }
@@ -247,7 +246,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds?{string.Join('&', parameters)}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildListResponse, cancellationToken)
@@ -282,7 +280,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/definitions?{string.Join('&', parameters)}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildDefinitionListResponse, cancellationToken)
@@ -305,7 +302,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/test/runs?buildUri=vstfs:///Build/Build/{runId.ToString(CultureInfo.InvariantCulture)}&api-version={AzureDevOpsConstants.ApiVersion}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.TestRunListResponse, cancellationToken)
@@ -356,7 +352,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/test/Runs/{testRunId.ToString(CultureInfo.InvariantCulture)}/results?{string.Join('&', parameters)}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.TestResultListResponse, cancellationToken)
@@ -382,7 +377,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         int runId,
         string query,
         UpdateBuildBody body,
-        string rejection,
         CancellationToken cancellationToken)
     {
         var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}{query}";
@@ -390,8 +384,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.UpdateBuildBody);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        using var response = await _httpClient.PatchAsync(url, content, cancellationToken);
-        await EnsureAcceptedAsync(response, rejection, cancellationToken);
+        using var request = RunChangeRequest(HttpMethod.Patch, url, content);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
@@ -400,61 +394,20 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         return ToPipelineRun(dto);
     }
 
-    private static void ThrowIfFailed(HttpResponseMessage response)
+    private static string ReadFailed(int runId, QuillException exception) =>
+        $"Queued run {runId}, but reading it failed: {exception.Message}";
+
+    private static HttpRequestMessage RunChangeRequest(HttpMethod method, string url, HttpContent content)
     {
-        if (response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var retryAfter = RetryAfterHeader.Read(response);
-        if (retryAfter is null)
-        {
-            response.EnsureSuccessStatusCode();
-        }
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException exception)
-        {
-            throw new RetryAfterHttpRequestException(exception.Message, response.StatusCode, retryAfter!.Value);
-        }
+        var request = new HttpRequestMessage(method, url) { Content = content };
+        request.Options.Set(FailureModeHandler.RejectedWhen, IsInvalidStateChange);
+        return request;
     }
 
-    // Auth, throttling and 5xx stay plain HTTP failures: the server did not
-    // judge the run. Any other 4xx is its verdict on what was sent, and so is
-    // its 500 for an invalid build state change.
-    private static async Task EnsureAcceptedAsync(HttpResponseMessage response, string fallback, CancellationToken cancellationToken)
-    {
-        if (response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var status = (int)response.StatusCode;
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        var isInvalidStateChange = response.StatusCode == HttpStatusCode.InternalServerError
-            && string.Equals(ServerErrorMessage.ReadTypeKey(body), InvalidStateChangeTypeKey, StringComparison.Ordinal);
-
-        if (!isInvalidStateChange
-            && (status is < 400 or >= 500
-                or (int)HttpStatusCode.Unauthorized
-                or (int)HttpStatusCode.Forbidden
-                or (int)HttpStatusCode.NotFound
-                or (int)HttpStatusCode.TooManyRequests))
-        {
-            response.EnsureSuccessStatusCode();
-        }
-
-        var message = ServerErrorMessage.Read(body);
-        var statusText = status.ToString(CultureInfo.InvariantCulture);
-
-        throw new PipelineRejectedException(
-            message is null ? $"{fallback} ({statusText})" : $"{message} ({statusText})");
-    }
+    // The server reports an invalid build state change as a 500.
+    private static bool IsInvalidStateChange(ServerError error) =>
+        error.Status == 500
+        && string.Equals(error.TypeKey, InvalidStateChangeTypeKey, StringComparison.Ordinal);
 
     private static TimelineRecord ToTimelineRecord(TimelineRecordResponse dto)
     {

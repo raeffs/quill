@@ -31,7 +31,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
         Calls.Add($"GetWorkItem({id})");
         return _workItems.TryGetValue(id, out var workItem)
             ? Task.FromResult(workItem)
-            : throw new HttpRequestException($"Work item {id} not found.");
+            : throw new RejectedException($"Work item {id} not found.");
     }
 
     public Task<int> CreateWorkItemAsync(WorkItemCreatePatch patch)

@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -11,7 +12,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("""{"value":[]}""", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -37,7 +38,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         }
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -49,11 +50,11 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
     }
 
     [Fact]
-    public async Task GetWorkItemRefsAsync_Non2xx_ThrowsHttpRequestException()
+    public async Task GetWorkItemRefsAsync_NotFound_ThrowsRejected()
     {
         // Arrange
         using var handler = new FakeHttpHandler("""{"message":"nope"}""", HttpStatusCode.NotFound);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -61,7 +62,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         Func<Task> act = () => client.GetWorkItemRefsAsync(4711, "importer", TestContext.Current.CancellationToken);
 
         // Assert
-        await Should.ThrowAsync<HttpRequestException>(act);
+        await Should.ThrowAsync<RejectedException>(act);
     }
 
     [Theory]
@@ -71,7 +72,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -87,7 +88,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -118,7 +119,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         }
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -148,7 +149,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         }
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 

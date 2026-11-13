@@ -1,5 +1,6 @@
 using System.Net;
 using Quill.AzureDevOps;
+using Quill.Core;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -39,7 +40,7 @@ public class AzureDevOpsClientBatchTests
         """;
 
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
@@ -78,7 +79,7 @@ public class AzureDevOpsClientBatchTests
         """;
 
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([10, 11, 12], TestContext.Current.CancellationToken);
@@ -101,7 +102,7 @@ public class AzureDevOpsClientBatchTests
         """;
 
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
@@ -122,7 +123,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.OK, firstResponse),
             new FakeResponse(HttpStatusCode.OK, secondResponse),
         ]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync(ids, TestContext.Current.CancellationToken);
@@ -133,16 +134,16 @@ public class AzureDevOpsClientBatchTests
     }
 
     [Fact]
-    public async Task FetchAsync_TransientFailureThenSuccess_RetriesOnceAndReturnsItems()
+    public async Task FetchAsync_ChunkFailsWith503ThenSucceeds_ReturnsItems()
     {
         var responseJson = BuildBatchResponse([10, 11]);
 
         using var handler = new RecordingHandler(
         [
-            new FakeResponse(HttpStatusCode.InternalServerError, "boom"),
+            new FakeResponse(HttpStatusCode.ServiceUnavailable, "boom"),
             new FakeResponse(HttpStatusCode.OK, responseJson),
         ]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
@@ -160,7 +161,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.InternalServerError, "boom"),
             new FakeResponse(HttpStatusCode.InternalServerError, "boom again"),
         ]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
@@ -181,7 +182,7 @@ public class AzureDevOpsClientBatchTests
             rateLimited,
             new FakeResponse(HttpStatusCode.OK, responseJson),
         ]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([10], TestContext.Current.CancellationToken);
@@ -201,7 +202,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.InternalServerError, "boom"),
             new FakeResponse(HttpStatusCode.InternalServerError, "boom again"),
         ]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync(ids, TestContext.Current.CancellationToken);
@@ -212,13 +213,31 @@ public class AzureDevOpsClientBatchTests
     }
 
     [Fact]
-    public async Task FetchAsync_NonTransientStatus_Throws()
+    public async Task FetchAsync_ChunkFailsWith429AndRetryAfterTwice_ReportsBatchFailedIds()
     {
-        using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.BadRequest, "bad")]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var handler = new RecordingHandler(
+        [
+            new FakeResponse(HttpStatusCode.TooManyRequests, "slow down", RetryAfterSeconds: 1),
+            new FakeResponse(HttpStatusCode.TooManyRequests, "slow down", RetryAfterSeconds: 1),
+        ]);
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
-        await Should.ThrowAsync<HttpRequestException>(() => client.FetchAsync([10]));
+        var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
+
+        result.Items.ShouldBeEmpty();
+        result.BatchFailedIds.ShouldBe([10, 11]);
+        handler.Requests.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task FetchAsync_ChunkFailsWith401_ThrowsDenied()
+    {
+        using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.Unauthorized, "no")]);
+        using var httpClient = TestHttp.Client(handler);
+        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+        await Should.ThrowAsync<DeniedException>(() => client.FetchAsync([10]));
         handler.Requests.Count.ShouldBe(1);
     }
 
@@ -226,7 +245,7 @@ public class AzureDevOpsClientBatchTests
     public async Task FetchAsync_EmptyInput_ReturnsEmptyResultAndDoesNotCallServer()
     {
         using var handler = new RecordingHandler([]);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
         var result = await client.FetchAsync([], TestContext.Current.CancellationToken);

@@ -1,4 +1,3 @@
-using System.Net;
 using Quill.Core.Models;
 using Quill.Tests.Shared.Fakes;
 using Shouldly;
@@ -11,12 +10,20 @@ public class PipelineRunWaiterTests
 
     public static TheoryData<Exception> TransientFailures => new()
     {
-        new HttpRequestException("boom", null, HttpStatusCode.InternalServerError),
-        new HttpRequestException("boom", null, HttpStatusCode.ServiceUnavailable),
-        new HttpRequestException("boom", null, HttpStatusCode.TooManyRequests),
-        new HttpRequestException("boom", null, HttpStatusCode.RequestTimeout),
-        new HttpRequestException("network down"),
-        new TaskCanceledException("request timed out"),
+        new UnavailableException("The server answered 500 (Internal Server Error)."),
+        new UnavailableException("The server answered 503 (Service Unavailable)."),
+        new UnavailableException("The server answered 429 (Too Many Requests)."),
+        new UnavailableException("The server answered 408 (Request Timeout)."),
+        new UnavailableException("No answer from the server: network down"),
+        new UnavailableException("The server did not answer within 30 seconds."),
+    };
+
+    public static TheoryData<Exception> OtherFailures => new()
+    {
+        new DeniedException("The server answered 403 (Forbidden)."),
+        new RejectedException("The server answered 404 (Not Found)."),
+        new RejectedException("The server answered 400 (Bad Request)."),
+        new DefectException("The server answered 302 (Found)."),
     };
 
     [Theory]
@@ -135,7 +142,7 @@ public class PipelineRunWaiterTests
         // Arrange
         var completed = Run("completed", "succeeded");
         var client = new ScriptedBuildClient(
-            () => throw new HttpRequestException("boom", null, HttpStatusCode.ServiceUnavailable),
+            () => throw new UnavailableException("The server answered 503 (Service Unavailable)."),
             () => completed);
 
         // Act
@@ -147,11 +154,11 @@ public class PipelineRunWaiterTests
     }
 
     [Fact]
-    public async Task WaitAsync_RetryAfterLongerThanInterval_WaitsRetryAfter()
+    public async Task WaitAsync_UnavailableWithRetryAfter_WaitsThatLong()
     {
         // Arrange
         var client = new ScriptedBuildClient(
-            () => throw new RetryAfterHttpRequestException("slow down", HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(30)),
+            () => throw new UnavailableException("busy", TimeSpan.FromSeconds(25)),
             () => Run("completed", "succeeded"));
         var clock = new FakeWaitClock();
 
@@ -159,7 +166,7 @@ public class PipelineRunWaiterTests
         await new PipelineRunWaiter(client, clock).WaitAsync(4202, TimeSpan.FromSeconds(600), TestContext.Current.CancellationToken);
 
         // Assert
-        clock.Delays.ShouldBe([TimeSpan.FromSeconds(30)]);
+        clock.Delays[0].ShouldBe(TimeSpan.FromSeconds(25));
     }
 
     [Fact]
@@ -167,7 +174,7 @@ public class PipelineRunWaiterTests
     {
         // Arrange
         var client = new ScriptedBuildClient(
-            () => throw new RetryAfterHttpRequestException("unavailable", HttpStatusCode.ServiceUnavailable, TimeSpan.FromSeconds(3)),
+            () => throw new UnavailableException("unavailable", TimeSpan.FromSeconds(3)),
             () => Run("completed", "succeeded"));
         var clock = new FakeWaitClock();
 
@@ -184,7 +191,7 @@ public class PipelineRunWaiterTests
         // Arrange
         var client = new ScriptedBuildClient(
             () => Run("inProgress"),
-            () => throw new RetryAfterHttpRequestException("slow down", HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(60)),
+            () => throw new UnavailableException("slow down", TimeSpan.FromSeconds(60)),
             () => Run("inProgress", buildNumber: "last"));
         var clock = new FakeWaitClock();
 
@@ -197,20 +204,32 @@ public class PipelineRunWaiterTests
         client.Calls.Count.ShouldBe(3);
     }
 
-    [Theory]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    [InlineData(HttpStatusCode.Forbidden)]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.BadRequest)]
-    public async Task WaitAsync_NonTransientFailure_ThrowsAtOnce(HttpStatusCode status)
+    [Fact]
+    public async Task WaitAsync_Denied_ThrowsAtOnce()
     {
         // Arrange
-        var failure = new HttpRequestException("rejected", null, status);
+        var client = new ScriptedBuildClient(() => throw new DeniedException("The server answered 401 (Unauthorized)."));
+        var clock = new FakeWaitClock();
+
+        // Act
+        var act = () => new PipelineRunWaiter(client, clock).WaitAsync(4202, TimeSpan.FromSeconds(600), TestContext.Current.CancellationToken);
+
+        // Assert
+        await Should.ThrowAsync<DeniedException>(act);
+        client.Calls.Count.ShouldBe(1);
+        clock.Delays.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [MemberData(nameof(OtherFailures))]
+    public async Task WaitAsync_FailureThatIsNotUnavailable_ThrowsAtOnce(Exception failure)
+    {
+        // Arrange
         var client = new ScriptedBuildClient(() => Run("inProgress"), () => throw failure);
         var clock = new FakeWaitClock();
 
         // Act
-        var thrown = await Should.ThrowAsync<HttpRequestException>(
+        var thrown = await Should.ThrowAsync<QuillException>(
             () => new PipelineRunWaiter(client, clock).WaitAsync(4202, TimeSpan.FromSeconds(600), TestContext.Current.CancellationToken));
 
         // Assert
@@ -220,19 +239,18 @@ public class PipelineRunWaiterTests
     }
 
     [Fact]
-    public async Task WaitAsync_EveryPollFailsUntilTimeout_ThrowsNamingTheRun()
+    public async Task WaitAsync_NoPollSucceeds_ThrowsUnavailable()
     {
         // Arrange
-        var client = new ScriptedBuildClient(
-            () => throw new HttpRequestException("Response status code does not indicate success: 503 (Service Unavailable).", null, HttpStatusCode.ServiceUnavailable));
+        var client = new ScriptedBuildClient(() => throw new UnavailableException("down"));
 
         // Act
-        var thrown = await Should.ThrowAsync<HttpRequestException>(
+        var thrown = await Should.ThrowAsync<UnavailableException>(
             () => new PipelineRunWaiter(client, new FakeWaitClock()).WaitAsync(4202, TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken));
 
         // Assert
-        thrown.Message.ShouldStartWith("No poll of run 4202 succeeded before the timeout: ");
-        thrown.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
+        thrown.Message.ShouldBe("No poll of run 4202 succeeded before the timeout: down");
+        thrown.InnerException.ShouldBeOfType<UnavailableException>();
         client.Calls.Count.ShouldBe(3);
     }
 
@@ -242,7 +260,7 @@ public class PipelineRunWaiterTests
         // Arrange
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
-        var client = new ScriptedBuildClient(() => throw new TaskCanceledException());
+        var client = new ScriptedBuildClient(() => throw new OperationCanceledException(cts.Token));
 
         // Act
         var act = () => new PipelineRunWaiter(client, new FakeWaitClock()).WaitAsync(4202, TimeSpan.FromSeconds(600), cts.Token);

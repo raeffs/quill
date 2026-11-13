@@ -14,7 +14,11 @@ public class AzureDevOpsBuildClientUpdateTests
 
     private const string Base = $"{TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_apis";
 
-    private const string InvalidStateChangeBody = """
+    private const string CancelInvalidStateChangeBody = """
+        {"$id":"1","innerException":null,"message":"Run 4202 cannot be cancelled because it has completed.","typeName":"Microsoft.TeamFoundation.Build.WebApi.BuildStatusInvalidChangeException, Microsoft.TeamFoundation.Build2.WebApi","typeKey":"BuildStatusInvalidChangeException","errorCode":0,"eventId":3000}
+        """;
+
+    private const string RetryInvalidStateChangeBody = """
         {"$id":"1","innerException":null,"message":"Unable to retry pipeline 20261101.7 because it is not currently in the completed state.","typeName":"Microsoft.TeamFoundation.Build.WebApi.BuildStatusInvalidChangeException, Microsoft.TeamFoundation.Build2.WebApi","typeKey":"BuildStatusInvalidChangeException","errorCode":0,"eventId":3000}
         """;
 
@@ -124,88 +128,32 @@ public class AzureDevOpsBuildClientUpdateTests
         run.Status.ShouldBe("inProgress");
     }
 
-    [Theory]
-    [InlineData(HttpStatusCode.BadRequest)]
-    [InlineData(HttpStatusCode.Conflict)]
-    public async Task RetryRunAsync_Rejected_ThrowsPipelineRejectedExceptionWithServerMessage(HttpStatusCode status)
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler((status, """{"message":"The build is in progress and cannot be retried."}"""));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
-            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.Message.ShouldBe($"The build is in progress and cannot be retried. ({(int)status})");
-    }
-
     [Fact]
-    public async Task CancelRunAsync_RejectedWithoutMessage_ThrowsRejectionNamingTheRun()
+    public async Task CancelRunAsync_InvalidStateChange500_ThrowsRejected()
     {
         // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.BadRequest, string.Empty));
+        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, CancelInvalidStateChangeBody));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
+        var exception = await Should.ThrowAsync<RejectedException>(
             () => client.CancelRunAsync(4202, TestContext.Current.CancellationToken));
 
         // Assert
-        exception.Message.ShouldBe("The server rejected the cancel of run 4202 (400)");
+        exception.Message.ShouldBe("Run 4202 cannot be cancelled because it has completed. (500)");
     }
 
     [Fact]
-    public async Task RetryRunAsync_RejectedWithoutMessage_ThrowsRejectionNamingTheRun()
+    public async Task RetryRunAsync_InvalidStateChange500_ThrowsRejected()
     {
         // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.Conflict, "not json"));
+        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, RetryInvalidStateChangeBody));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
-            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.Message.ShouldBe("The server rejected the retry of run 4202 (409)");
-    }
-
-    [Theory]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    [InlineData(HttpStatusCode.Forbidden)]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.TooManyRequests)]
-    [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task CancelRunAsync_ApiError_ThrowsPlainHttpRequestException(HttpStatusCode status)
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler((status, """{"message":"Some server message."}"""));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<HttpRequestException>(
-            () => client.CancelRunAsync(4202, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.GetType().ShouldBe(typeof(HttpRequestException));
-        exception.StatusCode.ShouldBe(status);
-    }
-
-    [Fact]
-    public async Task RetryRunAsync_InvalidStateChange500_ThrowsPipelineRejectedExceptionWithServerMessage()
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, InvalidStateChangeBody));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
+        var exception = await Should.ThrowAsync<RejectedException>(
             () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
 
         // Assert
@@ -213,57 +161,51 @@ public class AzureDevOpsBuildClientUpdateTests
     }
 
     [Fact]
-    public async Task CancelRunAsync_InvalidStateChange500WithoutMessage_ThrowsRejectionNamingTheRun()
+    public async Task CancelRunAsync_InvalidStateChange503_ThrowsUnavailable()
     {
         // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, """{"typeKey":"BuildStatusInvalidChangeException"}"""));
+        using var handler = new SequenceHttpHandler((HttpStatusCode.ServiceUnavailable, CancelInvalidStateChangeBody));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<PipelineRejectedException>(
+        var exception = await Should.ThrowAsync<UnavailableException>(
             () => client.CancelRunAsync(4202, TestContext.Current.CancellationToken));
 
         // Assert
-        exception.Message.ShouldBe("The server rejected the cancel of run 4202 (500)");
-    }
-
-    [Theory]
-    [InlineData("""{"message":"Something broke.","typeKey":"SomeOtherException"}""")]
-    [InlineData("""{"message":"Something broke."}""")]
-    [InlineData("")]
-    [InlineData("not json")]
-    public async Task RetryRunAsync_Other500_ThrowsPlainHttpRequestException(string body)
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, body));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<HttpRequestException>(
-            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.GetType().ShouldBe(typeof(HttpRequestException));
-        exception.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+        exception.Message.ShouldBe("Run 4202 cannot be cancelled because it has completed. (503)");
     }
 
     [Fact]
-    public async Task RetryRunAsync_InvalidStateChange503_ThrowsPlainHttpRequestException()
+    public async Task CancelRunAsync_Other500_ThrowsUnavailable()
     {
         // Arrange
-        using var handler = new SequenceHttpHandler((HttpStatusCode.ServiceUnavailable, InvalidStateChangeBody));
+        using var handler = new SequenceHttpHandler((HttpStatusCode.InternalServerError, """{"message":"Something broke.","typeKey":"SomeOtherException"}"""));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<HttpRequestException>(
-            () => client.RetryRunAsync(4202, TestContext.Current.CancellationToken));
+        var exception = await Should.ThrowAsync<UnavailableException>(
+            () => client.CancelRunAsync(4202, TestContext.Current.CancellationToken));
 
         // Assert
-        exception.GetType().ShouldBe(typeof(HttpRequestException));
-        exception.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
+        exception.Message.ShouldBe("Something broke. (500)");
+    }
+
+    [Fact]
+    public async Task CancelRunAsync_NotFound_ThrowsRejected()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler((HttpStatusCode.NotFound, string.Empty));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<RejectedException>(
+            () => client.CancelRunAsync(4202, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldBe("The server answered 404 (Not Found).");
     }
 
     [Theory]
@@ -285,7 +227,7 @@ public class AzureDevOpsBuildClientUpdateTests
     }
 
     private static HttpClient CreateHttpClient(SequenceHttpHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
         new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

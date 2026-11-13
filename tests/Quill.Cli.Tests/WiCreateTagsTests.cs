@@ -6,6 +6,7 @@ using Quill.AzureDevOps;
 using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
+using Quill.Tests.Shared;
 using Shouldly;
 
 namespace Quill.Cli.Tests;
@@ -67,7 +68,7 @@ public sealed class WiCreateTagsTests : IDisposable
     {
         using var handler = new ScriptedServer();
 #pragma warning disable CA2000 // The service provider disposes the client that holds it
-        var httpClient = new HttpClient(handler);
+        var httpClient = TestHttp.Client(handler);
 #pragma warning restore CA2000
         using var services = new ServiceCollection()
             .AddLogging()

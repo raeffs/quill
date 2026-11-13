@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using Quill.Core;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
 using Shouldly;
@@ -78,19 +79,19 @@ public class AzureDevOpsBuildClientTestRunTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task ListTestRunsAsync_ErrorStatus_ThrowsHttpRequestException(HttpStatusCode status)
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.InternalServerError, typeof(UnavailableException))]
+    public async Task ListTestRunsAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         using var handler = new SequenceHttpHandler((status, "{}"));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var exception = await Should.ThrowAsync<HttpRequestException>(
+        var exception = await Should.ThrowAsync<QuillException>(
             () => client.ListTestRunsAsync(4201, TestContext.Current.CancellationToken));
 
-        exception.StatusCode.ShouldBe(status);
+        exception.ShouldBeOfType(mode);
     }
 
     [Fact]
@@ -230,20 +231,19 @@ public class AzureDevOpsBuildClientTestRunTests
     }
 
     [Fact]
-    public async Task ListTestResultsAsync_BadRequest_ThrowsHttpRequestException()
+    public async Task ListTestResultsAsync_BadRequest_ThrowsRejected()
     {
         using var handler = new SequenceHttpHandler((HttpStatusCode.BadRequest, """{"message":"Invalid outcome."}"""));
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var exception = await Should.ThrowAsync<HttpRequestException>(
+        var exception = await Should.ThrowAsync<RejectedException>(
             () => client.ListTestResultsAsync(
                 9001,
                 new TestResultQuery { Outcomes = ["Bogus"] },
                 TestContext.Current.CancellationToken));
 
-        exception.GetType().ShouldBe(typeof(HttpRequestException));
-        exception.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        exception.Message.ShouldBe("Invalid outcome. (400)");
     }
 
     [Theory]
@@ -282,7 +282,7 @@ public class AzureDevOpsBuildClientTestRunTests
     }
 
     private static HttpClient CreateHttpClient(SequenceHttpHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
         new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

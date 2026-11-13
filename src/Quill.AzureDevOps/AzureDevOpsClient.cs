@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -78,7 +77,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
 
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(url, content, cancellationToken);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(
             AzureDevOpsJsonContext.Default.WiqlQueryResponse, cancellationToken)
@@ -92,7 +90,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
         var url = $"{_baseUrl}/{id}?$expand=relations&api-version={AzureDevOpsConstants.ApiVersion}";
         var response = await _httpClient.GetAsync(url);
-        response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync(AzureDevOpsJsonContext.Default.WorkItemResponse)
             ?? throw new InvalidOperationException("Failed to deserialize work item response.");
@@ -183,8 +180,8 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
         using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
 
-        var response = await _httpClient.PatchAsync(url, content);
-        await EnsureWriteSucceededAsync(response);
+        using var request = WriteRequest(url, content);
+        using var response = await _httpClient.SendAsync(request);
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return doc.RootElement.GetProperty("id").GetInt32();
@@ -212,7 +209,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             }
 
             var response = await _httpClient.GetAsync(url, cancellationToken);
-            response.EnsureSuccessStatusCode();
 
             var dto = await response.Content.ReadFromJsonAsync(
                 AzureDevOpsJsonContext.Default.CommentsResponse, cancellationToken)
@@ -249,16 +245,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         }
     }
 
-    private static bool IsTransientStatus(HttpStatusCode status)
-    {
-        if (status == HttpStatusCode.TooManyRequests)
-        {
-            return true;
-        }
-
-        return (int)status >= 500 && (int)status < 600;
-    }
-
     private JsonPatchOperation RelationOperation(string rel, int targetId) => new()
     {
         Op = "add",
@@ -278,39 +264,22 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
         using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
 
-        var response = await _httpClient.PatchAsync(url, content);
-        await EnsureWriteSucceededAsync(response);
+        using var request = WriteRequest(url, content);
+        using var response = await _httpClient.SendAsync(request);
     }
 
-    // Auth, throttling and 5xx stay plain HTTP failures: the server did not
-    // judge the write. Any other 4xx is its verdict on what was sent. So are a
-    // cycle and a self-link, which the server reports as a 500 with a TF code.
-    private static async Task EnsureWriteSucceededAsync(HttpResponseMessage response)
+    private static HttpRequestMessage WriteRequest(string url, HttpContent content)
     {
-        if (response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var status = (int)response.StatusCode;
-        var message = ServerErrorMessage.Read(await response.Content.ReadAsStringAsync());
-        var isLinkRule = message is not null
-            && (message.StartsWith(CircularLinkErrorCode, StringComparison.Ordinal)
-                || message.StartsWith(SelfLinkErrorCode, StringComparison.Ordinal));
-
-        if (!isLinkRule && status is < 400 or >= 500
-            or (int)HttpStatusCode.Unauthorized
-            or (int)HttpStatusCode.Forbidden
-            or (int)HttpStatusCode.TooManyRequests)
-        {
-            response.EnsureSuccessStatusCode();
-        }
-
-        var statusText = status.ToString(CultureInfo.InvariantCulture);
-
-        throw new WorkItemRejectedException(
-            message is null ? $"The server rejected the work item write ({statusText})" : $"{message} ({statusText})");
+        var request = new HttpRequestMessage(HttpMethod.Patch, url) { Content = content };
+        request.Options.Set(FailureModeHandler.RejectedWhen, IsLinkRule);
+        return request;
     }
+
+    // The server reports a cycle and a self-link as a 500 with a TF code.
+    private static bool IsLinkRule(ServerError error) =>
+        error.Message is not null
+        && (error.Message.StartsWith(CircularLinkErrorCode, StringComparison.Ordinal)
+            || error.Message.StartsWith(SelfLinkErrorCode, StringComparison.Ordinal));
 
     private async Task<List<WorkItem>?> FetchChunkAsync(IReadOnlyList<int> chunk, CancellationToken cancellationToken)
     {
@@ -329,8 +298,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         return second.Items;
     }
 
-    // Returns null with an optional RetryAfter on transient failures (5xx / 429 / network / timeout).
-    // Non-transient non-success statuses throw.
     private async Task<(List<WorkItem>? Items, TimeSpan RetryAfter)> TrySendBatchAsync(
         IReadOnlyList<int> chunk, CancellationToken cancellationToken)
     {
@@ -344,42 +311,27 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             response = await _httpClient.PostAsync(url, content, cancellationToken);
         }
-        catch (HttpRequestException)
+        catch (UnavailableException ex)
         {
-            return (null, TimeSpan.Zero);
-        }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return (null, TimeSpan.Zero);
+            return (null, ex.RetryAfter ?? TimeSpan.Zero);
         }
 
         using (response)
         {
-            if (response.IsSuccessStatusCode)
+            var dto = await response.Content.ReadFromJsonAsync(
+                AzureDevOpsJsonContext.Default.WorkItemsBatchResponse, cancellationToken)
+                ?? throw new InvalidOperationException("Failed to deserialize work items batch response.");
+            var items = new List<WorkItem>(dto.Value.Count);
+            foreach (var itemDto in dto.Value)
             {
-                var dto = await response.Content.ReadFromJsonAsync(
-                    AzureDevOpsJsonContext.Default.WorkItemsBatchResponse, cancellationToken)
-                    ?? throw new InvalidOperationException("Failed to deserialize work items batch response.");
-                var items = new List<WorkItem>(dto.Value.Count);
-                foreach (var itemDto in dto.Value)
+                if (itemDto is null)
                 {
-                    if (itemDto is null)
-                    {
-                        continue;
-                    }
-
-                    items.Add(MapToWorkItem(itemDto));
+                    continue;
                 }
-                return (items, TimeSpan.Zero);
-            }
 
-            if (IsTransientStatus(response.StatusCode))
-            {
-                return (null, RetryAfterHeader.Read(response) ?? TimeSpan.Zero);
+                items.Add(MapToWorkItem(itemDto));
             }
-
-            response.EnsureSuccessStatusCode();
-            throw new InvalidOperationException($"Unexpected batch response: {response.StatusCode}");
+            return (items, TimeSpan.Zero);
         }
     }
 

@@ -25,6 +25,8 @@ internal static class ServiceCollectionExtensions
         // Loaded lazily on first resolve, so `quill --help` and arg validation pay zero config cost.
         services.AddSingleton<QuillConfig>(sp => sp.GetRequiredService<IQuillConfigProvider>().Load());
 
+        services.AddTransient(_ => new FailureModeHandler(TimeSpan.FromSeconds(30)));
+
         services.AddHttpClient<AzureDevOpsClient>()
             .ConfigureQuillHttpClient()
             .AddTypedClient((httpClient, serviceProvider) =>
@@ -70,14 +72,16 @@ internal static class ServiceCollectionExtensions
 
     private static IHttpClientBuilder ConfigureQuillHttpClient(this IHttpClientBuilder builder)
     {
-        return builder.ConfigureHttpClient((serviceProvider, httpClient) =>
-        {
-            var pat = serviceProvider.GetRequiredService<IPatProvider>().GetPat();
+        return builder
+            .ConfigureHttpClient((serviceProvider, httpClient) =>
+            {
+                var pat = serviceProvider.GetRequiredService<IPatProvider>().GetPat();
 
-            httpClient.Timeout = TimeSpan.FromSeconds(30);
+                httpClient.Timeout = Timeout.InfiniteTimeSpan;
 
-            var patBytes = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{pat}"));
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", patBytes);
-        });
+                var patBytes = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{pat}"));
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", patBytes);
+            })
+            .AddHttpMessageHandler<FailureModeHandler>();
     }
 }

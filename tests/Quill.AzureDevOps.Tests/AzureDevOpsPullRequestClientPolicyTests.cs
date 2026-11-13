@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Quill.Core;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -129,19 +130,19 @@ public class AzureDevOpsPullRequestClientPolicyTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    [InlineData(HttpStatusCode.NotFound)]
-    [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task GetPolicyEvaluationsAsync_ErrorStatus_ThrowsHttpRequestException(HttpStatusCode status)
+    [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
+    [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
+    [InlineData(HttpStatusCode.InternalServerError, typeof(UnavailableException))]
+    public async Task GetPolicyEvaluationsAsync_ErrorStatus_ThrowsTheModeOfTheStatus(HttpStatusCode status, Type mode)
     {
         using var handler = new FakeHttpHandler("{}", status);
         using var httpClient = CreateHttpClient(handler);
         var client = CreateClient(httpClient);
 
-        var ex = await Should.ThrowAsync<HttpRequestException>(
+        var ex = await Should.ThrowAsync<QuillException>(
             () => client.GetPolicyEvaluationsAsync(ProjectId, 9001, TestContext.Current.CancellationToken));
 
-        ex.StatusCode.ShouldBe(status);
+        ex.ShouldBeOfType(mode);
     }
 
     [Theory]
@@ -175,7 +176,7 @@ public class AzureDevOpsPullRequestClientPolicyTests
     }
 
     private static HttpClient CreateHttpClient(FakeHttpHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsPullRequestClient CreateClient(HttpClient httpClient) =>
         new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

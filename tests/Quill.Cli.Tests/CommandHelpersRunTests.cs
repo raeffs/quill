@@ -25,8 +25,6 @@ public sealed class CommandHelpersRunTests : IDisposable
     [InlineData(typeof(FileNotFoundException), 3)]
     [InlineData(typeof(InvalidOperationException), 3)]
     [InlineData(typeof(InvalidRequestException), 1)]
-    [InlineData(typeof(PipelineRejectedException), 1)]
-    [InlineData(typeof(HttpRequestException), 2)]
     public async Task RunAsync_ActionThrows_WritesTheErrorRowAndSetsExitCode(Type exceptionType, int code)
     {
         var exception = (Exception)Activator.CreateInstance(exceptionType, "boom")!;

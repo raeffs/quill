@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text.Json;
 using Quill.Core;
 using Quill.Core.Models;
@@ -21,7 +20,6 @@ public class AzureDevOpsIdentityClient : IIdentityClient
     public async Task<CurrentUser> GetCurrentUserAsync()
     {
         var response = await _httpClient.GetAsync(_connectionDataUrl);
-        response.EnsureSuccessStatusCode();
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
@@ -40,17 +38,17 @@ public class AzureDevOpsIdentityClient : IIdentityClient
         IdentitySearchFilter filter, string value, CancellationToken cancellationToken)
     {
         var url = $"{_identitiesUrl}?searchFilter={filter}&filterValue={Uri.EscapeDataString(value)}&queryMembership=None&api-version=7.1";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        HttpResponseMessage response;
+        try
         {
-            throw new HttpRequestException(
-                "Response status code does not indicate success: 401 (Unauthorized). Resolving a person needs the Identity: Read PAT scope.",
-                null,
-                HttpStatusCode.Unauthorized);
+            response = await _httpClient.GetAsync(url, cancellationToken);
         }
-
-        response.EnsureSuccessStatusCode();
+        catch (DeniedException exception)
+        {
+            throw new DeniedException(
+                $"{exception.Message} Resolving a person needs the Identity: Read PAT scope.",
+                exception);
+        }
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
 

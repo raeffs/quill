@@ -1,4 +1,5 @@
 using System.Net;
+using Quill.Core;
 using Quill.Tests.Shared;
 using Shouldly;
 
@@ -25,7 +26,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
         }
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -46,7 +47,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -407,7 +408,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     }
 
     [Fact]
-    public async Task GetThreadsAsync_Non2xx_ThrowsHttpRequestException()
+    public async Task GetThreadsAsync_NotFound_ThrowsRejected()
     {
         // Arrange
         using var handler = new RecordingHandler(
@@ -421,7 +422,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
         Func<Task> act = () => client.GetThreadsAsync(4711, "importer", TestContext.Current.CancellationToken);
 
         // Assert
-        await Should.ThrowAsync<HttpRequestException>(act);
+        await Should.ThrowAsync<RejectedException>(act);
     }
 
     [Theory]
@@ -431,7 +432,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -447,7 +448,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     {
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
-        using var httpClient = new HttpClient(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsPullRequestClient(
             httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
 
@@ -465,7 +466,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
     ]);
 
     private static HttpClient NewHttpClient(RecordingHandler handler) =>
-        new(handler) { BaseAddress = new Uri(TestConstants.ServerUrl) };
+        TestHttp.Client(handler);
 
     private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(
         httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);

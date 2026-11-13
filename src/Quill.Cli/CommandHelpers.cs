@@ -50,10 +50,7 @@ internal static class CommandHelpers
             QuillException quill => (ex.Message, quill.ExitCode),
             FileNotFoundException => (ex.Message, 3),
             InvalidOperationException => (ex.Message, 3),
-            WorkItemRejectedException => (ex.Message, 1),
-            PipelineRejectedException => (ex.Message, 1),
             InvalidRequestException => (ex.Message, 1),
-            HttpRequestException => ($"API error: {ex.Message}", 2),
             _ => Defect(ex),
         };
 
