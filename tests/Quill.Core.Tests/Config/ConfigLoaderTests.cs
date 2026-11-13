@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Quill.Core.Config;
 using Shouldly;
 
@@ -241,6 +242,57 @@ public class ConfigLoaderTests
             var act = () => ConfigLoader.Load(tempDir);
 
             Should.Throw<UsageException>(act);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Load_MalformedJson_ThrowsUsageException()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, ".quill.json"), "{ \"serverUrl\": ");
+
+            var act = () => ConfigLoader.Load(tempDir);
+
+            var ex = Should.Throw<UsageException>(act);
+            ex.Message.ShouldStartWith("Failed to parse .quill.json: ");
+            ex.InnerException.ShouldBeOfType<JsonException>();
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Load_WrongValueType_ThrowsUsageException()
+    {
+        var json = """
+        {
+          "serverUrl": "https://myserver.com/tfs",
+          "collection": "DefaultCollection",
+          "project": "MyProject",
+          "allowedStates": "Active"
+        }
+        """;
+
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, ".quill.json"), json);
+
+            var act = () => ConfigLoader.Load(tempDir);
+
+            var ex = Should.Throw<UsageException>(act);
+            ex.Message.ShouldStartWith("Failed to parse .quill.json: ");
+            ex.InnerException.ShouldBeOfType<JsonException>();
         }
         finally
         {

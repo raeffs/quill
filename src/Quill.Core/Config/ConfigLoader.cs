@@ -18,8 +18,20 @@ public static class ConfigLoader
                 $"Configuration file not found: .quill.json (searched in {directory} and {fallbackDirectory})");
 
         var json = File.ReadAllText(filePath);
-        var config = JsonSerializer.Deserialize(json, ConfigJsonContext.Default.QuillConfig)
-            ?? throw new UsageException("Failed to parse .quill.json");
+        QuillConfig? config;
+        try
+        {
+            config = JsonSerializer.Deserialize(json, ConfigJsonContext.Default.QuillConfig);
+        }
+        catch (JsonException ex)
+        {
+            throw new UsageException($"Failed to parse .quill.json: {ex.Message}", ex);
+        }
+
+        if (config is null)
+        {
+            throw new UsageException("Failed to parse .quill.json");
+        }
 
         if (string.IsNullOrWhiteSpace(config.ServerUrl))
         {
