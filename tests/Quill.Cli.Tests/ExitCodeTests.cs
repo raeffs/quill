@@ -109,4 +109,22 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("wi", "view", "0")]
+    [InlineData("wi", "comments", "0")]
+    [InlineData("wi", "tree", "0")]
+    [InlineData("wi", "list", "--assignee", "@me", "--limit", "0")]
+    [InlineData("backlog", "pull", "0", "item.md")]
+    [InlineData("pr", "view", "0")]
+    [InlineData("pr", "threads", "0")]
+    [InlineData("pr", "revisions", "0")]
+    [InlineData("pr", "list", "--limit", "0")]
+    [InlineData("wi", "view", "-5")]
+    public async Task InvokeAsync_IdOrLimitBelowOne_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(args, TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

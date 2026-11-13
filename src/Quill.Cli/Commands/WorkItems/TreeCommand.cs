@@ -12,6 +12,8 @@ internal static class TreeCommand
     {
         var idArg = new Argument<int>("id") { Description = "Work item id to use as the subtree root" };
 
+        Validators.PositiveInteger(idArg, "id");
+
         var depthOption = new Option<int>("--depth")
         {
             Description = "How many levels below the root to fetch (≥ 1). Default: 3.",

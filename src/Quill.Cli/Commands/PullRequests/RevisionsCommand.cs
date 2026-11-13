@@ -11,6 +11,8 @@ internal static class RevisionsCommand
     {
         var idArg = new Argument<int>("id") { Description = "The Azure DevOps pull request ID whose revisions to read" };
 
+        Validators.PositiveInteger(idArg, "id");
+
         var command = new Command("revisions", "Print a pull request's revisions as JSON, newest first")
         {
             idArg,

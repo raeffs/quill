@@ -15,6 +15,8 @@ internal static class PullCommand
         var idArg = new Argument<int>("work-item-id") { Description = "The Azure DevOps work item ID to pull" };
         var fileArg = new Argument<string>("file-path") { Description = "Path to write the markdown file" };
 
+        Validators.PositiveInteger(idArg, "work-item-id");
+
         var command = new Command("pull", "Pull a work item from Azure DevOps to a local markdown file")
         {
             idArg,

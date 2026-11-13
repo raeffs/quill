@@ -13,6 +13,8 @@ internal static class ViewCommand
     {
         var idArg = new Argument<int>("id") { Description = "The Azure DevOps work item ID to view" };
 
+        Validators.PositiveInteger(idArg, "id");
+
         var withChildrenOption = new Option<bool>("--with-children")
         {
             Description = "Append a `children` array with each child's id, title, and state.",

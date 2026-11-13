@@ -13,6 +13,8 @@ internal static class ThreadsCommand
     {
         var idArg = new Argument<int>("id") { Description = "The Azure DevOps pull request ID whose threads to read" };
 
+        Validators.PositiveInteger(idArg, "id");
+
         var statusOption = new Option<string[]>("--status")
         {
             Description = "Filter by thread status (repeat to OR). Accepts active, fixed, wontFix, closed, pending, byDesign. Omit to return all.",

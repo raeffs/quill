@@ -13,6 +13,8 @@ internal static class ViewCommand
     {
         var idArg = new Argument<int>("id") { Description = "The Azure DevOps pull request ID to view" };
 
+        Validators.PositiveInteger(idArg, "id");
+
         var withThreadsOption = new Option<bool>("--with-threads")
         {
             Description = "Append a `threads` array with the PR's review threads (same payload as `pr threads`).",

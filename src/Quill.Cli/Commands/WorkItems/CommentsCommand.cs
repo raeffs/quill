@@ -13,6 +13,8 @@ internal static class CommentsCommand
     {
         var idArg = new Argument<int>("id") { Description = "The Azure DevOps work item ID whose comment thread to read" };
 
+        Validators.PositiveInteger(idArg, "id");
+
         var limitOption = new Option<int?>("--limit")
         {
             Description = "Return only the N most recent comments (must be >= 1). Omit to return all comments.",

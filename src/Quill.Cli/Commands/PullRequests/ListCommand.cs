@@ -48,6 +48,8 @@ internal static class ListCommand
             DefaultValueFactory = _ => 50,
         };
 
+        Validators.PositiveInteger(limitOption, "--limit");
+
         var skipOption = new Option<int?>("--skip")
         {
             Description = "Skip this many results. Use with --limit to page.",

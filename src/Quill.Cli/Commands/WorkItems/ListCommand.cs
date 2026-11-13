@@ -37,6 +37,8 @@ internal static class ListCommand
             DefaultValueFactory = _ => 50,
         };
 
+        Validators.PositiveInteger(limitOption, "--limit");
+
         var command = new Command("list", "Query work items via WIQL and print matches as a JSON array")
         {
             titleOption,
