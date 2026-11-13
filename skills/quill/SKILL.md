@@ -65,6 +65,7 @@ Pick the group first. Use `backlog` when you maintain the backlog as files: pull
 These are the things the help output and a successful run do not tell you.
 
 - `backlog push` succeeds only when the work item's state is in `allowedStates` and the item is assigned to the authenticated user.
+- `backlog push` reads the work item first. When it removes a predecessor, it sends the revision it read with the update. If someone changes the work item between the read and the update, the server answers 412 and quill exits 1 with the server's message, such as `VS403351: Test Operation for path /rev failed. (412)`. For this exit 1, run the same push again without changes.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Feature`, `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Feature needs an Epic parent, a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
 - `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user unless you pass `--assignee`.
@@ -73,11 +74,13 @@ These are the things the help output and a successful run do not tell you.
 - `wi create` takes a repeatable `--tag`, one value per flag. A tag must not contain `;` or `,` or be empty, and a bad value exits 3 before any request.
 - `wi create` takes a repeatable `--predecessor`, one ID per flag. A value that is not a positive integer, or a repeated ID, exits 3 before any request. The server rejects missing targets and cycles, which exits 1 and creates nothing.
 - `backlog create` and `wi create` give the new item its parent's area and iteration.
+- When `wi create` or `backlog create` fails with a message that starts `Created work item N, but`, the work item exists, whatever the exit code. Do not create it again. Run `wi view N` to read it. After `backlog create`, run `backlog pull N <file>` to write its ID into the file.
 - A bare `wi list` exits with code 3. Pass at least one of `--title`, `--assignee`, `--state` or `--type`. There is no implicit `@me`.
 - `wi list` has no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - `pipeline list` and `pipeline runs` have no `--skip`, unlike `pr list`. When you get exactly `--limit` rows, widen `--limit` or narrow the filter.
 - Quill never reads the working copy, so no `--branch` means "the pipeline's default branch" on `pipeline trigger` and "every branch" on `pipeline runs`. Run git yourself: `--branch "$(git rev-parse --abbrev-ref HEAD)"` in bash, `--branch (git rev-parse --abbrev-ref HEAD)` in PowerShell.
 - `--parameter` sends every value as a string. Object and list parameters are not supported. A parameter or stage name the YAML does not declare is a server rejection, exit 1.
+- When `pipeline trigger` fails with a message that starts `Queued run N, but reading it failed`, the run exists, whatever the exit code. Do not trigger again. Run `pipeline wait N` or `pipeline view N`.
 - `pipeline wait` polls every 10 seconds and gives up after `--timeout` seconds, 600 by default. The last poll can end up to 30 seconds after `--timeout`, so set your harness timeout at least 40 seconds above it: a harness kill leaves you with no output. On timeout the row's `status` still reads `inProgress` and the exit code is 0; call `pipeline wait` again with the same ID.
 - A completed run exits 0 whatever its `result`. Read `result`, not the exit code.
 - `pipeline retry` reruns the failed jobs and the jobs downstream of them as a new attempt on the same run ID. The returned row reads `notStarted` until an agent picks up the jobs. Follow with `pipeline wait <runId>`. Retry on a run still in progress is a server rejection, exit 1.
@@ -133,19 +136,26 @@ These are the things the help output and a successful run do not tell you.
 - To answer "what changed since I last reviewed", read `pr threads` for the date of your last comment. Take the newest `pr revisions` row created before that date, and `range-diff` it against the newest row of all. Comparing only the rows created after your comment skips the revision you actually read.
 - `pr create` always opens a draft. There is no `--draft` and no `--publish`. A draft runs no build validation, accepts no votes, and gains no reviewer a branch policy would require. Nothing starts and nobody hears about it until a human publishes it in the web UI.
 - `pr create` takes flags, not a file — except `--description-file`, which takes a path or `-` for stdin. Unlike `backlog create`, there is no frontmatter file.
-- The server caps a description at 4000 characters and rejects a longer one with `code: 2`. It does not truncate. Quill passes the server's message through, so read the `error` string before you retry.
+- The server caps a description at 4000 characters and rejects a longer one with `code: 1`. It does not truncate. Quill passes the server's message through, so read the `error` string before you shorten the description and run `pr create` again.
 - `--target-branch` is optional. Without it quill reads the repository and uses its default branch, which costs one extra request. Pass the flag to skip it.
 - The output is the `pr view` row without `workItems` and `threads`. Both keys are absent, not `null` — quill did not look, because each costs another request. Call `pr view` for them.
 - `mergeStatus` is `queued` on every `pr create`. The server has not finished the merge attempt yet, and `lastMergeSourceCommit` and `lastMergeTargetCommit` belong to that unfinished attempt. Call `pr view` for a settled merge status.
 - `myVote` and `myIsRequired` are `null` on `pr create`. You are the author, so you are not a reviewer, and a draft gains no policy-required reviewer.
-- A pull request already open on the same branch pair fails with `TF401179` and a non-zero exit. Quill does not check first and does not return the existing one. Recover with `pr list --source-branch <branch>`.
+- A pull request already open on the same branch pair fails with `TF401179` and exit 1. Quill does not check first and does not return the existing one. Recover with `pr list --source-branch <branch>`.
 - `pr create` has no confirmation flag and no allow-list. The PAT scope is the only boundary. Opening a draft is cheap to undo.
 
 ## Exit codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Validation failure (wrong state or assignee, or a person flag that matches nobody or several people), or the server rejected a work item write or a pipeline trigger, cancel or retry |
-| 2 | API error (network, auth, server) |
-| 3 | Configuration or argument error |
+| Code | Meaning | Do next |
+|------|---------|---------|
+| 0 | Success | |
+| 1 | Rejected: the server or a quill rule refused the request because of what the server holds. This includes an ID that does not exist. | Change what you ask for. |
+| 2 | Unavailable: no usable answer from the server. | Run the same command again. If the same failure comes back, stop and tell the user. After a command that writes, check first, as the bullet below the table says. |
+| 3 | Usage: the command line, the config or a file is wrong. | Fix what you wrote. |
+| 4 | Defect: quill hit a case it does not handle. | Stop. Suggest that the user reports a bug, with the text from stderr. |
+| 5 | Denied: the server refused the PAT. | Stop. Tell the user to check the PAT and its scopes. |
+
+- Exit 2 does not prove that a write failed. The server can do the write and still send no usable answer. These commands write: `wi create`, `backlog push`, `backlog create`, `pr create`, `pipeline trigger`, `pipeline cancel` and `pipeline retry`. After exit 2 from one of them, check the server before you run it again: `wi list --title` for a new work item, `wi view` for a push, `pr list --source-branch <branch>` for a new pull request, `pipeline runs` for a new run, and `pipeline view <runId>` for a cancel or a retry. Run the command again only when the write did not happen.
+- Exit 2 also covers causes that no second try fixes: a refused connection, a wrong host name, a TLS failure, or a server fault that stays.
+
+When the command line itself is wrong, such as a missing argument or an ID below 1, quill reports a usage error on stderr: text with exit 3 and no JSON row. Every other failure prints `{"error": ..., "code": ...}` to stdout.

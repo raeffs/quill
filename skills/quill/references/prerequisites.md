@@ -10,7 +10,7 @@ Quill needs the `quill` CLI on PATH. Install it once per machine:
 dotnet tool install -g Raeffs.Quill
 ```
 
-The install needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs as a native binary. Other platforms need the .NET 10 runtime.
+The install needs the .NET 11 SDK. On `linux-x64` and `win-x64` quill then runs as a native binary. Other platforms need the .NET 11 runtime.
 
 ## Personal Access Token
 
@@ -29,9 +29,9 @@ The install needs the .NET 10 SDK. On `linux-x64` and `win-x64` quill then runs 
 
 `pr view` also reads the linked work items, so it needs Work Items: Read. `pr create` links work items through the pull request and needs no work item scope, whether or not you pass `--work-item`.
 
-Without Identity: Read, a command that resolves a person exits 2, and the message names Identity: Read.
+Without Identity: Read, a command that resolves a person exits 5, and the message names Identity: Read.
 
-A pipeline command answers `401 (Unauthorized)` with exit 2 when the PAT lacks its scope. The server sends 401 for a missing scope and for a bad PAT alike. If the same PAT serves `pr` and `wi` commands, the PAT is fine and the scope is missing.
+A pipeline command fails with `401 (Unauthorized)` and exit 5 when the PAT lacks its scope. The server sends 401 for a missing scope and for a bad PAT alike. If the same PAT serves `pr` and `wi` commands, the PAT is fine and the scope is missing.
 
 ## Config file
 

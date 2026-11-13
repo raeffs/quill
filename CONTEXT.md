@@ -44,6 +44,41 @@ The name that tells one person from every other, such as `CONTOSO\jdoe`. Two
 people can share a display name, but never a unique name.
 _Avoid_: account name, alias, login
 
+## Failures
+
+**Failure mode**:
+One of the five ways a command can fail: usage, rejected, unavailable, denied or
+defect. Each tells the agent to do one thing next, and each has its own exit
+code.
+_Avoid_: error type, error kind
+
+**Usage**:
+The command line, the config or a file is wrong in itself. Quill can tell
+without asking the server. The agent fixes what it wrote.
+_Avoid_: argument error, validation error
+
+**Rejected**:
+Quill understood the command, and the server or a quill rule refused it because
+of what the server holds. The agent changes what it asks for.
+_Avoid_: validation failure, conflict
+
+**Unavailable**:
+Quill got no usable answer from the server, and the same command may succeed
+later. The agent tries again and stops when the same failure comes back. After
+a write, the server may already have done it, so the agent first checks that
+the write did not happen.
+_Avoid_: API error, transient error
+
+**Denied**:
+The server refused the PAT. The agent stops and tells the user to check the PAT
+and its scopes.
+_Avoid_: unauthorized, forbidden, auth error
+
+**Defect**:
+Quill hit a case it does not handle. Only a change to quill fixes it, so the
+agent stops and suggests a bug report.
+_Avoid_: bug, internal error, crash
+
 ## Backlog
 
 **Backlog**:
