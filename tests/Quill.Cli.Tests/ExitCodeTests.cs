@@ -121,9 +121,25 @@ public class ExitCodeTests
     [InlineData("pr", "revisions", "0")]
     [InlineData("pr", "list", "--limit", "0")]
     [InlineData("wi", "view", "-5")]
+    [InlineData("wi", "create", "--type", "Task", "--title", "Write the importer", "--parent", "0")]
+    [InlineData("wi", "create", "--type", "Task", "--title", "Write the importer", "--parent", "-5")]
     public async Task InvokeAsync_IdOrLimitBelowOne_Returns3(params string[] args)
     {
         var exitCode = await CliHost.InvokeAsync(args, TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
+
+    [Theory]
+    [InlineData("--repo", "", "--source-branch", "feature/login", "--title", "Fix the login")]
+    [InlineData("--repo", " ", "--source-branch", "feature/login", "--title", "Fix the login")]
+    [InlineData("--repo", "Contoso", "--source-branch", "", "--title", "Fix the login")]
+    [InlineData("--repo", "Contoso", "--source-branch", " ", "--title", "Fix the login")]
+    [InlineData("--repo", "Contoso", "--source-branch", "feature/login", "--title", "")]
+    [InlineData("--repo", "Contoso", "--source-branch", "feature/login", "--title", " ")]
+    public async Task InvokeAsync_PrCreateEmptyValue_Returns3(params string[] args)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pr", "create", .. args], TestServices.Empty);
 
         exitCode.ShouldBe(3);
     }

@@ -46,6 +46,24 @@ public class PrCreateCommandParsingTests
         parseResult.Errors.ShouldNotBeEmpty();
     }
 
+    [Theory]
+    [InlineData("--repo", "")]
+    [InlineData("--source-branch", " ")]
+    [InlineData("--title", "")]
+    public void Parse_EmptyRequiredValue_NamesTheFlag(string flag, string value)
+    {
+        var args = new List<string> { "pr", "create" };
+        foreach (var name in new[] { "--repo", "--source-branch", "--title" })
+        {
+            args.Add(name);
+            args.Add(string.Equals(name, flag, StringComparison.Ordinal) ? value : "Contoso");
+        }
+
+        var parseResult = CliHost.Parse(args.ToArray(), TestServices.Empty);
+
+        parseResult.Errors.ShouldHaveSingleItem().Message.ShouldBe($"{flag} must not be empty.");
+    }
+
     [Fact]
     public void Parse_WorkItem_IsRepeatable()
     {

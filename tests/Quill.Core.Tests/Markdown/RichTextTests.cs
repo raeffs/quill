@@ -233,6 +233,18 @@ public class RichTextTests
     }
 
     [Fact]
+    public async Task ToHtmlAsync_LinkIdBeyondInt_StaysAnOrdinaryLink()
+    {
+        var fake = new FakeAzureDevOpsClient();
+
+        var (html, linkIds) = await CreateRichText(fake).ToHtmlAsync("See [x](#99999999999).", TestContext.Current.CancellationToken);
+
+        html.ShouldBe("""<p style="line-height: 1.6">See <a href="#99999999999">x</a>.</p>""" + "\n");
+        linkIds.ShouldBeEmpty();
+        fake.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task ToHtmlAsync_MultipleWorkItemLinks_CollectsAllIds()
     {
         var markdown = "See [item A](#100) and [item B](#200).";

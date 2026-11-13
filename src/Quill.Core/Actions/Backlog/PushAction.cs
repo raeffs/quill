@@ -15,6 +15,11 @@ public static class PushAction
     {
         var parsed = FrontmatterParser.Parse(fileContent);
 
+        if (parsed.Id < 1)
+        {
+            throw new UsageException("Work item id must be a positive integer for a push. To create the work item, set id to 0 and run 'backlog create'.");
+        }
+
         var workItem = await client.GetWorkItemAsync(parsed.Id);
         var currentUser = await identity.GetCurrentUserAsync();
 

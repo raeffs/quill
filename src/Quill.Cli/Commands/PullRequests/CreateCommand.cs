@@ -30,6 +30,10 @@ internal static class CreateCommand
             Required = true,
         };
 
+        Validators.NotEmpty(repoOption, "--repo");
+        Validators.NotEmpty(sourceBranchOption, "--source-branch");
+        Validators.NotEmpty(titleOption, "--title");
+
         var targetBranchOption = new Option<string?>("--target-branch")
         {
             Description = "Branch to merge into. Short name or full ref. Defaults to the repository's default branch.",

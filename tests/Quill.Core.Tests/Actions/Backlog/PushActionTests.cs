@@ -49,6 +49,21 @@ public class PushActionTests
         row.UpdatedFields.ShouldBe(["title", "description", "tags"]);
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-5")]
+    public async Task RunAsync_IdBelowOne_ThrowsBeforeAnyRequest(string id)
+    {
+        var client = new FakeAzureDevOpsClient();
+        var identity = new ScriptedIdentityClient();
+
+        var ex = await Should.ThrowAsync<UsageException>(() => PushAction.RunAsync(client, identity, Config, new RichText(Config, client, NullLogger<RichText>.Instance), $"---\nid: {id}\ntype: Task\ntitle: T\n---\n\nbody\n"));
+
+        ex.Message.ShouldBe("Work item id must be a positive integer for a push. To create the work item, set id to 0 and run 'backlog create'.");
+        client.Calls.ShouldBeEmpty();
+        identity.Calls.ShouldBeEmpty();
+    }
+
     [Fact]
     public async Task RunAsync_InvalidState_ThrowsAndSendsNoUpdate()
     {

@@ -23,15 +23,22 @@ internal static partial class MarkdownConverter
 
         foreach (Match match in WorkItemLinkRegex().Matches(markdown))
         {
-            linkIds.Add(int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+            if (TryParseWorkItemId(match, out var id))
+            {
+                linkIds.Add(id);
+            }
         }
 
         var workItems = await ResolveAsync(linkIds, resolve);
 
         var rewritten = WorkItemLinkRegex().Replace(markdown, match =>
         {
+            if (!TryParseWorkItemId(match, out var id))
+            {
+                return match.Value;
+            }
+
             var originalText = match.Groups[1].Value;
-            var id = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             var linkText = workItems.TryGetValue(id, out var wi) ? $"{wi.Type} {wi.Id}: {wi.Title}" : originalText;
             return $"[{linkText}]({baseUrl}/{id})";
         });
@@ -111,6 +118,9 @@ internal static partial class MarkdownConverter
 
         return markdown;
     }
+
+    private static bool TryParseWorkItemId(Match match, out int id) =>
+        int.TryParse(match.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out id);
 
     private static async Task<IReadOnlyDictionary<int, WorkItem>> ResolveAsync(
         List<int> linkIds,

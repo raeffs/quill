@@ -74,6 +74,16 @@ public class WiCreateCommandParsingTests
         parseResult.Errors.ShouldHaveSingleItem().Message.ShouldContain("Feature, Product Backlog Item, Bug, Task");
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-5")]
+    public void Parse_ParentBelowOne_IsParseError(string parent)
+    {
+        var parseResult = CliHost.Parse(["wi", "create", "--type", "Task", "--title", "t", "--parent", parent], TestServices.Empty);
+
+        parseResult.Errors.ShouldHaveSingleItem().Message.ShouldBe("--parent must be a positive integer.");
+    }
+
     [Fact]
     public void Parse_DescriptionFileAndAssignee_AreRead()
     {

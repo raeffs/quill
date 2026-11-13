@@ -168,6 +168,35 @@ public class ConfigLoaderTests
     }
 
     [Fact]
+    public void Load_UnparsableUrl_ThrowsUsageException()
+    {
+        var json = """
+        {
+          "serverUrl": "https://exa mple/tfs",
+          "collection": "DefaultCollection",
+          "project": "MyProject",
+          "allowedStates": ["Active"]
+        }
+        """;
+
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, ".quill.json"), json);
+
+            var act = () => ConfigLoader.Load(tempDir);
+
+            Should.Throw<UsageException>(act)
+                .Message.ShouldBe("serverUrl is not a valid URL: https://exa mple/tfs");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
     public void Load_WithoutAllowedParentStates_Loads()
     {
         var json = """

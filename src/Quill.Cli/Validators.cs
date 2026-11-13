@@ -18,6 +18,15 @@ internal static class Validators
     public static void NotNegative(Option<int?> option, string name) =>
         option.Validators.Add(result => RejectBelow(result, 0, $"{name} must not be negative."));
 
+    public static void NotEmpty(Option<string> option, string name) =>
+        option.Validators.Add(result =>
+        {
+            if (result.Tokens.Any(token => string.IsNullOrWhiteSpace(token.Value)))
+            {
+                result.AddError($"{name} must not be empty.");
+            }
+        });
+
     private static void RejectBelow(SymbolResult result, int minimum, string message)
     {
         if (result.Tokens.Count > 0

@@ -51,6 +51,11 @@ public static class ConfigLoader
             throw new UsageException("serverUrl must use HTTPS.");
         }
 
+        if (!Uri.IsWellFormedUriString(config.ServerUrl, UriKind.Absolute))
+        {
+            throw new UsageException($"serverUrl is not a valid URL: {config.ServerUrl}");
+        }
+
         if (string.IsNullOrWhiteSpace(config.Collection))
         {
             throw new UsageException("collection is required in .quill.json");

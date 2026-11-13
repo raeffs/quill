@@ -25,7 +25,9 @@ public class CreateActionTests
     [InlineData("id: 0\ntitle: ' '\ntype: Task\nparentId: 42", "Frontmatter must contain a non-empty 'title' field.")]
     [InlineData("id: 0\ntitle: T\nparentId: 42", "Frontmatter must contain a 'type' field.")]
     [InlineData("id: 0\ntitle: T\ntype: Epic\nparentId: 42", "Type must be one of: Feature, Product Backlog Item, Bug, Task.")]
-    [InlineData("id: 0\ntitle: T\ntype: Task", "Frontmatter must contain a non-zero 'parentId' field.")]
+    [InlineData("id: 0\ntitle: T\ntype: Task", "Frontmatter must contain a positive 'parentId' field.")]
+    [InlineData("id: 0\ntitle: T\ntype: Task\nparentId: 0", "Frontmatter must contain a positive 'parentId' field.")]
+    [InlineData("id: 0\ntitle: T\ntype: Task\nparentId: -1", "Frontmatter must contain a positive 'parentId' field.")]
     public async Task RunAsync_BadFrontmatter_ThrowsBeforeAnyRequest(string frontmatter, string message)
     {
         var client = new FakeAzureDevOpsClient();

@@ -40,6 +40,8 @@ internal static class CreateCommand
             Required = true,
         };
 
+        Validators.PositiveInteger(parentOption, "--parent");
+
         var descriptionFileOption = new Option<string?>("--description-file")
         {
             Description = "Path to a markdown file with the description. Pass - to read stdin.",

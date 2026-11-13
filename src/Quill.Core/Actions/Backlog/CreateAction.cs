@@ -37,9 +37,9 @@ public static class CreateAction
             throw new UsageException($"Type must be one of: {string.Join(", ", WorkItemHierarchy.ChildTypes)}.");
         }
 
-        if (parsed.ParentId is null or 0)
+        if (parsed.ParentId is null or < 1)
         {
-            throw new UsageException("Frontmatter must contain a non-zero 'parentId' field.");
+            throw new UsageException("Frontmatter must contain a positive 'parentId' field.");
         }
 
         var parentWorkItem = await client.GetWorkItemAsync(parsed.ParentId.Value);
