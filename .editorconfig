@@ -260,9 +260,6 @@ dotnet_diagnostic.SA1101.severity = none
 # Disable SA1309: Field should not begin with underscore — conflicts with our _camelCase naming convention
 dotnet_diagnostic.SA1309.severity = none
 
-# Disable SA1200: Using directives should be placed correctly (conflicts with file-scoped namespaces)
-dotnet_diagnostic.SA1200.severity = none
-
 # Disable SA1503: Braces should not be omitted (we use csharp_prefer_braces instead)
 dotnet_diagnostic.SA1503.severity = none
 
@@ -272,26 +269,8 @@ dotnet_diagnostic.SA1513.severity = none
 # Disable SA1204: Static members before non-static — we prefer logical grouping over strict ordering
 dotnet_diagnostic.SA1204.severity = none
 
-# Disable SA1516: Elements should be separated by blank line — too noisy with top-level statements
-dotnet_diagnostic.SA1516.severity = none
-
 # Disable SA0001: XML comment analysis disabled due to project configuration
 dotnet_diagnostic.SA0001.severity = none
-
-# Disable SA1206: StyleCop 1.1.x doesn't support C# 11 required modifier ordering
-dotnet_diagnostic.SA1206.severity = none
-
-# Disable SA1313: Record positional parameters use PascalCase by convention
-dotnet_diagnostic.SA1313.severity = none
-
-# Disable SA1000: StyleCop 1.1.x doesn't support target-typed new() without space
-dotnet_diagnostic.SA1000.severity = none
-
-# Disable SA1010: StyleCop 1.1.x doesn't support collection expressions (= [])
-dotnet_diagnostic.SA1010.severity = none
-
-# Disable SA1009: StyleCop 1.1.x false positive with collection expressions
-dotnet_diagnostic.SA1009.severity = none
 
 #### Meziantou Overrides ####
 

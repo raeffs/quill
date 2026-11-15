@@ -166,6 +166,7 @@ public class PersonResolverTests
 
         ex.Message.ShouldBe(@"--assignee 'John Roe' matches 2 people: John Roe, John Roe (CONTOSO\jroe2). Pass the unique name.");
     }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]

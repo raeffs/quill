@@ -308,6 +308,7 @@ public class AzureDevOpsClientTests
         handler.LastRequestBody.ShouldContain("/relations/-");
         handler.LastRequestBody.ShouldContain("/workitems/200");
     }
+
     [Fact]
     public async Task CreateWorkItemAsync_SendsCorrectPatchOperations()
     {

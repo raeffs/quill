@@ -179,6 +179,7 @@ public class AzureDevOpsIdentityClientTests
 
         ex.Message.ShouldBe("Identity display name not found in identities response.");
     }
+
     private sealed class Harness : IDisposable
     {
         private readonly HttpClient _http;
