@@ -1,6 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using Quill.Core;
 using Quill.Core.Models;
 using Shouldly;
 
@@ -219,9 +217,4 @@ public class TreeBuilderTests
             });
         }
     }
-}
-
-[JsonSerializable(typeof(TreeNode))]
-internal sealed partial class TestJsonContext : JsonSerializerContext
-{
 }

@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using System.Text.Json;
 using Quill.Core;
 using Quill.Core.Models;
@@ -277,32 +276,5 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Assert
         var ex = await Should.ThrowAsync<RejectedException>(act);
         ex.Message.ShouldBe("TF401179: An active pull request for the source and target branch already exists. (409)");
-    }
-}
-
-internal sealed class ScriptedCreateHandler : HttpMessageHandler
-{
-    private readonly Queue<string> _responses;
-
-    public ScriptedCreateHandler(IEnumerable<string> responses)
-    {
-        _responses = new Queue<string>(responses);
-    }
-
-    public List<RecordedRequest> Requests { get; } = new();
-
-    protected override async Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        Requests.Add(new RecordedRequest(
-            request.Method,
-            request.RequestUri?.ToString(),
-            request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken)));
-
-        var body = _responses.Count > 0 ? _responses.Dequeue() : "{}";
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        };
     }
 }

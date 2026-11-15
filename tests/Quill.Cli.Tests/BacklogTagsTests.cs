@@ -1,19 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Quill.AzureDevOps;
-using Quill.Cli.Commands.Backlog;
 using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Shouldly;
 
 namespace Quill.Cli.Tests;
-
-[CollectionDefinition(nameof(ProcessStateCollection), DisableParallelization = true)]
-#pragma warning disable CA1515, CA1711, MA0048 // xUnit needs a public definition; it holds no code
-public sealed class ProcessStateCollection
-{
-}
-#pragma warning restore CA1515, CA1711, MA0048
 
 [Collection(nameof(ProcessStateCollection))]
 public sealed class BacklogTagsTests : IDisposable
