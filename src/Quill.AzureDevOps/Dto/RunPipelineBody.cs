@@ -16,27 +16,3 @@ internal sealed class RunPipelineBody
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? StagesToSkip { get; init; }
 }
-
-internal sealed class RunPipelineResources
-{
-    [JsonPropertyName("repositories")]
-    public required RunPipelineRepositories Repositories { get; init; }
-}
-
-internal sealed class RunPipelineRepositories
-{
-    [JsonPropertyName("self")]
-    public required RunPipelineRepository Self { get; init; }
-}
-
-internal sealed class RunPipelineRepository
-{
-    [JsonPropertyName("refName")]
-    public required string RefName { get; init; }
-}
-
-internal sealed class QueuedRunResponse
-{
-    [JsonPropertyName("id")]
-    public int Id { get; init; }
-}

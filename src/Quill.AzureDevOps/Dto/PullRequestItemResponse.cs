@@ -2,12 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace Quill.AzureDevOps.Dto;
 
-internal sealed class PullRequestListResponse
-{
-    [JsonPropertyName("value")]
-    public IReadOnlyList<PullRequestItemResponse> Value { get; init; } = Array.Empty<PullRequestItemResponse>();
-}
-
 internal sealed class PullRequestItemResponse
 {
     [JsonPropertyName("codeReviewId")]
@@ -60,64 +54,4 @@ internal sealed class PullRequestItemResponse
 
     [JsonPropertyName("description")]
     public string? Description { get; init; }
-}
-
-internal sealed class PullRequestIdentityResponse
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-
-    [JsonPropertyName("displayName")]
-    public string DisplayName { get; init; } = string.Empty;
-}
-
-internal sealed class PullRequestRepositoryResponse
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
-
-    [JsonPropertyName("project")]
-    public PullRequestProjectResponse? Project { get; init; }
-}
-
-internal sealed class PullRequestProjectResponse
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-}
-
-internal sealed class PullRequestCommitRefResponse
-{
-    [JsonPropertyName("commitId")]
-    public string CommitId { get; init; } = string.Empty;
-}
-
-internal sealed class PullRequestLabelResponse
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
-
-    [JsonPropertyName("active")]
-    public bool Active { get; init; }
-}
-
-internal sealed class PullRequestReviewerResponse
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-
-    [JsonPropertyName("displayName")]
-    public string DisplayName { get; init; } = string.Empty;
-
-    [JsonPropertyName("vote")]
-    public int Vote { get; init; }
-
-    [JsonPropertyName("isRequired")]
-    public bool IsRequired { get; init; }
-
-    [JsonPropertyName("isContainer")]
-    public bool IsContainer { get; init; }
 }

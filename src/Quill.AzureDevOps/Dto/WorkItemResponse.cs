@@ -17,12 +17,3 @@ public class WorkItemResponse
     [JsonPropertyName("relations")]
     public IReadOnlyList<WorkItemRelationResponse>? Relations { get; init; }
 }
-
-public class WorkItemRelationResponse
-{
-    [JsonPropertyName("rel")]
-    public string Rel { get; init; } = string.Empty;
-
-    [JsonPropertyName("url")]
-    public string Url { get; init; } = string.Empty;
-}

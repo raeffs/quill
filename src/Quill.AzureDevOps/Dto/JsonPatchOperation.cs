@@ -15,12 +15,3 @@ public class JsonPatchOperation
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public JsonNode? Value { get; init; }
 }
-
-public class RelationValue
-{
-    [JsonPropertyName("rel")]
-    public required string Rel { get; init; }
-
-    [JsonPropertyName("url")]
-    public required string Url { get; init; }
-}

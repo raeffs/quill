@@ -13,12 +13,3 @@ public class WorkItemsBatchRequest
     [JsonPropertyName("errorPolicy")]
     public string ErrorPolicy { get; init; } = "omit";
 }
-
-public class WorkItemsBatchResponse
-{
-    [JsonPropertyName("count")]
-    public int Count { get; init; }
-
-    [JsonPropertyName("value")]
-    public IReadOnlyList<WorkItemResponse?> Value { get; init; } = Array.Empty<WorkItemResponse?>();
-}
