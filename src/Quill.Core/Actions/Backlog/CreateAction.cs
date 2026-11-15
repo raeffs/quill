@@ -4,8 +4,6 @@ using Quill.Core.Validation;
 
 namespace Quill.Core.Actions.Backlog;
 
-public sealed record BacklogCreateOutcome(CreateResult Row, string FileContent);
-
 public static class CreateAction
 {
     public static async Task<BacklogCreateOutcome> RunAsync(

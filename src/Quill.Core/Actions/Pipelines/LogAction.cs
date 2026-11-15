@@ -2,8 +2,6 @@ using Quill.Core.Models;
 
 namespace Quill.Core.Actions.Pipelines;
 
-public sealed record PipelineLogRequest(int RunId, int LogId, int? StartLine, int? EndLine, int? Tail);
-
 public static class LogAction
 {
     public static async Task<PipelineLogResult> RunAsync(

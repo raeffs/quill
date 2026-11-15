@@ -2,8 +2,6 @@ using Quill.Core.Models;
 
 namespace Quill.Core.Validation;
 
-public record ValidationResult(bool IsValid, IReadOnlyList<string> Errors);
-
 public static class PushValidator
 {
     public static ValidationResult Validate(

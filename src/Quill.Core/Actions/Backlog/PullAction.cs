@@ -1,9 +1,6 @@
 using Quill.Core.Markdown;
-using Quill.Core.Models;
 
 namespace Quill.Core.Actions.Backlog;
-
-public sealed record BacklogPullOutcome(int Id, string Title, string FileContent);
 
 public static class PullAction
 {

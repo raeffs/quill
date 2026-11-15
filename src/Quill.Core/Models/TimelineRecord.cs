@@ -26,12 +26,3 @@ public class TimelineRecord
 
     public required IReadOnlyList<TimelineIssue> Issues { get; init; }
 }
-
-public class TimelineIssue
-{
-    public required string Type { get; init; }
-
-    public required string Message { get; init; }
-
-    public int? Line { get; init; }
-}

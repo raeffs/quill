@@ -3,8 +3,6 @@ using Quill.Core.Models;
 
 namespace Quill.Core.Actions.PullRequests;
 
-public sealed record PrThreadsRequest(int Id, IReadOnlyList<string> Statuses, int? Limit);
-
 public static class ThreadsAction
 {
     public static async Task<IReadOnlyList<PullRequestThreadResult>> RunAsync(
