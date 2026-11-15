@@ -70,7 +70,7 @@ public sealed class FailureModeHandler(TimeSpan timeout) : DelegatingHandler
         {
             400 or 404 or 409 or 412 or 422 => new RejectedException(text),
             401 or 403 => new DeniedException(text),
-            408 or 429 or >= 500 and < 600 => new UnavailableException(text, RetryAfterHeader.Read(response)),
+            408 or 429 or (>= 500 and < 600) => new UnavailableException(text, RetryAfterHeader.Read(response)),
             _ => new DefectException(text),
         };
     }

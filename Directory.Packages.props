@@ -9,7 +9,7 @@
     <PackageVersion Include="ColorCode.Core" Version="2.0.15" />
     <PackageVersion Include="Meziantou.Analyzer" Version="3.0.340" />
     <PackageVersion Include="ReverseMarkdown" Version="6.3.0" />
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.3.180" />
     <PackageVersion Include="System.CommandLine" Version="3.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="11.0.0" />
