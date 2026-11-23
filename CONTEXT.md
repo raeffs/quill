@@ -44,6 +44,24 @@ The name that tells one person from every other, such as `CONTOSO\jdoe`. Two
 people can share a display name, but never a unique name.
 _Avoid_: account name, alias, login
 
+**Group**:
+A set of people the server knows under one name, such as a team. A group can
+review a pull request, but it cannot write one and no work item is assigned to
+it. An agent names a group by its bare name or its scoped name, and the name
+must match exactly one group.
+_Avoid_: team, container, security group
+
+**Scoped name**:
+The name that tells one group from every other, such as
+`[Fabrikam]\Contoso Platform`. Two groups can share a bare name, but never a
+scoped name.
+_Avoid_: full name, qualified name
+
+**Identity**:
+A person or a group. Quill uses the word only where a name can be either, as on
+`pr list --reviewer`. Where only a person can stand, it says person.
+_Avoid_: user, account, principal
+
 ## Failures
 
 **Failure mode**:
