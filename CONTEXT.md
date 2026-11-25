@@ -26,9 +26,9 @@ comes back. Every command has exactly one action.
 _Avoid_: operation, handler, use case, logic
 
 **Rich text**:
-The HTML Azure DevOps stores in a description or a comment. Quill hands it to
-the agent as markdown and turns markdown back into it, so a linked work item
-names its type and title in both.
+The HTML Azure DevOps stores in a work item's description or comment. Quill
+hands it to the agent as markdown and turns markdown back into it, so a linked
+work item names its type and title in both.
 _Avoid_: HTML field, body, content
 
 ## People
@@ -117,6 +117,11 @@ it can. It repeats the attempt each time either branch moves. It reports the
 outcome and the two commits it used.
 _Avoid_: trial merge, merge preview
 
+**Retarget**:
+To change the target branch of a pull request. It makes a revision and starts a
+new merge attempt, and the policies of the new target branch apply.
+_Avoid_: rebase, move, change base
+
 ## Pull request review
 
 **Revision**:
@@ -124,17 +129,59 @@ One recorded state of a pull request's source branch. Opening the pull request
 makes one, and so does every push, rebase or retarget after it.
 _Avoid_: iteration, update, push
 
+**Edit**:
+To change the title or the description of a pull request. It changes what the
+pull request says. It makes no revision and leaves the review where it stands.
+_Avoid_: update, modify, patch
+
 **Review thread**:
-A conversation anchored to code. It has a file, usually a line range, and
-comments people wrote.
+A conversation on a pull request that people wrote. Most review threads have an
+anchor and are about that code. A review thread without an anchor is about the
+whole pull request.
 _Avoid_: comment thread, discussion
+
+**Comment**:
+To start a new review thread with its first comment. To add a comment to an
+existing review thread is a reply. As a noun, a comment is one message in a
+review thread.
+_Avoid_: annotate, note, post
+
+**Reply**:
+A comment added to the end of an existing review thread. It answers the thread,
+not one comment in it, and it leaves the thread's status alone.
+_Avoid_: answer, response, follow-up
+
+**Thread status**:
+What a review thread says about its own progress. `active` and `pending` leave
+it open: `active` waits for the author, `pending` waits for someone else.
+`fixed`, `wontFix`, `closed` and `byDesign` resolve it, and each gives a
+different reason.
+_Avoid_: thread state, resolution, comment status
+
+**Resolve**:
+To give a review thread a status that ends it. The opposite is to reopen it,
+which sets it back to `active`.
+_Avoid_: close, complete, dismiss
 
 **System thread**:
 What Azure DevOps records when something happens to a pull request — a push, a
 vote, a reviewer change. It has the shape of a review thread and is not one.
 No author wrote it, the server localises its text, and its content sits in
-properties. Quill reads the properties and never the text.
+properties. Quill reads the properties and never the text. Quill shows it to
+the agent as an event.
 _Avoid_: auto thread, generated comment
+
+**Event**:
+One thing that happened to a pull request, as the server recorded it: a vote, a
+push, a reviewer change, a check result. It has a type, a date and the person
+who caused it. Quill says *event*; the server and the adapter say *system
+thread*.
+_Avoid_: activity, history item, timeline entry
+
+**Timeline**:
+The events of one pull request, in the order they happened. It reports what
+happened, not where the pull request stands now.
+_Avoid_: history, activity log, audit trail
 
 **Anchor**:
 Where a review thread points in the code. It names a file, and on most threads a
@@ -189,6 +236,16 @@ The act that ends a draft. It assigns the reviewers policy requires, evaluates
 the policies, and opens voting. A pull request cannot return to draft without
 discarding every vote it has collected.
 _Avoid_: undraft, open, ready for review
+
+**Abandon**:
+To end a pull request without a merge. The branch, the review threads and the
+votes stay, and nothing reaches the target branch.
+_Avoid_: close, cancel, withdraw, decline
+
+**Reactivate**:
+To set an abandoned pull request to active again. It is the opposite of
+abandon. A completed pull request cannot be reactivated.
+_Avoid_: reopen, restore, unabandon
 
 **Check**:
 A policy evaluation that can gate the merge of a pull request. Quill says
