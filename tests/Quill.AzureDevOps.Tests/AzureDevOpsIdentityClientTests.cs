@@ -28,7 +28,7 @@ public class AzureDevOpsIdentityClientTests
 
         using var handler = new FakeHttpHandler(connectionDataJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsIdentityClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection);
+        var client = new AzureDevOpsIdentityClient(TestHttp.Server(httpClient));
 
         // Act
         var currentUser = await client.GetCurrentUserAsync();
@@ -180,6 +180,27 @@ public class AzureDevOpsIdentityClientTests
         ex.Message.ShouldBe("Identity display name not found in identities response.");
     }
 
+    [Fact]
+    public async Task GetCurrentUserAsync_AnswerWithoutAuthenticatedUser_ThrowsADefect()
+    {
+        using var harness = new Harness("{}");
+
+        var ex = await Should.ThrowAsync<DefectException>(() => harness.Client.GetCurrentUserAsync());
+
+        ex.Message.ShouldStartWith("Cannot read the answer to GET _apis/connectionData: ");
+    }
+
+    [Fact]
+    public async Task SearchAsync_BodyIsNotJson_ThrowsADefectWithoutTheName()
+    {
+        using var harness = new Harness("<html>");
+
+        var ex = await Should.ThrowAsync<DefectException>(
+            () => harness.Client.SearchAsync(IdentitySearchFilter.General, "Jane Doe", CancellationToken.None));
+
+        ex.Message.ShouldBe("Cannot read the answer to GET _apis/identities: the body is not valid JSON.");
+    }
+
     private sealed class Harness : IDisposable
     {
         private readonly HttpClient _http;
@@ -188,7 +209,7 @@ public class AzureDevOpsIdentityClientTests
         {
             Handler = new FakeHttpHandler(body, status);
             _http = TestHttp.Client(Handler);
-            Client = new AzureDevOpsIdentityClient(_http, TestConstants.ServerUrl, TestConstants.Collection);
+            Client = new AzureDevOpsIdentityClient(TestHttp.Server(_http));
         }
 
         public FakeHttpHandler Handler { get; }

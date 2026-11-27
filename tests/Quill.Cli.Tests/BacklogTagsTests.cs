@@ -3,6 +3,7 @@ using Quill.AzureDevOps;
 using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
+using Quill.Tests.Shared;
 using Shouldly;
 
 namespace Quill.Cli.Tests;
@@ -41,7 +42,7 @@ public sealed class BacklogTagsTests : IDisposable
             .AddSingleton<IAzureDevOpsClient>(sp => new AzureDevOpsClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ"))
             .AddSingleton<IWorkItemBatchFetcher>(sp => new AzureDevOpsClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ"))
             .AddSingleton<RichText>()
-            .AddSingleton<IIdentityClient>(sp => new AzureDevOpsIdentityClient(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL"))
+            .AddSingleton<IIdentityClient>(sp => new AzureDevOpsIdentityClient(TestHttp.Server(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ")))
             .BuildServiceProvider();
         Console.SetOut(_output);
 

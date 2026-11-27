@@ -1,34 +1,22 @@
 using System.Text.Json;
+using Quill.AzureDevOps.Dto;
 using Quill.Core;
 using Quill.Core.Models;
 
 namespace Quill.AzureDevOps;
 
-public class AzureDevOpsIdentityClient : IIdentityClient
+public class AzureDevOpsIdentityClient(AzureDevOpsServer server) : IIdentityClient
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _connectionDataUrl;
-    private readonly string _identitiesUrl;
-
-    public AzureDevOpsIdentityClient(HttpClient httpClient, string serverUrl, string collection)
-    {
-        _httpClient = httpClient;
-        _connectionDataUrl = $"{serverUrl.TrimEnd('/')}/{collection}/_apis/connectionData";
-        _identitiesUrl = $"{serverUrl.TrimEnd('/')}/{collection}/_apis/identities";
-    }
-
     public async Task<CurrentUser> GetCurrentUserAsync()
     {
-        var response = await _httpClient.GetAsync(_connectionDataUrl);
+        var request = ServerRequest.Get(ServerScope.Collection, "_apis/connectionData") with { ApiVersion = null };
+        var answer = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.ConnectionDataResponse, CancellationToken.None);
+        var authenticatedUser = answer.AuthenticatedUser;
 
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-
-        var authenticatedUser = doc.RootElement.GetProperty("authenticatedUser");
-
-        var id = authenticatedUser.GetProperty("id").GetString()
+        var id = authenticatedUser.Id
             ?? throw new DefectException("Authenticated user ID not found in connection data.");
 
-        var displayName = authenticatedUser.GetProperty("providerDisplayName").GetString()
+        var displayName = authenticatedUser.ProviderDisplayName
             ?? throw new DefectException("Authenticated user display name not found in connection data.");
 
         return new CurrentUser(id, displayName);
@@ -37,11 +25,12 @@ public class AzureDevOpsIdentityClient : IIdentityClient
     public async Task<IReadOnlyList<IdentityMatch>> SearchAsync(
         IdentitySearchFilter filter, string value, CancellationToken cancellationToken)
     {
-        var url = $"{_identitiesUrl}?searchFilter={filter}&filterValue={Uri.EscapeDataString(value)}&queryMembership=None&api-version=7.1";
-        HttpResponseMessage response;
+        var path = $"_apis/identities?searchFilter={filter}&filterValue={Uri.EscapeDataString(value)}&queryMembership=None";
+        var request = ServerRequest.Get(ServerScope.Collection, path) with { ApiVersion = "7.1" };
+        IdentitySearchResponse answer;
         try
         {
-            response = await _httpClient.GetAsync(url, cancellationToken);
+            answer = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.IdentitySearchResponse, cancellationToken);
         }
         catch (DeniedException exception)
         {
@@ -50,15 +39,13 @@ public class AzureDevOpsIdentityClient : IIdentityClient
                 exception);
         }
 
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
-
         var matches = new List<IdentityMatch>();
-        if (!doc.RootElement.TryGetProperty("value", out var items) || items.ValueKind != JsonValueKind.Array)
+        if (answer.Value.ValueKind != JsonValueKind.Array)
         {
             return matches;
         }
 
-        foreach (var item in items.EnumerateArray())
+        foreach (var item in answer.Value.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object)
             {
