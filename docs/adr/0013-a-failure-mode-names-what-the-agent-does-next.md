@@ -61,7 +61,9 @@ file, and `pipeline trigger` reads the queued run. When a later step fails, the
 message starts with what quill wrote, such as `Created work item 123, but
 linking it failed:`, and the failure mode stays that of the failure. This holds
 for all five modes. A Defect that hides the id would let the user run the
-command again and make a second work item.
+command again and make a second work item. It does not hold for an exception
+that no module gave a mode, such as an answer that is not valid JSON. The frame
+reports that one as a Defect, without the id.
 
 Only a write the agent must not do again has later steps. `backlog push`
 updates a work item and then adds links. A second push writes the same values

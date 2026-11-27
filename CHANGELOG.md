@@ -19,9 +19,9 @@
 ### Fixed
 
 - `backlog pull` and the commands that print a description or comment now convert a work item link on any host to the `(#id)` form. A link written before a server move used to stay a full URL.
-- `wi create`, `backlog create`: A failure with exit code 4 after the work item exists now starts with `Created work item N, but`, like each other failure there.
-- `pipeline trigger`: A failure with exit code 4 after the run is queued now starts with `Queued run N, but reading it failed`, like each other failure there.
-- `pipeline trigger`: Ctrl+C after the run is queued no longer stops quill before it reads the run. Quill prints the run, or a failure that names it.
+- `wi create`, `backlog create`: After the work item exists, a failure with exit code 4 for an answer with an unknown status now starts with `Created work item N, but`, like the failures with the other exit codes. An answer that is not valid JSON still fails without it.
+- `pipeline trigger`: After the run is queued, a failure with exit code 4 for an answer with an unknown status now starts with `Queued run N, but reading it failed`, like the failures with the other exit codes. An answer that is not valid JSON still fails without it.
+- `pipeline trigger`: Ctrl+C after quill has the id of the queued run no longer stops the read of the run. Quill prints the run, or a failure that names it, when the read completes within two seconds.
 
 ## [2.2.0]
 
