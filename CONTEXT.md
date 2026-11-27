@@ -97,6 +97,13 @@ Quill hit a case it does not handle. Only a change to quill fixes it, so the
 agent stops and suggests a bug report.
 _Avoid_: bug, internal error, crash
 
+**Later step**:
+A request or a file write that a command does after a write the agent must not
+do again. When a later step fails, the message starts with what quill wrote,
+such as `Created work item 123, but`. The failure mode stays that of the
+failure.
+_Avoid_: follow-up, post-step, second request
+
 ## Backlog
 
 **Backlog**:
