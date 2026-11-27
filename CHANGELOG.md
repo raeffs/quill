@@ -23,7 +23,7 @@
 - `wi create`, `backlog create`: After the work item exists, a failure with exit code 4 for an answer with an unknown status now starts with `Created work item N, but`, like the failures with the other exit codes.
 - `pipeline trigger`: After the run is queued, a failure with exit code 4 for an answer with an unknown status now starts with `Queued run N, but reading it failed`, like the failures with the other exit codes.
 - `pipeline trigger`: Ctrl+C after quill has the id of the queued run no longer stops the read of the run. Quill prints the run, or a failure that names it, when the read completes within two seconds.
-- An answer that quill cannot read now fails with exit code 4 and the text `Cannot read the answer to <METHOD> <path>`. After a work item is created or a run is queued, the message starts with what quill wrote.
+- Every command: An answer that quill cannot read now fails with exit code 4 and the text `Cannot read the answer to <METHOD> <path>`. After a work item is created or a run is queued, the message starts with what quill wrote.
 
 ## [2.2.0]
 

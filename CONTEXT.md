@@ -100,7 +100,7 @@ _Avoid_: bug, internal error, crash
 **Unreadable answer**:
 An answer that arrived with a success status, but whose body quill cannot turn
 into the shape it expects: it is not valid JSON, it is empty where a value must
-be, or it lacks a value quill requires. An unreadable answer is a defect.
+be, or it lacks a value quill requires. An unreadable answer is a Defect.
 _Avoid_: parse error, deserialisation failure, bad response
 
 **Later step**:
