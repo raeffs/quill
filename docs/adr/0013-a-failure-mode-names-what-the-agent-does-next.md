@@ -55,6 +55,25 @@ pull request or the run, and a second try makes a second one. The agent retries
 a read as it is, but it retries a write only after it checks that the write did
 not happen.
 
+Some commands write and then do a later step. `wi create` links the new work
+item and reads it back, `backlog create` links it and writes its id to the
+file, and `pipeline trigger` reads the queued run. When a later step fails, the
+message starts with what quill wrote, such as `Created work item 123, but
+linking it failed:`, and the failure mode stays that of the failure. This holds
+for all five modes. A Defect that hides the id would let the user run the
+command again and make a second work item.
+
+Only a write the agent must not do again has later steps. `backlog push`
+updates a work item and then adds links. A second push writes the same values
+and adds only the links that are missing, so its failures keep their own
+message.
+
+A later step ignores cancellation. A command that stops between the write and
+the row prints nothing, and the id is lost. The 30-second limit on each request
+still ends a later step that gets no answer, as Unavailable. After Ctrl+C,
+System.CommandLine ends the process after two seconds, so a later step that
+takes longer still loses the id.
+
 Unavailable does not promise that a second try succeeds either. A refused
 connection, a wrong host name, a TLS failure and a 500 for a lasting fault all
 report as Unavailable. When the same failure comes back, the agent stops and
