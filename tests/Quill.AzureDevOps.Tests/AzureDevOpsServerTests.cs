@@ -177,8 +177,40 @@ public class AzureDevOpsServerTests
             TestContext.Current.CancellationToken));
 
         failure.Message.ShouldStartWith("Cannot read the answer to GET ");
-        failure.Message.ShouldContain("query");
+        failure.Message.ShouldContain("'query'");
         failure.InnerException.ShouldBeOfType<JsonException>();
+    }
+
+    [Fact]
+    public async Task ReadAsync_RequiredValueHasTheWrongType_ThrowsADefect()
+    {
+        using var handler = new FakeHttpHandler("""{"id":"twelve"}""", HttpStatusCode.OK);
+        using var httpClient = TestHttp.Client(handler);
+        var server = TestHttp.Server(httpClient);
+
+        var failure = await Should.ThrowAsync<DefectException>(() => server.ReadAsync(
+            ServerRequest.Get(ServerScope.Project, WorkItemPath),
+            ServerTestJsonContext.Default.WorkItemResponse,
+            TestContext.Current.CancellationToken));
+
+        failure.Message.ShouldStartWith("Cannot read the answer to GET ");
+        failure.Message.ShouldNotEndWith("the body is not valid JSON.");
+        failure.InnerException.ShouldBeOfType<JsonException>();
+    }
+
+    [Fact]
+    public async Task ReadAsync_CancelledToken_ThrowsOperationCanceled()
+    {
+        using var handler = new FakeHttpHandler("""{"id":12}""", HttpStatusCode.OK);
+        using var httpClient = TestHttp.Client(handler);
+        var server = TestHttp.Server(httpClient);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => server.ReadAsync(
+            ServerRequest.Get(ServerScope.Project, WorkItemPath),
+            ServerTestJsonContext.Default.WorkItemResponse,
+            cancellation.Token));
     }
 
     [Fact]

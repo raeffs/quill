@@ -191,6 +191,16 @@ public class AzureDevOpsIdentityClientTests
     }
 
     [Fact]
+    public async Task GetCurrentUserAsync_AuthenticatedUserIsNull_ThrowsADefect()
+    {
+        using var harness = new Harness("""{"authenticatedUser":null}""");
+
+        var ex = await Should.ThrowAsync<DefectException>(() => harness.Client.GetCurrentUserAsync());
+
+        ex.Message.ShouldBe("Authenticated user not found in connection data.");
+    }
+
+    [Fact]
     public async Task SearchAsync_BodyIsNotJson_ThrowsADefectWithoutTheName()
     {
         using var harness = new Harness("<html>");

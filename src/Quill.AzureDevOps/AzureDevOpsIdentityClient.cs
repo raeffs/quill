@@ -11,7 +11,8 @@ public class AzureDevOpsIdentityClient(AzureDevOpsServer server) : IIdentityClie
     {
         var request = ServerRequest.Get(ServerScope.Collection, "_apis/connectionData") with { ApiVersion = null };
         var answer = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.ConnectionDataResponse, CancellationToken.None);
-        var authenticatedUser = answer.AuthenticatedUser;
+        var authenticatedUser = answer.AuthenticatedUser
+            ?? throw new DefectException("Authenticated user not found in connection data.");
 
         var id = authenticatedUser.Id
             ?? throw new DefectException("Authenticated user ID not found in connection data.");

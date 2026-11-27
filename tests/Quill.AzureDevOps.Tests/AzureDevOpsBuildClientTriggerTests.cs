@@ -219,6 +219,24 @@ public class AzureDevOpsBuildClientTriggerTests
         caller.IsCancellationRequested.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task QueueRunAsync_AnswerWithoutId_ThrowsADefect()
+    {
+        // Arrange
+        using var handler = new SequenceHttpHandler((HttpStatusCode.OK, "{}"));
+        using var httpClient = CreateHttpClient(handler);
+        var client = CreateClient(httpClient);
+
+        // Act
+        var exception = await Should.ThrowAsync<DefectException>(
+            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
+
+        // Assert
+        exception.Message.ShouldStartWith("Cannot read the answer to POST _apis/pipelines/");
+        exception.Message.ShouldContain("'id'");
+        handler.Requests.Count.ShouldBe(1);
+    }
+
     private static SequenceHttpHandler SuccessHandler() =>
         new((HttpStatusCode.OK, QueuedAnswer), (HttpStatusCode.OK, RunAnswer));
 

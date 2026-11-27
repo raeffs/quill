@@ -5,5 +5,5 @@ namespace Quill.AzureDevOps.Dto;
 internal sealed class QueuedRunResponse
 {
     [JsonPropertyName("id")]
-    public int Id { get; init; }
+    public required int Id { get; init; }
 }

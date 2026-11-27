@@ -362,7 +362,7 @@ public class AzureDevOpsClientTests
 
         var exception = await Should.ThrowAsync<DefectException>(act);
         exception.Message.ShouldStartWith("Cannot read the answer to PATCH _apis/wit/workitems/$Task: ");
-        exception.Message.ShouldContain("id");
+        exception.Message.ShouldContain("'id'");
     }
 
     [Fact]
