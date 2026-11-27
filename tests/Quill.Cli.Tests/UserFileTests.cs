@@ -81,4 +81,70 @@ public sealed class UserFileTests : IDisposable
 
         Directory.Exists(path).ShouldBeTrue();
     }
+
+    [Fact]
+    public async Task ReadAllTextAsync_FileMissing_ThrowsFileNotFound()
+    {
+        var path = Path.Combine(_directory, "missing.md");
+
+        var ex = await Should.ThrowAsync<UsageException>(
+            () => UserFile.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe($"File not found: {path}");
+        ex.InnerException.ShouldBeOfType<FileNotFoundException>();
+    }
+
+    [Fact]
+    public async Task ReadAllTextAsync_ParentDirectoryMissing_ThrowsFileNotFound()
+    {
+        var path = Path.Combine(_directory, "missing", "item.md");
+
+        var ex = await Should.ThrowAsync<UsageException>(
+            () => UserFile.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe($"File not found: {path}");
+        ex.InnerException.ShouldBeOfType<DirectoryNotFoundException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a\0b")]
+    public async Task ReadAllTextAsync_PathIsNotAPath_ThrowsFileNotFound(string path)
+    {
+        var ex = await Should.ThrowAsync<UsageException>(
+            () => UserFile.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe($"File not found: {path}");
+    }
+
+    [Fact]
+    public async Task ReadAllTextOrStdinAsync_ExistingFile_ReturnsItsText()
+    {
+        var path = Path.Combine(_directory, "item.md");
+        await File.WriteAllTextAsync(path, "Grüße, 世界", TestContext.Current.CancellationToken);
+
+        var text = await UserFile.ReadAllTextOrStdinAsync(path, TestContext.Current.CancellationToken);
+
+        text.ShouldBe("Grüße, 世界");
+    }
+
+    [Fact]
+    public async Task ReadAllTextOrStdinAsync_FileMissing_ThrowsFileNotFound()
+    {
+        var path = Path.Combine(_directory, "missing.md");
+
+        var ex = await Should.ThrowAsync<UsageException>(
+            () => UserFile.ReadAllTextOrStdinAsync(path, TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe($"File not found: {path}");
+    }
+
+    [Fact]
+    public async Task ReadAllTextOrStdinAsync_PathIsADirectory_ThrowsCannotRead()
+    {
+        var ex = await Should.ThrowAsync<UsageException>(
+            () => UserFile.ReadAllTextOrStdinAsync(_directory, TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldStartWith($"Cannot read {_directory}: ");
+    }
 }
