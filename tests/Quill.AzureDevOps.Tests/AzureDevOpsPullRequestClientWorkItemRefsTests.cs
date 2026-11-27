@@ -13,8 +13,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         // Arrange
         using var handler = new FakeHttpHandler("""{"value":[]}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var ids = await client.GetWorkItemRefsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -39,8 +38,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var ids = await client.GetWorkItemRefsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -55,8 +53,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         // Arrange
         using var handler = new FakeHttpHandler("""{"message":"nope"}""", HttpStatusCode.NotFound);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetWorkItemRefsAsync(4711, "importer", TestContext.Current.CancellationToken);
@@ -73,8 +70,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetWorkItemRefsAsync(id, "importer", TestContext.Current.CancellationToken);
@@ -89,8 +85,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetWorkItemRefsAsync(4711, string.Empty, TestContext.Current.CancellationToken);
@@ -120,8 +115,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var pr = await client.GetByIdAsync(4711, TestContext.Current.CancellationToken);
@@ -150,8 +144,7 @@ public class AzureDevOpsPullRequestClientWorkItemRefsTests
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var pr = await client.GetByIdAsync(4711, TestContext.Current.CancellationToken);

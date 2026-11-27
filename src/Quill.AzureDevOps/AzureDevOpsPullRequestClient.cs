@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using Quill.AzureDevOps.Dto;
 using Quill.Core;
@@ -8,7 +6,7 @@ using Quill.Core.Models;
 
 namespace Quill.AzureDevOps;
 
-public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
+public class AzureDevOpsPullRequestClient(AzureDevOpsServer server) : IAzureDevOpsPullRequestClient
 {
     private const string RefsHeadsPrefix = "refs/heads/";
     private const string CodeReviewThreadTypeKey = "CodeReviewThreadType";
@@ -18,19 +16,6 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
 
     private readonly Dictionary<string, IReadOnlyList<PullRequestIterationResponse>> _iterationsByPullRequest =
         new(StringComparer.Ordinal);
-
-    private readonly HttpClient _httpClient;
-    private readonly string _serverUrl;
-    private readonly string _collection;
-    private readonly string _project;
-
-    public AzureDevOpsPullRequestClient(HttpClient httpClient, string serverUrl, string collection, string project)
-    {
-        _httpClient = httpClient;
-        _serverUrl = serverUrl.TrimEnd('/');
-        _collection = collection;
-        _project = project;
-    }
 
     public async Task<IReadOnlyList<PullRequest>> ListAsync(
         PullRequestListQuery query,
@@ -46,14 +31,13 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         }
 
         var baseUrl = string.IsNullOrEmpty(query.Repo)
-            ? $"{_serverUrl}/{_collection}/{_project}/_apis/git/pullrequests"
-            : $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(query.Repo)}/pullrequests";
+            ? "_apis/git/pullrequests"
+            : $"_apis/git/repositories/{Uri.EscapeDataString(query.Repo)}/pullrequests";
 
         var parameters = new List<string>
         {
             $"searchCriteria.status={Uri.EscapeDataString(query.Status)}",
             $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
-            $"api-version={AzureDevOpsConstants.ApiVersion}",
         };
 
         if (!string.IsNullOrEmpty(query.CreatorId))
@@ -81,13 +65,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             parameters.Add($"$skip={skipValue.ToString(CultureInfo.InvariantCulture)}");
         }
 
-        var url = $"{baseUrl}?{string.Join('&', parameters)}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize pull request list response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"{baseUrl}?{string.Join('&', parameters)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.PullRequestListResponse, cancellationToken);
 
         var results = new List<PullRequest>(dto.Value.Count);
         foreach (var item in dto.Value)
@@ -102,13 +81,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prId);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/pullrequests/{prId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize pull request response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/git/pullrequests/{prId.ToString(CultureInfo.InvariantCulture)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken);
 
         return MapToPullRequest(dto);
     }
@@ -122,13 +96,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(codeReviewId);
 
         var artifactId = $"vstfs:///CodeReview/CodeReviewId/{projectId}/{codeReviewId.ToString(CultureInfo.InvariantCulture)}";
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/policy/evaluations?artifactId={artifactId}&api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PolicyEvaluationListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize policy evaluations response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/policy/evaluations?artifactId={artifactId}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.PolicyEvaluationListResponse, cancellationToken);
 
         var results = new List<PolicyEvaluation>(dto.Value.Count);
         foreach (var item in dto.Value)
@@ -162,15 +131,10 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         // normalises to the whole-pull-request diff, which is what re-tracks the anchors. An empty
         // pull request has no iteration to scope to, so it falls back to the plain call.
         var scope = latestIteration is { } n
-            ? $"$iteration={n.ToString(CultureInfo.InvariantCulture)}&$baseIteration=0&"
+            ? $"?$iteration={n.ToString(CultureInfo.InvariantCulture)}&$baseIteration=0"
             : string.Empty;
-        var url = $"{PullRequestRoot(prId, repo)}/threads?{scope}api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestThreadsResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize pull request threads response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"{PullRequestRoot(prId, repo)}/threads{scope}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.PullRequestThreadsResponse, cancellationToken);
 
         var results = new List<PullRequestThread>(dto.Value.Count);
         foreach (var thread in dto.Value)
@@ -276,13 +240,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(prId);
         ArgumentException.ThrowIfNullOrWhiteSpace(repo);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}/workitems?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestWorkItemRefsResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize pull request work item refs response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"{PullRequestRoot(prId, repo)}/workitems");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.PullRequestWorkItemRefsResponse, cancellationToken);
 
         var ids = new List<int>(dto.Value.Count);
         foreach (var item in dto.Value)
@@ -325,29 +284,20 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             WorkItemRefs = workItemRefs.Count == 0 ? null : workItemRefs,
         };
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(request.Repo)}/pullrequests?supportsIterations=true&api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.CreatePullRequestBody);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize created pull request response.");
+        var createRequest = ServerRequest.Post(
+            ServerScope.Project,
+            $"_apis/git/repositories/{Uri.EscapeDataString(request.Repo)}/pullrequests?supportsIterations=true",
+            body,
+            AzureDevOpsJsonContext.Default.CreatePullRequestBody);
+        var dto = await server.ReadAsync(createRequest, AzureDevOpsJsonContext.Default.PullRequestItemResponse, cancellationToken);
 
         return MapToPullRequest(dto);
     }
 
     private async Task<string> GetDefaultBranchAsync(string repo, CancellationToken cancellationToken)
     {
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.GitRepositoryResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize repository response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/git/repositories/{Uri.EscapeDataString(repo)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.GitRepositoryResponse, cancellationToken);
 
         return string.IsNullOrEmpty(dto.DefaultBranch)
             ? throw new RejectedException(
@@ -370,8 +320,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
         return properties.Value.TryGetProperty(CodeReviewThreadTypeKey, out _);
     }
 
-    private string PullRequestRoot(int prId, string repo) =>
-        $"{_serverUrl}/{_collection}/{_project}/_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}";
+    private static string PullRequestRoot(int prId, string repo) =>
+        $"_apis/git/repositories/{Uri.EscapeDataString(repo)}/pullRequests/{prId.ToString(CultureInfo.InvariantCulture)}";
 
     private async Task<IReadOnlyList<PullRequestIterationResponse>> GetIterationsAsync(
         int prId,
@@ -384,12 +334,8 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
             return cached;
         }
 
-        var url = $"{PullRequestRoot(prId, repo)}/iterations?api-version={AzureDevOpsConstants.ApiVersion}";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.PullRequestIterationsResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize pull request iterations response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"{PullRequestRoot(prId, repo)}/iterations");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.PullRequestIterationsResponse, cancellationToken);
 
         _iterationsByPullRequest[key] = dto.Value;
         return dto.Value;
@@ -533,7 +479,7 @@ public class AzureDevOpsPullRequestClient : IAzureDevOpsPullRequestClient
     {
         var repoName = dto.Repository?.Name
             ?? throw new DefectException($"Pull request {dto.PullRequestId.ToString(CultureInfo.InvariantCulture)} has no repository.");
-        var webUrl = $"{_serverUrl}/{_collection}/{_project}/_git/{repoName}/pullrequest/{dto.PullRequestId.ToString(CultureInfo.InvariantCulture)}";
+        var webUrl = server.UrlOf(ServerScope.Project, $"_git/{repoName}/pullrequest/{dto.PullRequestId.ToString(CultureInfo.InvariantCulture)}");
 
         var dtoReviewers = dto.Reviewers ?? [];
         var reviewers = new List<PullRequestReviewer>(dtoReviewers.Count);

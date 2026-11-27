@@ -27,8 +27,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var pr = await client.GetByIdAsync(4711, TestContext.Current.CancellationToken);
@@ -48,8 +47,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetByIdAsync(id, TestContext.Current.CancellationToken);
@@ -433,8 +431,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetThreadsAsync(id, "importer", TestContext.Current.CancellationToken);
@@ -449,8 +446,7 @@ public class AzureDevOpsPullRequestClientThreadsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetThreadsAsync(4711, string.Empty, TestContext.Current.CancellationToken);
@@ -468,6 +464,5 @@ public class AzureDevOpsPullRequestClientThreadsTests
     private static HttpClient NewHttpClient(RecordingHandler handler) =>
         TestHttp.Client(handler);
 
-    private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(
-        httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+    private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(TestHttp.Server(httpClient));
 }

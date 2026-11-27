@@ -176,8 +176,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetRevisionsAsync(id, "importer", TestContext.Current.CancellationToken);
@@ -192,8 +191,7 @@ public class AzureDevOpsPullRequestClientRevisionsTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.GetRevisionsAsync(4711, string.Empty, TestContext.Current.CancellationToken);
@@ -208,6 +206,5 @@ public class AzureDevOpsPullRequestClientRevisionsTests
     private static HttpClient NewHttpClient(RecordingHandler handler) =>
         TestHttp.Client(handler);
 
-    private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(
-        httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+    private static AzureDevOpsPullRequestClient NewClient(HttpClient httpClient) => new(TestHttp.Server(httpClient));
 }

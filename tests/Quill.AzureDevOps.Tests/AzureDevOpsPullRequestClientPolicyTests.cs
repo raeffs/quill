@@ -179,5 +179,5 @@ public class AzureDevOpsPullRequestClientPolicyTests
         TestHttp.Client(handler);
 
     private static AzureDevOpsPullRequestClient CreateClient(HttpClient httpClient) =>
-        new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        new(TestHttp.Server(httpClient));
 }

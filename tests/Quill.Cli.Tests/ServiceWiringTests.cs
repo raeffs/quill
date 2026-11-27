@@ -104,7 +104,6 @@ public class ServiceWiringTests
 
     [Theory]
     [InlineData(nameof(AzureDevOpsClient))]
-    [InlineData(nameof(AzureDevOpsPullRequestClient))]
     [InlineData(nameof(AzureDevOpsServer))]
     public void AddQuillServices_LeavesTheTimeoutToTheHandler(string name)
     {
@@ -136,7 +135,6 @@ public class ServiceWiringTests
             // Re-using the generic AddHttpClient<T>() overload would re-register the default typed-client
             // activator and clobber the AddTypedClient factory under test, so configure by name instead.
             services.AddHttpClient(nameof(AzureDevOpsClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
-            services.AddHttpClient(nameof(AzureDevOpsPullRequestClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
             services.AddHttpClient(nameof(AzureDevOpsServer)).ConfigurePrimaryHttpMessageHandler(() => handler);
         }
 

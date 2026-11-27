@@ -35,8 +35,7 @@ public class AzureDevOpsPullRequestClientMergeAttemptTests
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var pr = await client.GetByIdAsync(4711, TestContext.Current.CancellationToken);
@@ -66,8 +65,7 @@ public class AzureDevOpsPullRequestClientMergeAttemptTests
         """;
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var pr = await client.GetByIdAsync(4711, TestContext.Current.CancellationToken);

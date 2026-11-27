@@ -33,8 +33,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateAsync(
@@ -60,8 +59,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateAsync(
@@ -89,8 +87,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateAsync(
@@ -115,8 +112,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateAsync(
@@ -146,8 +142,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new FakeHttpHandler(CreatedJson, HttpStatusCode.Created);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         var pullRequest = await client.CreateAsync(
@@ -176,8 +171,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new ScriptedCreateHandler(["""{"defaultBranch":"refs/heads/develop"}""", CreatedJson]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateAsync(
@@ -205,8 +199,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new ScriptedCreateHandler([CreatedJson]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateAsync(
@@ -230,8 +223,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         // Arrange
         using var handler = new ScriptedCreateHandler(["""{"name":"importer"}""", CreatedJson]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.CreateAsync(
@@ -259,8 +251,7 @@ public class AzureDevOpsPullRequestClientCreateTests
         """;
         using var handler = new FakeHttpHandler(errorJson, HttpStatusCode.Conflict);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsPullRequestClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsPullRequestClient(TestHttp.Server(httpClient));
 
         // Act
         Func<Task> act = () => client.CreateAsync(
