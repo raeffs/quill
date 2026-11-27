@@ -10,8 +10,6 @@ namespace Quill.Cli.Commands.WorkItems;
 
 internal static class CreateCommand
 {
-    private const string StdinPath = "-";
-
     public static Command Create(IServiceProvider serviceProvider)
     {
         var typeOption = new Option<string>("--type")
@@ -109,11 +107,9 @@ internal static class CreateCommand
                 var normalizedTags = WorkItemTags.Normalize(tags);
                 var validatedPredecessors = WorkItemPredecessors.Validate(predecessors);
 
-                var description = await ReadDescriptionAsync(descriptionFile, ct);
-                if (description is null && descriptionFile is not null)
-                {
-                    throw new UsageException($"File not found: {descriptionFile}");
-                }
+                var description = descriptionFile is null
+                    ? null
+                    : await UserFile.ReadAllTextOrStdinAsync(descriptionFile, ct);
 
                 return await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
@@ -123,20 +119,5 @@ internal static class CreateCommand
             },
             CommandHelpers.Context.ViewResult,
             cancellationToken);
-    }
-
-    private static async Task<string?> ReadDescriptionAsync(string? path, CancellationToken cancellationToken)
-    {
-        if (path is null)
-        {
-            return null;
-        }
-
-        if (string.Equals(path, StdinPath, StringComparison.Ordinal))
-        {
-            return await Console.In.ReadToEndAsync(cancellationToken);
-        }
-
-        return File.Exists(path) ? await UserFile.ReadAllTextAsync(path, cancellationToken) : null;
     }
 }

@@ -36,11 +36,6 @@ internal static class CreateCommand
         return CommandHelpers.RunAsync(
             async ct =>
             {
-                if (!File.Exists(filePath))
-                {
-                    throw new UsageException($"File not found: {filePath}");
-                }
-
                 var content = await UserFile.ReadAllTextAsync(filePath, ct);
 
                 var outcome = await CreateAction.RunAsync(
