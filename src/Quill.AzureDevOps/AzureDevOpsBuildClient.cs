@@ -75,22 +75,10 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken)
             ?? throw new DefectException("Failed to deserialize queued run response.");
 
-        try
-        {
-            return await GetRunAsync(queued.Id, cancellationToken);
-        }
-        catch (UnavailableException exception)
-        {
-            throw new UnavailableException(ReadFailed(queued.Id, exception), exception.RetryAfter, exception);
-        }
-        catch (RejectedException exception)
-        {
-            throw new RejectedException(ReadFailed(queued.Id, exception), exception);
-        }
-        catch (DeniedException exception)
-        {
-            throw new DeniedException(ReadFailed(queued.Id, exception), exception);
-        }
+        return await LaterStep.RunAsync(
+            $"Queued run {queued.Id}",
+            "reading it",
+            () => GetRunAsync(queued.Id, CancellationToken.None));
     }
 
     public Task<PipelineRun> CancelRunAsync(int runId, CancellationToken cancellationToken = default)
@@ -393,9 +381,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         return ToPipelineRun(dto);
     }
-
-    private static string ReadFailed(int runId, QuillException exception) =>
-        $"Queued run {runId}, but reading it failed: {exception.Message}";
 
     private static HttpRequestMessage RunChangeRequest(HttpMethod method, string url, HttpContent content)
     {

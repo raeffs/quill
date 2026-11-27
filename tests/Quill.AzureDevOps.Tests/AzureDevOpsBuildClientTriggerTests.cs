@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using Quill.Core;
 using Quill.Core.Models;
@@ -165,7 +166,7 @@ public class AzureDevOpsBuildClientTriggerTests
     }
 
     [Fact]
-    public async Task QueueRunAsync_ReadFailsWith418_ThrowsDefectWithoutThePrefix()
+    public async Task QueueRunAsync_ReadFailsWith418_ThrowsDefectNamingTheQueuedRun()
     {
         // Arrange
         using var handler = new SequenceHttpHandler(
@@ -179,7 +180,8 @@ public class AzureDevOpsBuildClientTriggerTests
             () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
 
         // Assert
-        exception.Message.ShouldNotContain("Queued run");
+        exception.Message.ShouldStartWith("Queued run 4202, but reading it failed: ");
+        exception.InnerException.ShouldBeOfType<DefectException>();
     }
 
     [Fact]
@@ -201,41 +203,20 @@ public class AzureDevOpsBuildClientTriggerTests
     }
 
     [Fact]
-    public async Task QueueRunAsync_ReadFailsWith404_ThrowsRejectedNamingTheQueuedRun()
+    public async Task QueueRunAsync_CancelledAfterTheRunIsQueued_StillReadsTheRun()
     {
         // Arrange
-        using var handler = new SequenceHttpHandler(
-            (HttpStatusCode.OK, """{"id":4202}"""),
-            (HttpStatusCode.NotFound, string.Empty));
-        using var httpClient = CreateHttpClient(handler);
+        using var caller = new CancellationTokenSource();
+        using var handler = new CancelOnSecondRequestHandler(caller);
+        using var httpClient = TestHttp.Client(handler);
         var client = CreateClient(httpClient);
 
         // Act
-        var exception = await Should.ThrowAsync<RejectedException>(
-            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
+        var run = await client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, caller.Token);
 
         // Assert
-        exception.Message.ShouldStartWith("Queued run 4202, but reading it failed: ");
-        exception.InnerException.ShouldBeOfType<RejectedException>();
-    }
-
-    [Fact]
-    public async Task QueueRunAsync_ReadFailsWith401_ThrowsDeniedNamingTheQueuedRun()
-    {
-        // Arrange
-        using var handler = new SequenceHttpHandler(
-            (HttpStatusCode.OK, """{"id":4202}"""),
-            (HttpStatusCode.Unauthorized, string.Empty));
-        using var httpClient = CreateHttpClient(handler);
-        var client = CreateClient(httpClient);
-
-        // Act
-        var exception = await Should.ThrowAsync<DeniedException>(
-            () => client.QueueRunAsync(new PipelineTriggerRequest { PipelineId = 42 }, TestContext.Current.CancellationToken));
-
-        // Assert
-        exception.Message.ShouldStartWith("Queued run 4202, but reading it failed: ");
-        exception.InnerException.ShouldBeOfType<DeniedException>();
+        run.Id.ShouldBe(4202);
+        caller.IsCancellationRequested.ShouldBeTrue();
     }
 
     private static SequenceHttpHandler SuccessHandler() =>
@@ -246,4 +227,24 @@ public class AzureDevOpsBuildClientTriggerTests
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
         new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+
+    private sealed class CancelOnSecondRequestHandler(CancellationTokenSource caller) : HttpMessageHandler
+    {
+        private int _requests;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            _requests++;
+            if (_requests == 2)
+            {
+                await caller.CancelAsync();
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(_requests == 1 ? QueuedAnswer : RunAnswer, Encoding.UTF8, "application/json"),
+            };
+        }
+    }
 }
