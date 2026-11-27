@@ -97,6 +97,12 @@ Quill hit a case it does not handle. Only a change to quill fixes it, so the
 agent stops and suggests a bug report.
 _Avoid_: bug, internal error, crash
 
+**Unreadable answer**:
+An answer that arrived with a success status, but whose body quill cannot turn
+into the shape it expects: it is not valid JSON, it is empty where a value must
+be, or it lacks a value quill requires. An unreadable answer is a defect.
+_Avoid_: parse error, deserialisation failure, bad response
+
 **Later step**:
 A request or a file write that a command does after a write the agent must not
 do again. When a later step fails, the message starts with what quill wrote,
