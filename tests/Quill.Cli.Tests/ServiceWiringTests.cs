@@ -102,14 +102,12 @@ public class ServiceWiringTests
         (await Should.ThrowAsync<UnavailableException>(() => provider.GetRequiredService<AzureDevOpsIdentityClient>().GetCurrentUserAsync())).Message.ShouldBe(expected);
     }
 
-    [Theory]
-    [InlineData(nameof(AzureDevOpsClient))]
-    [InlineData(nameof(AzureDevOpsServer))]
-    public void AddQuillServices_LeavesTheTimeoutToTheHandler(string name)
+    [Fact]
+    public void AddQuillServices_LeavesTheTimeoutToTheHandler()
     {
         using var provider = BuildProvider(handler: null);
 
-        using var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(name);
+        using var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(AzureDevOpsServer));
 
         httpClient.Timeout.ShouldBe(Timeout.InfiniteTimeSpan);
     }
@@ -131,10 +129,9 @@ public class ServiceWiringTests
 
         if (handler is not null)
         {
-            // Override the primary handler on the named clients (the typed clients' default names).
+            // Override the primary handler on the named client (the typed client's default name).
             // Re-using the generic AddHttpClient<T>() overload would re-register the default typed-client
             // activator and clobber the AddTypedClient factory under test, so configure by name instead.
-            services.AddHttpClient(nameof(AzureDevOpsClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
             services.AddHttpClient(nameof(AzureDevOpsServer)).ConfigurePrimaryHttpMessageHandler(() => handler);
         }
 

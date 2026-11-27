@@ -35,7 +35,7 @@ public class AzureDevOpsClientCommentsTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -69,7 +69,7 @@ public class AzureDevOpsClientCommentsTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -85,7 +85,7 @@ public class AzureDevOpsClientCommentsTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -107,7 +107,7 @@ public class AzureDevOpsClientCommentsTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -132,7 +132,7 @@ public class AzureDevOpsClientCommentsTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var comments = await client.GetCommentsAsync(123, limit: 2, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -170,7 +170,7 @@ public class AzureDevOpsClientCommentsTests
 
         using var handler = new ScriptedHttpHandler([page1, page2]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var comments = await client.GetCommentsAsync(123, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -186,7 +186,7 @@ public class AzureDevOpsClientCommentsTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.GetCommentsAsync(id);
 
@@ -200,7 +200,7 @@ public class AzureDevOpsClientCommentsTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.GetCommentsAsync(1, limit);
 
@@ -212,7 +212,7 @@ public class AzureDevOpsClientCommentsTests
     {
         using var handler = new FakeHttpHandler("""{"message":"nope"}""", HttpStatusCode.NotFound);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.GetCommentsAsync(999);
 

@@ -27,14 +27,6 @@ internal static class ServiceCollectionExtensions
 
         services.AddTransient(_ => new FailureModeHandler(TimeSpan.FromSeconds(30)));
 
-        services.AddHttpClient<AzureDevOpsClient>()
-            .ConfigureQuillHttpClient()
-            .AddTypedClient((httpClient, serviceProvider) =>
-            {
-                var config = serviceProvider.GetRequiredService<QuillConfig>();
-                return new AzureDevOpsClient(httpClient, config.ServerUrl, config.Collection, config.Project);
-            });
-
         services.AddHttpClient<AzureDevOpsServer>()
             .ConfigureQuillHttpClient()
             .AddTypedClient((httpClient, serviceProvider) =>
@@ -43,6 +35,7 @@ internal static class ServiceCollectionExtensions
                 return new AzureDevOpsServer(httpClient, config.ServerUrl, config.Collection, config.Project);
             });
 
+        services.AddTransient(sp => new AzureDevOpsClient(sp.GetRequiredService<AzureDevOpsServer>()));
         services.AddTransient(sp => new AzureDevOpsIdentityClient(sp.GetRequiredService<AzureDevOpsServer>()));
         services.AddTransient(sp => new AzureDevOpsPullRequestClient(sp.GetRequiredService<AzureDevOpsServer>()));
         services.AddTransient(sp => new AzureDevOpsBuildClient(sp.GetRequiredService<AzureDevOpsServer>()));

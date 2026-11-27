@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Quill.AzureDevOps.Dto;
@@ -9,26 +7,11 @@ using Quill.Core.Models;
 
 namespace Quill.AzureDevOps;
 
-public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
+public class AzureDevOpsClient(AzureDevOpsServer server) : IAzureDevOpsClient, IWorkItemBatchFetcher
 {
     private const int BatchChunkSize = 200;
     private const string CircularLinkErrorCode = "TF201035";
     private const string SelfLinkErrorCode = "TF201033";
-
-    private readonly HttpClient _httpClient;
-    private readonly string _baseUrl;
-    private readonly string _batchUrl;
-    private readonly string _collectionUrl;
-    private readonly string _projectUrl;
-
-    public AzureDevOpsClient(HttpClient httpClient, string serverUrl, string collection, string project)
-    {
-        _httpClient = httpClient;
-        _baseUrl = $"{serverUrl.TrimEnd('/')}/{collection}/{project}/_apis/wit/workitems";
-        _batchUrl = $"{serverUrl.TrimEnd('/')}/{collection}/{project}/_apis/wit/workitemsbatch";
-        _collectionUrl = $"{serverUrl.TrimEnd('/')}/{collection}";
-        _projectUrl = $"{serverUrl.TrimEnd('/')}/{collection}/{project}";
-    }
 
     public async Task<BatchFetchResult> FetchAsync(IReadOnlyList<int> ids, CancellationToken cancellationToken = default)
     {
@@ -71,16 +54,12 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         ArgumentException.ThrowIfNullOrWhiteSpace(wiql);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(top);
 
-        var url = $"{_projectUrl}/_apis/wit/wiql?$top={top}&api-version={AzureDevOpsConstants.ApiVersion}";
-        var requestDto = new WiqlQueryRequest { Query = wiql };
-        var json = JsonSerializer.Serialize(requestDto, AzureDevOpsJsonContext.Default.WiqlQueryRequest);
-
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(url, content, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.WiqlQueryResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize WIQL query response.");
+        var request = ServerRequest.Post(
+            ServerScope.Project,
+            $"_apis/wit/wiql?$top={top}",
+            new WiqlQueryRequest { Query = wiql },
+            AzureDevOpsJsonContext.Default.WiqlQueryRequest);
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.WiqlQueryResponse, cancellationToken);
 
         return dto.WorkItems.Select(w => w.Id).ToList();
     }
@@ -88,11 +67,8 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
     public async Task<WorkItem> GetWorkItemAsync(int id)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(id);
-        var url = $"{_baseUrl}/{id}?$expand=relations&api-version={AzureDevOpsConstants.ApiVersion}";
-        var response = await _httpClient.GetAsync(url);
-
-        var dto = await response.Content.ReadFromJsonAsync(AzureDevOpsJsonContext.Default.WorkItemResponse)
-            ?? throw new DefectException("Failed to deserialize work item response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/wit/workitems/{id}?$expand=relations");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.WorkItemResponse, CancellationToken.None);
 
         return MapToWorkItem(dto);
     }
@@ -139,7 +115,6 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
     public async Task<int> CreateWorkItemAsync(WorkItemCreatePatch patch)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(patch.ParentId, nameof(patch));
-        var url = $"{_baseUrl}/${patch.Type}?api-version={AzureDevOpsConstants.ApiVersion}";
 
         var operations = new List<JsonPatchOperation>
         {
@@ -177,14 +152,11 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             operations.AddRange(patch.Predecessors.Select(id => RelationOperation(AzureDevOpsConstants.PredecessorLinkType, id)));
         }
 
-        var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
+        var request = ServerRequest.JsonPatch(HttpMethod.Patch, ServerScope.Project, $"_apis/wit/workitems/${patch.Type}", operations) with
+        { RejectedWhen = IsLinkRule };
+        var created = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.CreatedWorkItemResponse, CancellationToken.None);
 
-        using var request = WriteRequest(url, content);
-        using var response = await _httpClient.SendAsync(request);
-
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        return doc.RootElement.GetProperty("id").GetInt32();
+        return created.Id;
     }
 
     public async Task<IReadOnlyList<WorkItemComment>> GetCommentsAsync(int id, int? limit = null, CancellationToken cancellationToken = default)
@@ -202,17 +174,14 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
         while (true)
         {
             var remaining = limit is null ? pageSize : Math.Min(pageSize, limit.Value - results.Count);
-            var url = $"{_baseUrl}/{id}/comments?$top={remaining}&order=desc&api-version={AzureDevOpsConstants.ApiVersion}";
+            var path = $"_apis/wit/workitems/{id}/comments?$top={remaining}&order=desc";
             if (!string.IsNullOrEmpty(continuationToken))
             {
-                url += $"&continuationToken={Uri.EscapeDataString(continuationToken)}";
+                path += $"&continuationToken={Uri.EscapeDataString(continuationToken)}";
             }
 
-            var response = await _httpClient.GetAsync(url, cancellationToken);
-
-            var dto = await response.Content.ReadFromJsonAsync(
-                AzureDevOpsJsonContext.Default.CommentsResponse, cancellationToken)
-                ?? throw new DefectException("Failed to deserialize comments response.");
+            var request = ServerRequest.Get(ServerScope.Project, path);
+            var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.CommentsResponse, cancellationToken);
 
             foreach (var c in dto.Comments)
             {
@@ -253,26 +222,16 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
             new RelationValue
             {
                 Rel = rel,
-                Url = $"{_collectionUrl}/_apis/wit/workitems/{targetId}",
+                Url = server.UrlOf(ServerScope.Collection, $"_apis/wit/workitems/{targetId}"),
             },
             AzureDevOpsJsonContext.Default.RelationValue),
     };
 
     private async Task PatchWorkItemAsync(int id, List<JsonPatchOperation> operations)
     {
-        var url = $"{_baseUrl}/{id}?api-version={AzureDevOpsConstants.ApiVersion}";
-        var json = JsonSerializer.Serialize(operations, AzureDevOpsJsonContext.Default.ListJsonPatchOperation);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json-patch+json");
-
-        using var request = WriteRequest(url, content);
-        using var response = await _httpClient.SendAsync(request);
-    }
-
-    private static HttpRequestMessage WriteRequest(string url, HttpContent content)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Patch, url) { Content = content };
-        request.Options.Set(FailureModeHandler.RejectedWhen, IsLinkRule);
-        return request;
+        var request = ServerRequest.JsonPatch(HttpMethod.Patch, ServerScope.Project, $"_apis/wit/workitems/{id}", operations) with
+        { RejectedWhen = IsLinkRule };
+        await server.SendAsync(request, CancellationToken.None);
     }
 
     // The server reports a cycle and a self-link as a 500 with a TF code.
@@ -301,38 +260,34 @@ public class AzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatchFetcher
     private async Task<(List<WorkItem>? Items, TimeSpan RetryAfter)> TrySendBatchAsync(
         IReadOnlyList<int> chunk, CancellationToken cancellationToken)
     {
-        var url = $"{_batchUrl}?api-version={AzureDevOpsConstants.ApiVersion}";
-        var requestDto = new WorkItemsBatchRequest { Ids = chunk };
-        var json = JsonSerializer.Serialize(requestDto, AzureDevOpsJsonContext.Default.WorkItemsBatchRequest);
+        var request = ServerRequest.Post(
+            ServerScope.Project,
+            "_apis/wit/workitemsbatch",
+            new WorkItemsBatchRequest { Ids = chunk },
+            AzureDevOpsJsonContext.Default.WorkItemsBatchRequest);
 
-        HttpResponseMessage response;
+        WorkItemsBatchResponse dto;
         try
         {
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            response = await _httpClient.PostAsync(url, content, cancellationToken);
+            dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.WorkItemsBatchResponse, cancellationToken);
         }
         catch (UnavailableException ex)
         {
             return (null, ex.RetryAfter ?? TimeSpan.Zero);
         }
 
-        using (response)
+        var items = new List<WorkItem>(dto.Value.Count);
+        foreach (var itemDto in dto.Value)
         {
-            var dto = await response.Content.ReadFromJsonAsync(
-                AzureDevOpsJsonContext.Default.WorkItemsBatchResponse, cancellationToken)
-                ?? throw new DefectException("Failed to deserialize work items batch response.");
-            var items = new List<WorkItem>(dto.Value.Count);
-            foreach (var itemDto in dto.Value)
+            if (itemDto is null)
             {
-                if (itemDto is null)
-                {
-                    continue;
-                }
-
-                items.Add(MapToWorkItem(itemDto));
+                continue;
             }
-            return (items, TimeSpan.Zero);
+
+            items.Add(MapToWorkItem(itemDto));
         }
+
+        return (items, TimeSpan.Zero);
     }
 
     private static WorkItem MapToWorkItem(WorkItemResponse dto)

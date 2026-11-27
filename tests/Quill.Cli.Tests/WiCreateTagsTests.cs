@@ -74,7 +74,7 @@ public sealed class WiCreateTagsTests : IDisposable
             .AddLogging()
             .AddSingleton(new QuillConfig { ServerUrl = ServerUrl, Collection = Collection, Project = Project })
             .AddSingleton(httpClient)
-            .AddSingleton(new AzureDevOpsClient(httpClient, ServerUrl, Collection, Project))
+            .AddSingleton(new AzureDevOpsClient(TestHttp.Server(httpClient, ServerUrl, Collection, Project)))
             .AddSingleton<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>())
             .AddSingleton<IWorkItemBatchFetcher>(sp => sp.GetRequiredService<AzureDevOpsClient>())
             .AddSingleton<RichText>()

@@ -33,7 +33,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(123);
 
@@ -65,7 +65,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(77);
 
@@ -92,7 +92,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(42);
 
@@ -130,7 +130,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(100);
 
@@ -142,7 +142,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"message":"Not found"}""", HttpStatusCode.NotFound);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.GetWorkItemAsync(999);
 
@@ -156,7 +156,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.GetWorkItemAsync(id);
 
@@ -170,7 +170,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(id, "Product Backlog Item", "title", "<p>desc</p>"));
 
@@ -184,7 +184,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         Func<Task> act = () => client.AddRelationAsync(sourceId, 1);
 
@@ -197,7 +197,7 @@ public class AzureDevOpsClientTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Product Backlog Item", "New Title", "<p>New Description</p>"));
@@ -221,7 +221,7 @@ public class AzureDevOpsClientTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Bug", "New Title", "<p>New Description</p>"));
@@ -258,7 +258,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(200);
 
@@ -283,7 +283,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(200);
 
@@ -295,7 +295,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.AddRelationAsync(100, 200);
 
@@ -316,7 +316,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Bug", "New bug", 100, "6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b"));
 
@@ -342,13 +342,53 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "New task", 100));
 
         newId.ShouldBe(999);
         handler.LastRequestBody.ShouldNotBeNull();
         handler.LastRequestBody.ShouldNotContain("System.AssignedTo");
+    }
+
+    [Fact]
+    public async Task CreateWorkItemAsync_AnswerWithoutId_ThrowsADefect()
+    {
+        using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
+        using var httpClient = TestHttp.Client(handler);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
+
+        var act = () => client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "New task", 100));
+
+        var exception = await Should.ThrowAsync<DefectException>(act);
+        exception.Message.ShouldStartWith("Cannot read the answer to PATCH _apis/wit/workitems/$Task: ");
+        exception.Message.ShouldContain("id");
+    }
+
+    [Fact]
+    public async Task CreateWorkItemAsync_BodyIsNotJson_ThrowsADefect()
+    {
+        using var handler = new FakeHttpHandler("<html>", HttpStatusCode.OK);
+        using var httpClient = TestHttp.Client(handler);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
+
+        var act = () => client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "New task", 100));
+
+        var exception = await Should.ThrowAsync<DefectException>(act);
+        exception.Message.ShouldBe("Cannot read the answer to PATCH _apis/wit/workitems/$Task: the body is not valid JSON.");
+    }
+
+    [Fact]
+    public async Task GetWorkItemAsync_UnreadableAnswerInALaterStep_NamesTheCreatedWorkItem()
+    {
+        using var handler = new FakeHttpHandler("<html>", HttpStatusCode.OK);
+        using var httpClient = TestHttp.Client(handler);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
+
+        var act = () => LaterStep.RunAsync("Created work item 123", "reading it", () => client.GetWorkItemAsync(123));
+
+        var exception = await Should.ThrowAsync<DefectException>(act);
+        exception.Message.ShouldBe("Created work item 123, but reading it failed: Cannot read the answer to GET _apis/wit/workitems/123: the body is not valid JSON.");
     }
 
     [Fact]
@@ -359,7 +399,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var newId = await client.CreateWorkItemAsync(
@@ -381,7 +421,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var newId = await client.CreateWorkItemAsync(
@@ -402,7 +442,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "New task", 100));
 
@@ -430,7 +470,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var workItem = await client.GetWorkItemAsync(321);
@@ -458,7 +498,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var workItem = await client.GetWorkItemAsync(322);
@@ -475,7 +515,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateWorkItemAsync(
@@ -507,7 +547,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var workItem = await client.GetWorkItemAsync(50);
@@ -524,7 +564,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "No-iteration task", 100));
@@ -554,7 +594,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var workItem = await client.GetWorkItemAsync(321);
@@ -582,7 +622,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         var workItem = await client.GetWorkItemAsync(321);
@@ -599,7 +639,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateWorkItemAsync(
@@ -619,7 +659,7 @@ public class AzureDevOpsClientTests
 
         using var handler = new FakeHttpHandler(responseJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         // Act
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "No-area task", 100));
@@ -634,7 +674,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, "A", "Body", "P\\I", "P\\A"));
 
@@ -646,7 +686,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, null, string.Empty, string.Empty, string.Empty));
 
@@ -658,7 +698,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body"));
 
@@ -670,7 +710,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", string.Empty));
 
@@ -682,7 +722,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Bug", "T", "Body")
         {
@@ -713,7 +753,7 @@ public class AzureDevOpsClientTests
         """;
         using var handler = new FakeHttpHandler(json, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var workItem = await client.GetWorkItemAsync(1);
 
@@ -735,7 +775,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Bug", "T", "Body")
         {
@@ -753,7 +793,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body") { Rev = 7 });
 
@@ -765,7 +805,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"id":1}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Predecessors: [10, 11]));
 
@@ -781,7 +821,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"id":1}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Predecessors: empty ? [] : null));
 
@@ -793,7 +833,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"message":"TF201035: Adding a Predecessor link between work items 1 and 2 would result in a circular relationship."}""", HttpStatusCode.InternalServerError);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var ex = await Should.ThrowAsync<RejectedException>(() => client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Predecessors: [2])));
 
@@ -805,7 +845,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"message":"TF201033: A work item cannot be linked to itself."}""", HttpStatusCode.InternalServerError);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var ex = await Should.ThrowAsync<RejectedException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
 
@@ -817,7 +857,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"message":"VS403351: Test Operation for path /rev failed."}""", HttpStatusCode.PreconditionFailed);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
         var patch = new WorkItemUpdatePatch(123, "Task", "T", "Body") { Rev = 7, RemoveRelationIndexes = [1] };
 
         var ex = await Should.ThrowAsync<RejectedException>(() => client.UpdateWorkItemAsync(patch));
@@ -831,7 +871,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"message":"TF400898: An internal error occurred."}""", HttpStatusCode.InternalServerError);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var ex = await Should.ThrowAsync<UnavailableException>(() => client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body")));
 
@@ -859,7 +899,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body") { Tags = ["a", "b"] });
 
@@ -872,7 +912,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body") { Tags = [] });
 
@@ -884,7 +924,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("{}", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.UpdateWorkItemAsync(new WorkItemUpdatePatch(123, "Task", "T", "Body"));
 
@@ -897,7 +937,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Tags: ["a", "b"]));
 
@@ -912,7 +952,7 @@ public class AzureDevOpsClientTests
     {
         using var handler = new FakeHttpHandler("""{"id": 999, "fields": {}}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, Tags: empty ? [] : null));
 
@@ -936,7 +976,7 @@ public class AzureDevOpsClientTests
         """;
         using var handler = new FakeHttpHandler(rawApiJson, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         return await client.GetWorkItemAsync(321);
     }

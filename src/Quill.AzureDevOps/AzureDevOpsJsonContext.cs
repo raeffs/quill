@@ -5,6 +5,7 @@ namespace Quill.AzureDevOps;
 
 [JsonSerializable(typeof(List<JsonPatchOperation>))]
 [JsonSerializable(typeof(WorkItemResponse))]
+[JsonSerializable(typeof(CreatedWorkItemResponse))]
 [JsonSerializable(typeof(RelationValue))]
 [JsonSerializable(typeof(WorkItemsBatchRequest))]
 [JsonSerializable(typeof(WorkItemsBatchResponse))]

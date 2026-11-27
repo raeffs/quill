@@ -40,7 +40,7 @@ public class AzureDevOpsClientBatchTests
 
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
 
@@ -79,7 +79,7 @@ public class AzureDevOpsClientBatchTests
 
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11, 12], TestContext.Current.CancellationToken);
 
@@ -102,7 +102,7 @@ public class AzureDevOpsClientBatchTests
 
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.OK, responseJson)]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
 
@@ -123,7 +123,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.OK, secondResponse),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync(ids, TestContext.Current.CancellationToken);
 
@@ -143,7 +143,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.OK, responseJson),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
 
@@ -163,7 +163,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.OK, responseJson),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
 
@@ -181,7 +181,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.InternalServerError, "boom again"),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
 
@@ -202,7 +202,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.OK, responseJson),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10], TestContext.Current.CancellationToken);
 
@@ -222,7 +222,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.InternalServerError, "boom again"),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync(ids, TestContext.Current.CancellationToken);
 
@@ -240,7 +240,7 @@ public class AzureDevOpsClientBatchTests
             new FakeResponse(HttpStatusCode.TooManyRequests, "slow down", RetryAfterSeconds: 1),
         ]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([10, 11], TestContext.Current.CancellationToken);
 
@@ -254,7 +254,7 @@ public class AzureDevOpsClientBatchTests
     {
         using var handler = new RecordingHandler([new FakeResponse(HttpStatusCode.Unauthorized, "no")]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         await Should.ThrowAsync<DeniedException>(() => client.FetchAsync([10]));
         handler.Requests.Count.ShouldBe(1);
@@ -265,7 +265,7 @@ public class AzureDevOpsClientBatchTests
     {
         using var handler = new RecordingHandler([]);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
         var result = await client.FetchAsync([], TestContext.Current.CancellationToken);
 
