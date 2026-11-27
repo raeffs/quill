@@ -17,4 +17,6 @@ public sealed class DefectException : QuillException
     }
 
     public override int ExitCode => 4;
+
+    public override QuillException WithMessage(string message) => new DefectException(message, this);
 }

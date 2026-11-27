@@ -17,4 +17,6 @@ public sealed class RejectedException : QuillException
     }
 
     public override int ExitCode => 1;
+
+    public override QuillException WithMessage(string message) => new RejectedException(message, this);
 }

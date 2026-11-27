@@ -17,4 +17,6 @@ public abstract class QuillException : Exception
     }
 
     public abstract int ExitCode { get; }
+
+    public abstract QuillException WithMessage(string message);
 }

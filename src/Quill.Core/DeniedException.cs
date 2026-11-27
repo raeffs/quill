@@ -17,4 +17,6 @@ public sealed class DeniedException : QuillException
     }
 
     public override int ExitCode => 5;
+
+    public override QuillException WithMessage(string message) => new DeniedException(message, this);
 }

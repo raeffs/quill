@@ -25,4 +25,6 @@ public sealed class UnavailableException : QuillException
     public TimeSpan? RetryAfter { get; }
 
     public override int ExitCode => 2;
+
+    public override QuillException WithMessage(string message) => new UnavailableException(message, RetryAfter, this);
 }
