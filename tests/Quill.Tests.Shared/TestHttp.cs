@@ -11,4 +11,11 @@ public static class TestHttp
         return new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
 #pragma warning restore CA2000
     }
+
+    public static AzureDevOpsServer Server(
+        HttpClient httpClient,
+        string serverUrl = TestConstants.ServerUrl,
+        string collection = TestConstants.Collection,
+        string project = TestConstants.Project) =>
+        new(httpClient, serverUrl, collection, project);
 }
