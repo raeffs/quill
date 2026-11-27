@@ -80,6 +80,24 @@ public sealed class FailureFrameTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_RestatedDefect_WritesTheSentenceTheAdviceAndTheFirstFailure()
+    {
+        var first = new DefectException("Failed to deserialize work item response.");
+        var restated = first.WithMessage("Created work item 7, but reading it failed: Failed to deserialize work item response.");
+
+        await CommandHelpers.RunAsync<CreateResult>(
+            _ => throw restated,
+            CommandHelpers.Context.CreateResult,
+            TestContext.Current.CancellationToken);
+
+        Environment.ExitCode.ShouldBe(4);
+        using var row = JsonDocument.Parse(_output.ToString());
+        row.RootElement.GetProperty("error").GetString().ShouldBe(
+            $"Created work item 7, but reading it failed: Failed to deserialize work item response. {CommandHelpers.DefectAdvice}");
+        _error.ToString().ShouldContain("DefectException: Failed to deserialize work item response.");
+    }
+
+    [Fact]
     public async Task RunAsync_UnclassifiedException_IsADefect()
     {
         await CommandHelpers.RunAsync<CreateResult>(

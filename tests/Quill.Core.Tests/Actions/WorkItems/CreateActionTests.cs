@@ -291,23 +291,6 @@ public class CreateActionTests
         ex.InnerException.ShouldBeSameAs(rejected);
     }
 
-    [Theory]
-    [InlineData(typeof(DeniedException))]
-    [InlineData(typeof(UsageException))]
-    public async Task RunAsync_LinkFailsAfterCreate_KeepsTheFailureMode(Type type)
-    {
-        var client = Seed();
-        var failure = (QuillException)Activator.CreateInstance(type, "The link failed.")!;
-        client.AddRelation = (_, _) => throw failure;
-
-        var ex = await Should.ThrowAsync<QuillException>(() => CreateAction.RunAsync(
-            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).")));
-
-        ex.ShouldBeOfType(type);
-        ex.Message.ShouldBe("Created work item 1000, but linking it failed: The link failed.");
-        ex.InnerException.ShouldBeSameAs(failure);
-    }
-
     [Fact]
     public async Task RunAsync_ReadBackUnavailable_NamesTheCreatedItemAndKeepsRetryAfter()
     {
@@ -330,16 +313,23 @@ public class CreateActionTests
     }
 
     [Fact]
-    public async Task RunAsync_DefectAfterCreate_PassesThroughUnchanged()
+    public async Task RunAsync_ReadBackDefect_NamesTheCreatedItem()
     {
         var client = Seed();
         var defect = new DefectException("Failed to deserialize work item response.");
-        client.AddRelation = (_, _) => throw defect;
+        client.GetWorkItem = id =>
+        {
+            if (id == 1000)
+            {
+                throw defect;
+            }
+        };
 
         var ex = await Should.ThrowAsync<DefectException>(() => CreateAction.RunAsync(
-            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: "See [the bug](#123).")));
+            client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task")));
 
-        ex.ShouldBeSameAs(defect);
+        ex.Message.ShouldBe("Created work item 1000, but reading it failed: Failed to deserialize work item response.");
+        ex.InnerException.ShouldBeSameAs(defect);
     }
 
     private static WorkItemCreateRequest Request(

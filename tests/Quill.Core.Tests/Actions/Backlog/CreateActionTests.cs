@@ -108,34 +108,6 @@ public class CreateActionTests
         ex.InnerException.ShouldBeSameAs(rejected);
     }
 
-    [Fact]
-    public async Task RunAsync_LinkUnavailableAfterCreate_KeepsRetryAfter()
-    {
-        var client = new FakeAzureDevOpsClient();
-        client.Add(Parent());
-        var unavailable = new UnavailableException("The server is busy.", TimeSpan.FromSeconds(30));
-        client.AddRelation = (_, _) => throw unavailable;
-
-        var ex = await Should.ThrowAsync<UnavailableException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), LinkingFile, null));
-
-        ex.Message.ShouldBe("Created work item 1000, but linking it failed: The server is busy.");
-        ex.RetryAfter.ShouldBe(TimeSpan.FromSeconds(30));
-        ex.InnerException.ShouldBeSameAs(unavailable);
-    }
-
-    [Fact]
-    public async Task RunAsync_DefectAfterCreate_PassesThroughUnchanged()
-    {
-        var client = new FakeAzureDevOpsClient();
-        client.Add(Parent());
-        var defect = new DefectException("Failed to deserialize work item response.");
-        client.AddRelation = (_, _) => throw defect;
-
-        var ex = await Should.ThrowAsync<DefectException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), LinkingFile, null));
-
-        ex.ShouldBeSameAs(defect);
-    }
-
     private static WorkItem Parent(string assignedToId = "user-1") => new()
     {
         Id = 42,

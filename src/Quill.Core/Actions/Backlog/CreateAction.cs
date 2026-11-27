@@ -65,7 +65,13 @@ public static class CreateAction
             Tags: parsed.Tags,
             Predecessors: parsed.Predecessors));
 
-        await CreatedWorkItem.LinkAsync(client, newId, linkIds);
+        await LaterStep.RunAsync($"Created work item {newId}", "linking it", async () =>
+        {
+            foreach (var targetId in linkIds)
+            {
+                await client.AddRelationAsync(newId, targetId);
+            }
+        });
 
         var updatedContent = FrontmatterParser.Write(
             id: newId,

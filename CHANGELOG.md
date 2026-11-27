@@ -19,6 +19,7 @@
 ### Fixed
 
 - `backlog pull` and the commands that print a description or comment now convert a work item link on any host to the `(#id)` form. A link written before a server move used to stay a full URL.
+- `wi create`, `backlog create`: A failure with exit code 4 after the work item exists now starts with `Created work item N, but`, like each other failure there.
 
 ## [2.2.0]
 
