@@ -106,7 +106,6 @@ public class ServiceWiringTests
     [InlineData(nameof(AzureDevOpsClient))]
     [InlineData(nameof(AzureDevOpsPullRequestClient))]
     [InlineData(nameof(AzureDevOpsServer))]
-    [InlineData(nameof(AzureDevOpsBuildClient))]
     public void AddQuillServices_LeavesTheTimeoutToTheHandler(string name)
     {
         using var provider = BuildProvider(handler: null);
@@ -139,7 +138,6 @@ public class ServiceWiringTests
             services.AddHttpClient(nameof(AzureDevOpsClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
             services.AddHttpClient(nameof(AzureDevOpsPullRequestClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
             services.AddHttpClient(nameof(AzureDevOpsServer)).ConfigurePrimaryHttpMessageHandler(() => handler);
-            services.AddHttpClient(nameof(AzureDevOpsBuildClient)).ConfigurePrimaryHttpMessageHandler(() => handler);
         }
 
         return services.BuildServiceProvider();

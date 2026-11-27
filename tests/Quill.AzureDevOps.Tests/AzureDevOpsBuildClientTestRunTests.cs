@@ -285,5 +285,5 @@ public class AzureDevOpsBuildClientTestRunTests
         TestHttp.Client(handler);
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
-        new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        new(TestHttp.Server(httpClient));
 }

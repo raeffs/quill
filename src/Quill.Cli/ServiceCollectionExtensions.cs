@@ -43,14 +43,6 @@ internal static class ServiceCollectionExtensions
                 return new AzureDevOpsPullRequestClient(httpClient, config.ServerUrl, config.Collection, config.Project);
             });
 
-        services.AddHttpClient<AzureDevOpsBuildClient>()
-            .ConfigureQuillHttpClient()
-            .AddTypedClient((httpClient, serviceProvider) =>
-            {
-                var config = serviceProvider.GetRequiredService<QuillConfig>();
-                return new AzureDevOpsBuildClient(httpClient, config.ServerUrl, config.Collection, config.Project);
-            });
-
         services.AddHttpClient<AzureDevOpsServer>()
             .ConfigureQuillHttpClient()
             .AddTypedClient((httpClient, serviceProvider) =>
@@ -60,6 +52,7 @@ internal static class ServiceCollectionExtensions
             });
 
         services.AddTransient(sp => new AzureDevOpsIdentityClient(sp.GetRequiredService<AzureDevOpsServer>()));
+        services.AddTransient(sp => new AzureDevOpsBuildClient(sp.GetRequiredService<AzureDevOpsServer>()));
 
         services.AddTransient<IAzureDevOpsClient>(sp => sp.GetRequiredService<AzureDevOpsClient>());
         services.AddTransient<IWorkItemBatchFetcher>(sp => sp.GetRequiredService<AzureDevOpsClient>());

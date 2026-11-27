@@ -226,7 +226,7 @@ public class AzureDevOpsBuildClientTriggerTests
         TestHttp.Client(handler);
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
-        new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        new(TestHttp.Server(httpClient));
 
     private sealed class CancelOnSecondRequestHandler(CancellationTokenSource caller) : HttpMessageHandler
     {

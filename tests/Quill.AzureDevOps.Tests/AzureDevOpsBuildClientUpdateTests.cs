@@ -90,7 +90,7 @@ public class AzureDevOpsBuildClientUpdateTests
         // Assert
         handler.Requests.Count.ShouldBe(1);
         handler.Requests[0].Method.ShouldBe(HttpMethod.Patch);
-        handler.Requests[0].RequestUri!.ToString().ShouldBe($"{Base}/build/builds/4202?api-version=7.1-preview&retry=true");
+        handler.Requests[0].RequestUri!.ToString().ShouldBe($"{Base}/build/builds/4202?retry=true&api-version=7.1-preview");
         handler.ContentTypes[0].ShouldBe("application/json");
     }
 
@@ -230,5 +230,5 @@ public class AzureDevOpsBuildClientUpdateTests
         TestHttp.Client(handler);
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient) =>
-        new(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        new(TestHttp.Server(httpClient));
 }

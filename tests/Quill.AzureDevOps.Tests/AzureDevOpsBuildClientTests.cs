@@ -40,8 +40,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(CompletedBuild, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         await client.GetRunAsync(4201, TestContext.Current.CancellationToken);
@@ -58,8 +57,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(CompletedBuild, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var run = await client.GetRunAsync(4201, TestContext.Current.CancellationToken);
@@ -87,8 +85,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(QueuedBuild, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var run = await client.GetRunAsync(4201, TestContext.Current.CancellationToken);
@@ -100,6 +97,22 @@ public class AzureDevOpsBuildClientTests
         run.FinishTime.ShouldBeNull();
     }
 
+    [Fact]
+    public async Task GetRunAsync_BodyIsNotJson_ThrowsADefectThatNamesTheRequest()
+    {
+        // Arrange
+        using var handler = new FakeHttpHandler("<html>", HttpStatusCode.OK);
+        using var httpClient = TestHttp.Client(handler);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
+
+        // Act
+        var act = () => client.GetRunAsync(4202, TestContext.Current.CancellationToken);
+
+        // Assert
+        var exception = await Should.ThrowAsync<DefectException>(act);
+        exception.Message.ShouldBe("Cannot read the answer to GET _apis/build/builds/4202: the body is not valid JSON.");
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.NotFound, typeof(RejectedException))]
     [InlineData(HttpStatusCode.Unauthorized, typeof(DeniedException))]
@@ -108,8 +121,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.GetRunAsync(4201, TestContext.Current.CancellationToken);
@@ -125,8 +137,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         await client.ListPipelinesAsync(new PipelineListQuery { Top = 50 }, TestContext.Current.CancellationToken);
@@ -142,8 +153,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         await client.ListPipelinesAsync(
@@ -152,7 +162,7 @@ public class AzureDevOpsBuildClientTests
 
         // Assert
         handler.LastRequest!.RequestUri!.AbsoluteUri.ShouldBe(
-            $"{PipelineBase}?$top=10&api-version=7.1-preview&name=Contoso%2A&path=%5CTeam%20A%5CCI");
+            $"{PipelineBase}?$top=10&name=Contoso%2A&path=%5CTeam%20A%5CCI&api-version=7.1-preview");
     }
 
     [Fact]
@@ -161,8 +171,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         await client.ListPipelinesAsync(
@@ -181,8 +190,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var pipelines = await client.ListPipelinesAsync(
@@ -207,8 +215,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var pipelines = await client.ListPipelinesAsync(
@@ -226,8 +233,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(PipelineList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.ListPipelinesAsync(
@@ -245,8 +251,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.ListPipelinesAsync(
@@ -262,7 +267,7 @@ public class AzureDevOpsBuildClientTests
     {
         var url = await RequestUrlForRunsAsync(new PipelineRunListQuery { Top = 50 });
 
-        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview&queryOrder=queueTimeDescending");
+        url.ShouldBe($"{RunBase}?$top=50&queryOrder=queueTimeDescending&api-version=7.1-preview");
     }
 
     [Fact]
@@ -278,7 +283,7 @@ public class AzureDevOpsBuildClientTests
             Top = 10,
         });
 
-        url.ShouldBe($"{RunBase}?$top=10&api-version=7.1-preview&queryOrder=queueTimeDescending&definitions=42&branchName=refs%2Fheads%2Fmain&statusFilter=completed&resultFilter=failed&reasonFilter=pullRequest");
+        url.ShouldBe($"{RunBase}?$top=10&queryOrder=queueTimeDescending&definitions=42&branchName=refs%2Fheads%2Fmain&statusFilter=completed&resultFilter=failed&reasonFilter=pullRequest&api-version=7.1-preview");
     }
 
     [Fact]
@@ -309,7 +314,7 @@ public class AzureDevOpsBuildClientTests
             Top = 50,
         });
 
-        url.ShouldBe($"{RunBase}?$top=50&api-version=7.1-preview&queryOrder=queueTimeDescending");
+        url.ShouldBe($"{RunBase}?$top=50&queryOrder=queueTimeDescending&api-version=7.1-preview");
     }
 
     [Fact]
@@ -318,8 +323,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var runs = await client.ListRunsAsync(new PipelineRunListQuery { Top = 50 }, TestContext.Current.CancellationToken);
@@ -354,8 +358,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler("""{"count":0,"value":[]}""", HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var runs = await client.ListRunsAsync(new PipelineRunListQuery { Top = 50 }, TestContext.Current.CancellationToken);
@@ -372,8 +375,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.ListRunsAsync(
@@ -391,8 +393,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.ListRunsAsync(
@@ -410,8 +411,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.ListRunsAsync(
@@ -428,8 +428,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(Fixtures.Read("timeline-matrix.json"), HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         await client.GetTimelineAsync(4300, TestContext.Current.CancellationToken);
@@ -446,8 +445,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(Fixtures.Read("timeline-matrix.json"), HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var records = await client.GetTimelineAsync(4300, TestContext.Current.CancellationToken);
@@ -493,8 +491,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(Fixtures.Read("timeline-matrix.json"), HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var records = await client.GetTimelineAsync(4300, TestContext.Current.CancellationToken);
@@ -517,8 +514,7 @@ public class AzureDevOpsBuildClientTests
         var body = $$"""{"records":[{"id":"a","type":"Task","name":"n","state":"completed","issues":[{{issueJson}}]}]}""";
         using var handler = new FakeHttpHandler(body, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var records = await client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
@@ -535,8 +531,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(string.Empty, HttpStatusCode.NoContent);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var records = await client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
@@ -551,8 +546,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler(string.Empty, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var records = await client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
@@ -569,8 +563,7 @@ public class AzureDevOpsBuildClientTests
         // Arrange
         using var handler = new FakeHttpHandler("{}", status);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         // Act
         var act = () => client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
@@ -603,7 +596,7 @@ public class AzureDevOpsBuildClientTests
     {
         var uri = await LogLinesUrlAsync(401, 600);
 
-        uri.ShouldEndWith("?api-version=7.1-preview&startLine=401&endLine=600");
+        uri.ShouldEndWith("?startLine=401&endLine=600&api-version=7.1-preview");
     }
 
     [Fact]
@@ -611,7 +604,7 @@ public class AzureDevOpsBuildClientTests
     {
         var uri = await LogLinesUrlAsync(5, null);
 
-        uri.ShouldEndWith("?api-version=7.1-preview&startLine=5");
+        uri.ShouldEndWith("?startLine=5&api-version=7.1-preview");
     }
 
     [Fact]
@@ -619,7 +612,7 @@ public class AzureDevOpsBuildClientTests
     {
         var uri = await LogLinesUrlAsync(null, 9);
 
-        uri.ShouldEndWith("?api-version=7.1-preview&endLine=9");
+        uri.ShouldEndWith("?endLine=9&api-version=7.1-preview");
     }
 
     [Fact]
@@ -763,8 +756,7 @@ public class AzureDevOpsBuildClientTests
 
     private static AzureDevOpsBuildClient CreateClient(HttpClient httpClient)
     {
-        return new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        return new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
     }
 
     private static async Task<string> LogLinesUrlAsync(int? startLine, int? endLine)
@@ -782,8 +774,7 @@ public class AzureDevOpsBuildClientTests
     {
         using var handler = new FakeHttpHandler(RunList, HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(
-            httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
 
         await client.ListRunsAsync(query, TestContext.Current.CancellationToken);
 

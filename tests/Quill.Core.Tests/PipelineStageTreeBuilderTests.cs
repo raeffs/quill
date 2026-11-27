@@ -305,7 +305,7 @@ public class PipelineStageTreeBuilderTests
     {
         using var handler = new FakeHttpHandler(Fixtures.Read(fileName), HttpStatusCode.OK);
         using var httpClient = TestHttp.Client(handler);
-        var client = new AzureDevOpsBuildClient(httpClient, TestConstants.ServerUrl, TestConstants.Collection, TestConstants.Project);
+        var client = new AzureDevOpsBuildClient(TestHttp.Server(httpClient));
         return await client.GetTimelineAsync(1, TestContext.Current.CancellationToken);
     }
 

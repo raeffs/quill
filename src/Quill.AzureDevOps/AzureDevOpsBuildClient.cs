@@ -1,42 +1,20 @@
 using System.Globalization;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using Quill.AzureDevOps.Dto;
 using Quill.Core;
 using Quill.Core.Models;
 
 namespace Quill.AzureDevOps;
 
-public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
+public class AzureDevOpsBuildClient(AzureDevOpsServer server) : IAzureDevOpsBuildClient
 {
     private const string InvalidStateChangeTypeKey = "BuildStatusInvalidChangeException";
-
-    private readonly HttpClient _httpClient;
-    private readonly string _serverUrl;
-    private readonly string _collection;
-    private readonly string _project;
-
-    public AzureDevOpsBuildClient(HttpClient httpClient, string serverUrl, string collection, string project)
-    {
-        _httpClient = httpClient;
-        _serverUrl = serverUrl.TrimEnd('/');
-        _collection = collection;
-        _project = project;
-    }
 
     public async Task<PipelineRun> GetRunAsync(int runId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize build response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken);
 
         return ToPipelineRun(dto);
     }
@@ -63,17 +41,13 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             StagesToSkip = request.StagesToSkip.Count == 0 ? null : request.StagesToSkip,
         };
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/pipelines/{request.PipelineId.ToString(CultureInfo.InvariantCulture)}/runs?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.RunPipelineBody);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        using var runRequest = RunChangeRequest(HttpMethod.Post, url, content);
-        using var response = await _httpClient.SendAsync(runRequest, cancellationToken);
-
-        var queued = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize queued run response.");
+        var runRequest = ServerRequest.Post(
+            ServerScope.Project,
+            $"_apis/pipelines/{request.PipelineId.ToString(CultureInfo.InvariantCulture)}/runs",
+            body,
+            AzureDevOpsJsonContext.Default.RunPipelineBody) with
+        { RejectedWhen = IsInvalidStateChange };
+        var queued = await server.ReadAsync(runRequest, AzureDevOpsJsonContext.Default.QueuedRunResponse, cancellationToken);
 
         return await LaterStep.RunAsync(
             $"Queued run {queued.Id}",
@@ -98,7 +72,7 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
 
         return UpdateRunAsync(
             runId,
-            "&retry=true",
+            "?retry=true",
             new UpdateBuildBody(),
             cancellationToken);
     }
@@ -107,23 +81,12 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/timeline?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        if (response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/timeline");
+        var dto = await server.ReadOrNothingAsync(request, AzureDevOpsJsonContext.Default.TimelineResponse, cancellationToken);
+        if (dto is null)
         {
             return [];
         }
-
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(body))
-        {
-            return [];
-        }
-
-        var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.TimelineResponse)
-            ?? throw new DefectException("Failed to deserialize timeline response.");
 
         return dto.Records.Select(ToTimelineRecord).ToList();
     }
@@ -138,36 +101,26 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(logId);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs/{logId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}";
+        var path = $"_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs/{logId.ToString(CultureInfo.InvariantCulture)}";
+        var separator = '?';
 
         if (startLine is { } start)
         {
-            url += $"&startLine={start.ToString(CultureInfo.InvariantCulture)}";
+            path += $"{separator}startLine={start.ToString(CultureInfo.InvariantCulture)}";
+            separator = '&';
         }
 
         if (endLine is { } end)
         {
-            url += $"&endLine={end.ToString(CultureInfo.InvariantCulture)}";
+            path += $"{separator}endLine={end.ToString(CultureInfo.InvariantCulture)}";
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-
-        if (response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0)
+        var request = ServerRequest.Get(ServerScope.Project, path);
+        var dto = await server.ReadOrNothingAsync(request, AzureDevOpsJsonContext.Default.BuildLogLinesResponse, cancellationToken);
+        if (dto is null)
         {
             return [];
         }
-
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(body))
-        {
-            return [];
-        }
-
-        var dto = JsonSerializer.Deserialize(body, AzureDevOpsJsonContext.Default.BuildLogLinesResponse)
-            ?? throw new DefectException("Failed to deserialize build log response.");
 
         return dto.Value.ToList();
     }
@@ -177,13 +130,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(logId);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs?api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.BuildLogListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize build log list response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}/logs");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.BuildLogListResponse, cancellationToken);
 
         var log = dto.Value.FirstOrDefault(entry => entry.Id == logId)
             ?? throw new RejectedException($"Log {logId} not found in run {runId}.");
@@ -201,7 +149,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var parameters = new List<string>
         {
             $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
-            $"api-version={AzureDevOpsConstants.ApiVersion}",
             "queryOrder=queueTimeDescending",
         };
 
@@ -231,13 +178,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             parameters.Add($"reasonFilter={Uri.EscapeDataString(query.Reason)}");
         }
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds?{string.Join('&', parameters)}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.BuildListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize build list response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/build/builds?{string.Join('&', parameters)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.BuildListResponse, cancellationToken);
 
         return dto.Value.Select(ToPipelineRun).ToList();
     }
@@ -252,7 +194,6 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         var parameters = new List<string>
         {
             $"$top={query.Top.ToString(CultureInfo.InvariantCulture)}",
-            $"api-version={AzureDevOpsConstants.ApiVersion}",
         };
 
         if (!string.IsNullOrEmpty(query.Name))
@@ -265,13 +206,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             parameters.Add($"path={Uri.EscapeDataString(query.Folder)}");
         }
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/definitions?{string.Join('&', parameters)}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.BuildDefinitionListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize build definition list response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/build/definitions?{string.Join('&', parameters)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.BuildDefinitionListResponse, cancellationToken);
 
         return dto.Value
             .Select(definition => new Pipeline
@@ -287,13 +223,8 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runId);
 
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/test/runs?buildUri=vstfs:///Build/Build/{runId.ToString(CultureInfo.InvariantCulture)}&api-version={AzureDevOpsConstants.ApiVersion}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.TestRunListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize test run list response.");
+        var request = ServerRequest.Get(ServerScope.Project, $"_apis/test/runs?buildUri=vstfs:///Build/Build/{runId.ToString(CultureInfo.InvariantCulture)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.TestRunListResponse, cancellationToken);
 
         return dto.Value
             .Select(run => new TestRun
@@ -335,15 +266,10 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
             parameters.Add($"$skip={skip.ToString(CultureInfo.InvariantCulture)}");
         }
 
-        parameters.Add($"api-version={AzureDevOpsConstants.ApiVersion}");
-
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/test/Runs/{testRunId.ToString(CultureInfo.InvariantCulture)}/results?{string.Join('&', parameters)}";
-
-        var response = await _httpClient.GetAsync(url, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.TestResultListResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize test result list response.");
+        var request = ServerRequest.Get(
+            ServerScope.Project,
+            $"_apis/test/Runs/{testRunId.ToString(CultureInfo.InvariantCulture)}/results?{string.Join('&', parameters)}");
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.TestResultListResponse, cancellationToken);
 
         return dto.Value
             .Select(result => new TestCaseResult
@@ -367,26 +293,15 @@ public class AzureDevOpsBuildClient : IAzureDevOpsBuildClient
         UpdateBuildBody body,
         CancellationToken cancellationToken)
     {
-        var url = $"{_serverUrl}/{_collection}/{_project}/_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}?api-version={AzureDevOpsConstants.ApiVersion}{query}";
-
-        var json = JsonSerializer.Serialize(body, AzureDevOpsJsonContext.Default.UpdateBuildBody);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        using var request = RunChangeRequest(HttpMethod.Patch, url, content);
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-
-        var dto = await response.Content.ReadFromJsonAsync(
-            AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken)
-            ?? throw new DefectException("Failed to deserialize build response.");
+        var request = ServerRequest.Patch(
+            ServerScope.Project,
+            $"_apis/build/builds/{runId.ToString(CultureInfo.InvariantCulture)}{query}",
+            body,
+            AzureDevOpsJsonContext.Default.UpdateBuildBody) with
+        { RejectedWhen = IsInvalidStateChange };
+        var dto = await server.ReadAsync(request, AzureDevOpsJsonContext.Default.BuildResponse, cancellationToken);
 
         return ToPipelineRun(dto);
-    }
-
-    private static HttpRequestMessage RunChangeRequest(HttpMethod method, string url, HttpContent content)
-    {
-        var request = new HttpRequestMessage(method, url) { Content = content };
-        request.Options.Set(FailureModeHandler.RejectedWhen, IsInvalidStateChange);
-        return request;
     }
 
     // The server reports an invalid build state change as a 500.
