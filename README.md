@@ -26,8 +26,8 @@ See [`skills/quill/SKILL.md`](https://github.com/raeffs/quill/blob/main/skills/q
 
 ## Cache
 
-Quill saves each person it resolves, and the current user, for 24 hours. The
-file is safe to delete.
+Quill saves each person and group it resolves, and the current user, for 24
+hours. The file is safe to delete.
 
 - Linux and macOS: `$XDG_CACHE_HOME/quill/people.json`, by default `~/.cache/quill/people.json`
 - Windows: `%LOCALAPPDATA%\quill\people.json`

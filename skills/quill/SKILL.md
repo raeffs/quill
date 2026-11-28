@@ -69,8 +69,12 @@ These are the things the help output and a successful run do not tell you.
 - `backlog create` needs frontmatter with `id: 0`, a `title`, a `type` of `Feature`, `Product Backlog Item`, `Bug` or `Task`, and a `parentId`. The parent must exist and be assigned to the authenticated user, and its type must fit the hierarchy: a Feature needs an Epic parent, a Product Backlog Item or Bug needs a Feature parent, and a Task needs a Product Backlog Item or Bug parent. The parent's state does not matter. On success quill rewrites the file with the server-assigned ID.
 - `wi create` checks only the parent's type against the same hierarchy. The parent may be assigned to anyone and be in any state.
 - `wi create` leaves the new item unassigned unless you pass `--assignee`. `backlog create` assigns it to the authenticated user unless you pass `--assignee`.
-- `--reviewer`, `--author` and `--assignee` accept `@me`, a display name, a unique name such as `CONTOSO\jdoe`, or an email address. The match is exact, so `Jane` does not find `Jane Doe`. Groups are not accepted.
-- A person flag whose value matches nobody exits 1 and names the flag and the value. A value that matches several people exits 1 and lists each display name with its unique name. Pass the unique name.
+- `--reviewer`, `--author` and `--assignee` accept `@me`, a display name, a unique name such as `CONTOSO\jdoe`, or an email address. The match is exact, so `Jane` does not find `Jane Doe`.
+- `--reviewer` also accepts a group, by its bare name or its scoped name such as `[Fabrikam]\Contoso Platform`. `--author` and `--assignee` do not.
+- `--reviewer <group>` returns only the pull requests where the group itself is attached. An empty result does not mean that nothing waits on its members. Ask for each person when you need that answer.
+- `--reviewer @me` does not cover the groups you belong to. Name each group in its own call.
+- On `--author` and `--assignee`, a value that matches nobody exits 1, and a value that matches several people exits 1 and lists each display name with its unique name. Pass the unique name.
+- On `--reviewer`, the value must match exactly one person or group. A value that matches several groups, or a person and a group, exits 1 and lists each candidate. Pass the unique name or the scoped name.
 - `wi create` takes a repeatable `--tag`, one value per flag. A tag must not contain `;` or `,` or be empty, and a bad value exits 3 before any request.
 - `wi create` takes a repeatable `--predecessor`, one ID per flag. A value that is not a positive integer, or a repeated ID, exits 3 before any request. The server rejects missing targets and cycles, which exits 1 and creates nothing.
 - `backlog create` and `wi create` give the new item its parent's area and iteration.
