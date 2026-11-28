@@ -16,3 +16,13 @@ fail in two ways, and the skill doc would have to teach both.
 
 That has a price. A command that names a person other than `@me` sends one
 more request, and the PAT needs Identity: Read.
+
+The wiring builds one resolver for a run. Every action that needs a person or
+the current user takes that resolver, also when it needs only the current
+user. No action takes the identity client. The resolver then asks the server
+for the current user at most once in a run.
+
+What leaves the resolver is a person, not a name. A query takes either a
+resolved person or the current user, which the server fills in for `@me`. A
+work item write takes a resolved person. An action cannot send a name that
+quill did not resolve.
