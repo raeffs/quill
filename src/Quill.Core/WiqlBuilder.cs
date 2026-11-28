@@ -1,16 +1,18 @@
+using Quill.Core.Models;
+
 namespace Quill.Core;
 
 public static class WiqlBuilder
 {
     public static (string Wiql, int Top) Build(
         string? title,
-        string? assignee,
+        PersonFilter? assignee,
         IReadOnlyList<string> states,
         IReadOnlyList<string> types,
         int limit)
     {
         var hasTitle = !string.IsNullOrWhiteSpace(title);
-        var hasAssignee = !string.IsNullOrWhiteSpace(assignee);
+        var hasAssignee = assignee is not null;
         var hasStates = states is { Count: > 0 };
         var hasTypes = types is { Count: > 0 };
 
@@ -33,10 +35,9 @@ public static class WiqlBuilder
 
         if (hasAssignee)
         {
-            var trimmed = assignee!.Trim();
-            clauses.Add(PersonResolver.IsMe(trimmed)
+            clauses.Add(assignee!.Person is null
                 ? "[System.AssignedTo] = @Me"
-                : $"[System.AssignedTo] = '{Escape(trimmed)}'");
+                : $"[System.AssignedTo] = '{Escape(assignee.Person.AssignedTo)}'");
         }
 
         if (hasStates)

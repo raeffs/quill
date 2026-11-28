@@ -11,12 +11,9 @@ public static class ListAction
         WiListRequest request,
         CancellationToken cancellationToken)
     {
-        var assignee = request.Assignee;
-        if (assignee is not null && !PersonResolver.IsMe(assignee))
-        {
-            var person = await new PersonResolver(identity).ResolveAsync("--assignee", assignee, cancellationToken);
-            assignee = person.AssignedTo;
-        }
+        var assignee = request.Assignee is null
+            ? null
+            : await new PersonResolver(identity).ResolveForQueryAsync("--assignee", request.Assignee, cancellationToken);
 
         var (wiql, top) = WiqlBuilder.Build(request.Title, assignee, request.States, request.Types, request.Limit);
 

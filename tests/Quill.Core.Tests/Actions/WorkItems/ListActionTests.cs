@@ -76,6 +76,20 @@ public class ListActionTests
     }
 
     [Fact]
+    public async Task RunAsync_BlankAssignee_ThrowsUsageBeforeAnyRequest()
+    {
+        var client = new FakeAzureDevOpsClient();
+        var identity = new ScriptedIdentityClient();
+
+        var ex = await Should.ThrowAsync<UsageException>(() =>
+            ListAction.RunAsync(client, client, identity, new WiListRequest("importer", " ", [], [], 20), TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe("--assignee must not be empty.");
+        client.Calls.ShouldBeEmpty();
+        identity.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task RunAsync_AssigneeWithApostrophe_DoublesTheQuote()
     {
         string? wiql = null;

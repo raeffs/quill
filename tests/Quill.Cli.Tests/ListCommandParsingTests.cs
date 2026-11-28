@@ -117,10 +117,10 @@ public class ListCommandParsingTests
     private static (string Wiql, int Top) BuildWiql(ParseResult parseResult)
     {
         return WiqlBuilder.Build(
-            parseResult.GetValue<string?>("--title"),
-            parseResult.GetValue<string?>("--assignee"),
-            parseResult.GetValue<string[]>("--state") ?? [],
-            parseResult.GetValue<string[]>("--type") ?? [],
-            parseResult.GetValue<int>("--limit"));
+            title: parseResult.GetValue<string?>("--title"),
+            assignee: null,
+            states: parseResult.GetValue<string[]>("--state") ?? [],
+            types: parseResult.GetValue<string[]>("--type") ?? [],
+            limit: parseResult.GetValue<int>("--limit"));
     }
 }

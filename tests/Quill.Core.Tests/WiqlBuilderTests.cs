@@ -1,4 +1,5 @@
 using Quill.Core;
+using Quill.Core.Models;
 using Shouldly;
 
 namespace Quill.Core.Tests;
@@ -18,7 +19,7 @@ public class WiqlBuilderTests
     public void Build_WithWhitespaceOnlyInputs_Throws()
     {
         Should.Throw<UsageException>(() =>
-            WiqlBuilder.Build("   ", " ", [], [], 50));
+            WiqlBuilder.Build("   ", null, [], [], 50));
     }
 
     [Fact]
@@ -41,32 +42,32 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithAssigneeAtMe_ExpandsToAtMeMacroUnquoted()
     {
-        var (wiql, _) = WiqlBuilder.Build(null, "@me", [], [], 50);
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Me, [], [], 50);
 
         wiql.ShouldContain("[System.AssignedTo] = @Me");
         wiql.ShouldNotContain("'@Me'");
     }
 
     [Fact]
-    public void Build_WithAssigneeAtMeMixedCase_ExpandsToAtMeMacro()
-    {
-        var (wiql, _) = WiqlBuilder.Build(null, "@ME", [], [], 50);
-
-        wiql.ShouldContain("[System.AssignedTo] = @Me");
-    }
-
-    [Fact]
     public void Build_WithAssigneeDisplayName_QuotesAsLiteral()
     {
-        var (wiql, _) = WiqlBuilder.Build(null, "Jane Doe", [], [], 50);
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Person("id-1", "Jane Doe", null)), [], [], 50);
 
         wiql.ShouldContain("[System.AssignedTo] = 'Jane Doe'");
     }
 
     [Fact]
+    public void Build_WithAssigneeWithUniqueName_QuotesTheCombinedForm()
+    {
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Person("id-1", "Jane Doe", @"CONTOSO\jdoe")), [], [], 50);
+
+        wiql.ShouldContain(@"[System.AssignedTo] = 'Jane Doe <CONTOSO\jdoe>'");
+    }
+
+    [Fact]
     public void Build_WithAssigneeContainingSingleQuote_DoublesIt()
     {
-        var (wiql, _) = WiqlBuilder.Build(null, "O'Brien", [], [], 50);
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Person("id-1", "O'Brien", null)), [], [], 50);
 
         wiql.ShouldContain("[System.AssignedTo] = 'O''Brien'");
     }
@@ -106,7 +107,7 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_CombinesAllClausesWithAnd()
     {
-        var (wiql, top) = WiqlBuilder.Build("login", "@me", ["Active"], ["Bug"], 25);
+        var (wiql, top) = WiqlBuilder.Build("login", PersonFilter.Me, ["Active"], ["Bug"], 25);
 
         wiql.ShouldBe(
             "SELECT [System.Id] FROM WorkItems WHERE " +

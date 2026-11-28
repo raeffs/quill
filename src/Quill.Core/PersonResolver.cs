@@ -6,9 +6,14 @@ public sealed class PersonResolver(IIdentityClient identity)
 {
     private Task<CurrentUser>? _connectionData;
 
-    public static bool IsMe(string value) => string.Equals(value.Trim(), "@me", StringComparison.OrdinalIgnoreCase);
-
     public Task<CurrentUser> MeAsync() => _connectionData ??= identity.GetCurrentUserAsync();
+
+    public async Task<PersonFilter> ResolveForQueryAsync(string flag, string value, CancellationToken cancellationToken)
+    {
+        return IsMe(value)
+            ? PersonFilter.Me
+            : PersonFilter.Of(await ResolveAsync(flag, value, cancellationToken));
+    }
 
     public async Task<Person> ResolveAsync(string flag, string value, CancellationToken cancellationToken)
     {
@@ -44,4 +49,6 @@ public sealed class PersonResolver(IIdentityClient identity)
         var match = people[0];
         return new Person(match.Id, match.DisplayName, match.UniqueName);
     }
+
+    private static bool IsMe(string value) => string.Equals(value.Trim(), "@me", StringComparison.OrdinalIgnoreCase);
 }

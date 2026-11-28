@@ -181,6 +181,47 @@ public class PersonResolverTests
         identity.Calls.ShouldBeEmpty();
     }
 
+    [Theory]
+    [InlineData("@me")]
+    [InlineData("@ME")]
+    [InlineData(" @me ")]
+    public async Task ResolveForQueryAsync_Me_AnswersMeAndSendsNoRequest(string value)
+    {
+        var identity = new ScriptedIdentityClient();
+
+        var filter = await new PersonResolver(identity).ResolveForQueryAsync("--assignee", value, TestContext.Current.CancellationToken);
+
+        filter.ShouldBeSameAs(PersonFilter.Me);
+        filter.Person.ShouldBeNull();
+        identity.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ResolveForQueryAsync_Name_AnswersTheResolvedPerson()
+    {
+        var identity = new ScriptedIdentityClient
+        {
+            Search = (_, _) => [Match("id-2", "John Roe", @"CONTOSO\jroe")],
+        };
+
+        var filter = await new PersonResolver(identity).ResolveForQueryAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+
+        filter.Person.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
+        identity.Calls.ShouldBe(["Search(General,John Roe)"]);
+    }
+
+    [Fact]
+    public async Task ResolveForQueryAsync_Blank_ThrowsUsageAndSendsNoRequest()
+    {
+        var identity = new ScriptedIdentityClient();
+
+        var ex = await Should.ThrowAsync<UsageException>(() =>
+            new PersonResolver(identity).ResolveForQueryAsync("--assignee", " ", TestContext.Current.CancellationToken));
+
+        ex.Message.ShouldBe("--assignee must not be empty.");
+        identity.Calls.ShouldBeEmpty();
+    }
+
     [Fact]
     public void AssignedTo_WithUniqueName_IsTheCombinedForm()
     {
