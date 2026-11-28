@@ -2,11 +2,11 @@ using Quill.Core.Models;
 
 namespace Quill.Core;
 
-public sealed class PersonResolver(IIdentityClient identity)
+public sealed class PersonResolver(IIdentityClient identity, PersonCache cache)
 {
     private Task<CurrentUser>? _connectionData;
 
-    public Task<CurrentUser> MeAsync() => _connectionData ??= identity.GetCurrentUserAsync();
+    public Task<CurrentUser> MeAsync() => _connectionData ??= LoadMeAsync();
 
     public async Task<PersonFilter> ResolveForQueryAsync(string flag, string value, CancellationToken cancellationToken)
     {
@@ -29,6 +29,12 @@ public sealed class PersonResolver(IIdentityClient identity)
             return new Person(me.Id, me.DisplayName, null);
         }
 
+        var known = cache.Find(trimmed);
+        if (known is not null)
+        {
+            return known;
+        }
+
         var filter = trimmed.Contains('@', StringComparison.Ordinal) ? IdentitySearchFilter.MailAddress : IdentitySearchFilter.General;
         var hits = await identity.SearchAsync(filter, trimmed, cancellationToken);
         var people = hits.Where(hit => !hit.IsContainer).DistinctBy(hit => hit.Id, StringComparer.Ordinal).ToList();
@@ -47,7 +53,22 @@ public sealed class PersonResolver(IIdentityClient identity)
         }
 
         var match = people[0];
-        return new Person(match.Id, match.DisplayName, match.UniqueName);
+        var person = new Person(match.Id, match.DisplayName, match.UniqueName);
+        cache.Remember(trimmed, person);
+        return person;
+    }
+
+    private async Task<CurrentUser> LoadMeAsync()
+    {
+        var known = cache.FindMe();
+        if (known is not null)
+        {
+            return known;
+        }
+
+        var me = await identity.GetCurrentUserAsync();
+        cache.RememberMe(me);
+        return me;
     }
 
     private static bool IsMe(string value) => string.Equals(value.Trim(), "@me", StringComparison.OrdinalIgnoreCase);

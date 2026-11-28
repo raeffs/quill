@@ -7,6 +7,7 @@ using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
 using Quill.Tests.Shared;
+using Quill.Tests.Shared.Fakes;
 using Shouldly;
 
 namespace Quill.Cli.Tests;
@@ -106,7 +107,7 @@ public sealed class WiCreatePredecessorsTests : IDisposable
             .AddSingleton<RichText>()
             .AddSingleton(new AzureDevOpsIdentityClient(TestHttp.Server(httpClient, ServerUrl, Collection, Project)))
             .AddSingleton<IIdentityClient>(sp => sp.GetRequiredService<AzureDevOpsIdentityClient>())
-            .AddSingleton<PersonResolver>()
+            .AddSingleton(sp => new PersonResolver(sp.GetRequiredService<IIdentityClient>(), TestPersonCache.Create()))
             .BuildServiceProvider();
         Console.SetOut(_output);
 

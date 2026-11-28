@@ -4,6 +4,7 @@ using Quill.AzureDevOps;
 using Quill.Core;
 using Quill.Core.Markdown;
 using Quill.Core.Models;
+using Quill.Tests.Shared.Fakes;
 using Shouldly;
 
 namespace Quill.Cli.Tests;
@@ -122,20 +123,98 @@ public class ServiceWiringTests
         httpClient.Timeout.ShouldBe(Timeout.InfiniteTimeSpan);
     }
 
-    private static ServiceProvider BuildProvider(CapturingHandler? handler)
+    [Fact]
+    public void AddQuillServices_RegistersTheFileStore()
+    {
+        var services = new ServiceCollection();
+        services.AddQuillServices();
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<IPersonStore>().ShouldBeOfType<FilePersonStore>();
+    }
+
+    [Fact]
+    public async Task PersonResolver_SecondRunWithTheSamePat_SendsNoConnectionDataRequest()
+    {
+        var store = new InMemoryPersonStore();
+        using var firstHandler = new ConnectionDataHandler();
+        using var secondHandler = new ConnectionDataHandler();
+        using var first = BuildProvider(firstHandler, store);
+        using var second = BuildProvider(secondHandler, store);
+
+        var firstUser = await first.GetRequiredService<PersonResolver>().MeAsync();
+        var secondUser = await second.GetRequiredService<PersonResolver>().MeAsync();
+
+        firstHandler.Requests.Count.ShouldBe(1);
+        secondHandler.Requests.Count.ShouldBe(0);
+        secondUser.ShouldBe(firstUser);
+    }
+
+    [Fact]
+    public async Task PersonResolver_SecondRunWithAnotherPat_AsksTheServer()
+    {
+        var store = new InMemoryPersonStore();
+        using var firstHandler = new ConnectionDataHandler();
+        using var secondHandler = new ConnectionDataHandler();
+        using var first = BuildProvider(firstHandler, store);
+        using var second = BuildProvider(secondHandler, store, pat: "other-pat");
+
+        await first.GetRequiredService<PersonResolver>().MeAsync();
+        await second.GetRequiredService<PersonResolver>().MeAsync();
+
+        secondHandler.Requests.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task PersonResolver_SecondRunWithAnotherCollection_AsksTheServer()
+    {
+        var store = new InMemoryPersonStore();
+        using var firstHandler = new ConnectionDataHandler();
+        using var secondHandler = new ConnectionDataHandler();
+        using var first = BuildProvider(firstHandler, store);
+        using var second = BuildProvider(secondHandler, store, collection: "OTHER");
+
+        await first.GetRequiredService<PersonResolver>().MeAsync();
+        await second.GetRequiredService<PersonResolver>().MeAsync();
+
+        secondHandler.Requests.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void PersonResolver_NoPat_FailsLikeTheIdentityClient()
+    {
+        using var provider = BuildProvider(
+            handler: null,
+            patProvider: new ThrowingPatProvider(),
+            configProvider: new ThrowingConfigProvider());
+
+        var expected = Should.Throw<UsageException>(() => provider.GetRequiredService<AzureDevOpsIdentityClient>());
+        var actual = Should.Throw<UsageException>(() => provider.GetRequiredService<PersonResolver>());
+
+        actual.Message.ShouldBe(expected.Message);
+    }
+
+    private static ServiceProvider BuildProvider(
+        HttpMessageHandler? handler,
+        IPersonStore? store = null,
+        string pat = "test-pat",
+        string collection = Collection,
+        IPatProvider? patProvider = null,
+        IQuillConfigProvider? configProvider = null)
     {
         var services = new ServiceCollection();
         services.AddQuillServices();
 
         // Swap the real seams for deterministic stubs (registered last, so they win on resolve).
-        services.AddSingleton<IQuillConfigProvider>(new StubConfigProvider(new QuillConfig
+        services.AddSingleton(store ?? new InMemoryPersonStore());
+        services.AddSingleton(configProvider ?? new StubConfigProvider(new QuillConfig
         {
             ServerUrl = ServerUrl,
-            Collection = Collection,
+            Collection = collection,
             Project = Project,
             AllowedStates = ["Done"],
         }));
-        services.AddSingleton<IPatProvider>(new StubPatProvider());
+        services.AddSingleton(patProvider ?? new StubPatProvider(pat));
 
         if (handler is not null)
         {
@@ -153,9 +232,39 @@ public class ServiceWiringTests
         public QuillConfig Load() => config;
     }
 
-    private sealed class StubPatProvider : IPatProvider
+    private sealed class StubPatProvider(string pat) : IPatProvider
     {
-        public string GetPat() => "test-pat";
+        public string GetPat() => pat;
+    }
+
+    private sealed class ThrowingPatProvider : IPatProvider
+    {
+        public string GetPat() => throw new UsageException("QUILL_PAT environment variable is not set.");
+    }
+
+    private sealed class ThrowingConfigProvider : IQuillConfigProvider
+    {
+        public QuillConfig Load() => throw new UsageException("no config");
+    }
+
+    private sealed class ConnectionDataHandler : HttpMessageHandler
+    {
+#pragma warning disable CA1002, MA0016 // The tests count the recorded requests
+        public List<Uri> Requests { get; } = [];
+#pragma warning restore CA1002, MA0016
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests.Add(request.RequestUri!);
+            var response = request.RequestUri!.AbsolutePath.Contains("_apis/connectionData", StringComparison.Ordinal)
+                ? new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"authenticatedUser":{"id":"user-1","providerDisplayName":"Jane Doe"}}"""),
+                }
+                : new HttpResponseMessage(HttpStatusCode.NotFound);
+            return Task.FromResult(response);
+        }
     }
 
     private sealed class CapturingHandler : HttpMessageHandler

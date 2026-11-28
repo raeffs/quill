@@ -47,7 +47,18 @@ internal static class ServiceCollectionExtensions
         services.AddTransient<IAzureDevOpsBuildClient>(sp => sp.GetRequiredService<AzureDevOpsBuildClient>());
 
         services.AddSingleton<RichText>();
-        services.AddSingleton<PersonResolver>();
+        services.AddSingleton<IPersonStore>(_ => new FilePersonStore(PersonCachePath.Default()));
+        services.AddSingleton(sp =>
+        {
+            var identity = sp.GetRequiredService<IIdentityClient>();
+            var config = sp.GetRequiredService<QuillConfig>();
+            var pat = sp.GetRequiredService<IPatProvider>().GetPat();
+            var cache = new PersonCache(
+                sp.GetRequiredService<IPersonStore>(),
+                PersonCacheScope.For(config.ServerUrl, config.Collection, pat),
+                TimeProvider.System);
+            return new PersonResolver(identity, cache);
+        });
 
         return services;
     }
