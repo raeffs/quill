@@ -51,7 +51,7 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithAssigneeDisplayName_QuotesAsLiteral()
     {
-        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Person("id-1", "Jane Doe", null)), [], [], 50);
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Identity("id-1", "Jane Doe", null, false)), [], [], 50);
 
         wiql.ShouldContain("[System.AssignedTo] = 'Jane Doe'");
     }
@@ -59,7 +59,7 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithAssigneeWithUniqueName_QuotesTheCombinedForm()
     {
-        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Person("id-1", "Jane Doe", @"CONTOSO\jdoe")), [], [], 50);
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Identity("id-1", "Jane Doe", @"CONTOSO\jdoe", false)), [], [], 50);
 
         wiql.ShouldContain(@"[System.AssignedTo] = 'Jane Doe <CONTOSO\jdoe>'");
     }
@@ -67,7 +67,7 @@ public class WiqlBuilderTests
     [Fact]
     public void Build_WithAssigneeContainingSingleQuote_DoublesIt()
     {
-        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Person("id-1", "O'Brien", null)), [], [], 50);
+        var (wiql, _) = WiqlBuilder.Build(null, PersonFilter.Of(new Identity("id-1", "O'Brien", null, false)), [], [], 50);
 
         wiql.ShouldContain("[System.AssignedTo] = 'O''Brien'");
     }

@@ -107,7 +107,7 @@ public sealed class WiCreatePredecessorsTests : IDisposable
             .AddSingleton<RichText>()
             .AddSingleton(new AzureDevOpsIdentityClient(TestHttp.Server(httpClient, ServerUrl, Collection, Project)))
             .AddSingleton<IIdentityClient>(sp => sp.GetRequiredService<AzureDevOpsIdentityClient>())
-            .AddSingleton(sp => new PersonResolver(sp.GetRequiredService<IIdentityClient>(), TestPersonCache.Create()))
+            .AddSingleton(sp => new IdentityResolver(sp.GetRequiredService<IIdentityClient>(), TestPersonCache.Create()))
             .BuildServiceProvider();
         Console.SetOut(_output);
 

@@ -27,13 +27,13 @@ public class ServiceWiringTests
     }
 
     [Fact]
-    public void AddQuillServices_ResolvesOnePersonResolverForTheRun()
+    public void AddQuillServices_ResolvesOneIdentityResolverForTheRun()
     {
         using var provider = BuildProvider(handler: null);
 
-        var first = provider.GetRequiredService<PersonResolver>();
+        var first = provider.GetRequiredService<IdentityResolver>();
 
-        provider.GetRequiredService<PersonResolver>().ShouldBeSameAs(first);
+        provider.GetRequiredService<IdentityResolver>().ShouldBeSameAs(first);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class ServiceWiringTests
     }
 
     [Fact]
-    public async Task PersonResolver_SecondRunWithTheSamePat_SendsNoConnectionDataRequest()
+    public async Task IdentityResolver_SecondRunWithTheSamePat_SendsNoConnectionDataRequest()
     {
         var store = new InMemoryPersonStore();
         using var firstHandler = new ConnectionDataHandler();
@@ -142,8 +142,8 @@ public class ServiceWiringTests
         using var first = BuildProvider(firstHandler, store);
         using var second = BuildProvider(secondHandler, store);
 
-        var firstUser = await first.GetRequiredService<PersonResolver>().MeAsync();
-        var secondUser = await second.GetRequiredService<PersonResolver>().MeAsync();
+        var firstUser = await first.GetRequiredService<IdentityResolver>().MeAsync();
+        var secondUser = await second.GetRequiredService<IdentityResolver>().MeAsync();
 
         firstHandler.Requests.Count.ShouldBe(1);
         secondHandler.Requests.Count.ShouldBe(0);
@@ -151,7 +151,7 @@ public class ServiceWiringTests
     }
 
     [Fact]
-    public async Task PersonResolver_SecondRunWithAnotherPat_AsksTheServer()
+    public async Task IdentityResolver_SecondRunWithAnotherPat_AsksTheServer()
     {
         var store = new InMemoryPersonStore();
         using var firstHandler = new ConnectionDataHandler();
@@ -159,14 +159,14 @@ public class ServiceWiringTests
         using var first = BuildProvider(firstHandler, store);
         using var second = BuildProvider(secondHandler, store, pat: "other-pat");
 
-        await first.GetRequiredService<PersonResolver>().MeAsync();
-        await second.GetRequiredService<PersonResolver>().MeAsync();
+        await first.GetRequiredService<IdentityResolver>().MeAsync();
+        await second.GetRequiredService<IdentityResolver>().MeAsync();
 
         secondHandler.Requests.Count.ShouldBe(1);
     }
 
     [Fact]
-    public async Task PersonResolver_SecondRunWithAnotherCollection_AsksTheServer()
+    public async Task IdentityResolver_SecondRunWithAnotherCollection_AsksTheServer()
     {
         var store = new InMemoryPersonStore();
         using var firstHandler = new ConnectionDataHandler();
@@ -174,14 +174,14 @@ public class ServiceWiringTests
         using var first = BuildProvider(firstHandler, store);
         using var second = BuildProvider(secondHandler, store, collection: "OTHER");
 
-        await first.GetRequiredService<PersonResolver>().MeAsync();
-        await second.GetRequiredService<PersonResolver>().MeAsync();
+        await first.GetRequiredService<IdentityResolver>().MeAsync();
+        await second.GetRequiredService<IdentityResolver>().MeAsync();
 
         secondHandler.Requests.Count.ShouldBe(1);
     }
 
     [Fact]
-    public void PersonResolver_NoPat_FailsLikeTheIdentityClient()
+    public void IdentityResolver_NoPat_FailsLikeTheIdentityClient()
     {
         using var provider = BuildProvider(
             handler: null,
@@ -189,7 +189,7 @@ public class ServiceWiringTests
             configProvider: new ThrowingConfigProvider());
 
         var expected = Should.Throw<UsageException>(() => provider.GetRequiredService<AzureDevOpsIdentityClient>());
-        var actual = Should.Throw<UsageException>(() => provider.GetRequiredService<PersonResolver>());
+        var actual = Should.Throw<UsageException>(() => provider.GetRequiredService<IdentityResolver>());
 
         actual.Message.ShouldBe(expected.Message);
     }

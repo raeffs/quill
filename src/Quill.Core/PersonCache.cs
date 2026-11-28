@@ -8,13 +8,13 @@ public sealed class PersonCache(IPersonStore store, PersonCacheScope scope, Time
 
     private IReadOnlyDictionary<string, PersonEntry>? _entries;
 
-    public Person? Find(string name)
+    public Identity? Find(string name)
     {
         var entry = Get(PersonKey(name));
-        return entry is null ? null : new Person(entry.Id, entry.DisplayName, entry.UniqueName);
+        return entry is null ? null : new Identity(entry.Id, entry.DisplayName, entry.UniqueName, false);
     }
 
-    public void Remember(string name, Person person) =>
+    public void Remember(string name, Identity person) =>
         Add(PersonKey(name), new PersonEntry(person.Id, person.DisplayName, person.UniqueName, clock.GetUtcNow()));
 
     public CurrentUser? FindMe()

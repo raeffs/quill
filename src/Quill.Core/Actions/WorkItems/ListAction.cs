@@ -7,7 +7,7 @@ public static class ListAction
     public static async Task<IReadOnlyList<SearchResult>> RunAsync(
         IAzureDevOpsClient client,
         IWorkItemBatchFetcher fetcher,
-        PersonResolver people,
+        IdentityResolver people,
         WiListRequest request,
         CancellationToken cancellationToken)
     {

@@ -6,9 +6,9 @@ namespace Quill.Core.Tests;
 
 public class PersonCacheTests
 {
-    private static readonly Person John = new("id-2", "John Roe", @"CONTOSO\jroe");
+    private static readonly Identity John = new("id-2", "John Roe", @"CONTOSO\jroe", false);
 
-    private static readonly Person Jane = new("id-1", "Jane Doe", null);
+    private static readonly Identity Jane = new("id-1", "Jane Doe", null, false);
 
     [Fact]
     public void Find_NothingSaved_ReturnsNull() =>

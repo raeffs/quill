@@ -26,7 +26,7 @@ public class PushActionTests
         WorkItemUpdatePatch? seen = null;
         client.UpdateWorkItem = p => seen = p;
 
-        var row = await PushAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\nparentId: 42\n---\n\nbody\n");
+        var row = await PushAction.RunAsync(client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\nparentId: 42\n---\n\nbody\n");
 
         seen!.Tags.ShouldBeNull();
         row.Id.ShouldBe(5);
@@ -43,7 +43,7 @@ public class PushActionTests
         WorkItemUpdatePatch? seen = null;
         client.UpdateWorkItem = p => seen = p;
 
-        var row = await PushAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\nparentId: 42\ntags: [a, b]\n---\n\nbody\n");
+        var row = await PushAction.RunAsync(client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\nparentId: 42\ntags: [a, b]\n---\n\nbody\n");
 
         seen!.Tags.ShouldBe(["a", "b"]);
         row.UpdatedFields.ShouldBe(["title", "description", "tags"]);
@@ -57,7 +57,7 @@ public class PushActionTests
         var client = new FakeAzureDevOpsClient();
         var identity = new ScriptedIdentityClient();
 
-        var ex = await Should.ThrowAsync<UsageException>(() => PushAction.RunAsync(client, new PersonResolver(identity, TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), $"---\nid: {id}\ntype: Task\ntitle: T\n---\n\nbody\n"));
+        var ex = await Should.ThrowAsync<UsageException>(() => PushAction.RunAsync(client, new IdentityResolver(identity, TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), $"---\nid: {id}\ntype: Task\ntitle: T\n---\n\nbody\n"));
 
         ex.Message.ShouldBe("Work item id must be a positive integer for a push. To create the work item, set id to 0 and run 'backlog create'.");
         client.Calls.ShouldBeEmpty();
@@ -70,7 +70,7 @@ public class PushActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(WorkItem(5, state: "Done"));
 
-        var ex = await Should.ThrowAsync<RejectedException>(() => PushAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\n---\n\nbody\n"));
+        var ex = await Should.ThrowAsync<RejectedException>(() => PushAction.RunAsync(client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\n---\n\nbody\n"));
 
         ex.Message.ShouldBe("Work item state 'Done' is not in allowed states: [New]");
         client.Calls.Contains("UpdateWorkItem(5)", StringComparer.Ordinal).ShouldBeFalse();
@@ -82,7 +82,7 @@ public class PushActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(WorkItem(5, state: "New", relations: [new WorkItemRelation { RelationType = WorkItemLinkTypes.Related, TargetId = 100 }]));
 
-        var row = await PushAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\n---\n\n[a](#100) [b](#200)\n");
+        var row = await PushAction.RunAsync(client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), Config, new RichText(Config, client, NullLogger<RichText>.Instance), "---\nid: 5\ntype: Task\ntitle: T\n---\n\n[a](#100) [b](#200)\n");
 
         client.Calls.TakeLast(2).ShouldBe(["UpdateWorkItem(5)", "AddRelation(5,200)"]);
         row.RelationsAdded.ShouldBe([200]);

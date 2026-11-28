@@ -2,13 +2,13 @@ namespace Quill.Core.Models;
 
 public sealed record PersonFilter
 {
-    private PersonFilter(Person? person) => Person = person;
+    private PersonFilter(Identity? person) => Person = person;
 
-    public static PersonFilter Me { get; } = new((Person?)null);
+    public static PersonFilter Me { get; } = new((Identity?)null);
 
-    public Person? Person { get; }
+    public Identity? Person { get; }
 
-    public static PersonFilter Of(Person person)
+    public static PersonFilter Of(Identity person)
     {
         ArgumentNullException.ThrowIfNull(person);
         return new PersonFilter(person);

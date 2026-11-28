@@ -61,7 +61,7 @@ internal static class ListCommand
                 ct => ListAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
-                    serviceProvider.GetRequiredService<PersonResolver>(),
+                    serviceProvider.GetRequiredService<IdentityResolver>(),
                     request,
                     ct),
                 CommandHelpers.Context.ListSearchResult,

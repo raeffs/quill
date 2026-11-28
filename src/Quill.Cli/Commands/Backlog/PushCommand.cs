@@ -38,7 +38,7 @@ internal static class PushCommand
 
                 return await PushAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
-                    serviceProvider.GetRequiredService<PersonResolver>(),
+                    serviceProvider.GetRequiredService<IdentityResolver>(),
                     serviceProvider.GetRequiredService<QuillConfig>(),
                     serviceProvider.GetRequiredService<RichText>(),
                     content);

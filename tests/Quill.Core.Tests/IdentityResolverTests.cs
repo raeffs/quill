@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace Quill.Core.Tests;
 
-public class PersonResolverTests
+public class IdentityResolverTests
 {
     [Theory]
     [InlineData("@me")]
@@ -14,9 +14,9 @@ public class PersonResolverTests
     {
         var identity = new ScriptedIdentityClient();
 
-        var person = await new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", value, TestContext.Current.CancellationToken);
+        var person = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", value, TestContext.Current.CancellationToken);
 
-        person.ShouldBe(new Person("user-1", "Jane Doe", null));
+        person.ShouldBe(new Identity("user-1", "Jane Doe", null, false));
         identity.Calls.ShouldBe(["GetCurrentUser"]);
     }
 
@@ -24,7 +24,7 @@ public class PersonResolverTests
     public async Task ResolveAsync_MeTwice_CallsConnectionDataOnce()
     {
         var identity = new ScriptedIdentityClient();
-        var resolver = new PersonResolver(identity, TestPersonCache.Create());
+        var resolver = new IdentityResolver(identity, TestPersonCache.Create());
 
         await resolver.ResolveAsync("--reviewer", "@me", TestContext.Current.CancellationToken);
         await resolver.MeAsync();
@@ -40,9 +40,9 @@ public class PersonResolverTests
             Search = (_, _) => [Match("id-2", "John Roe", @"CONTOSO\jroe")],
         };
 
-        var person = await new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+        var person = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
 
-        person.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
+        person.ShouldBe(new Identity("id-2", "John Roe", @"CONTOSO\jroe", false));
         identity.Calls.ShouldBe(["Search(General,John Roe)"]);
     }
 
@@ -54,7 +54,7 @@ public class PersonResolverTests
             Search = (_, _) => [Match("id-2", "John Roe", @"CONTOSO\jroe")],
         };
 
-        await new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "jroe@contoso.com", TestContext.Current.CancellationToken);
+        await new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "jroe@contoso.com", TestContext.Current.CancellationToken);
 
         identity.Calls.ShouldBe(["Search(MailAddress,jroe@contoso.com)"]);
     }
@@ -71,7 +71,7 @@ public class PersonResolverTests
             ],
         };
 
-        var person = await new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+        var person = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
 
         person.Id.ShouldBe("id-2");
     }
@@ -82,7 +82,7 @@ public class PersonResolverTests
         var identity = new ScriptedIdentityClient();
 
         var ex = await Should.ThrowAsync<RejectedException>(
-            () => new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "Jane", TestContext.Current.CancellationToken));
+            () => new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "Jane", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--assignee 'Jane' matches nobody.");
     }
@@ -96,7 +96,7 @@ public class PersonResolverTests
         };
 
         var ex = await Should.ThrowAsync<RejectedException>(
-            () => new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--reviewer", "Contoso Team", TestContext.Current.CancellationToken));
+            () => new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--reviewer", "Contoso Team", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--reviewer 'Contoso Team' matches only groups. Groups are not accepted; name a person.");
     }
@@ -114,7 +114,7 @@ public class PersonResolverTests
         };
 
         var ex = await Should.ThrowAsync<RejectedException>(
-            () => new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--reviewer", "Jane Doe", TestContext.Current.CancellationToken));
+            () => new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--reviewer", "Jane Doe", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe(@"--reviewer 'Jane Doe' matches 2 people: Jane Doe (CONTOSO\jdoe), Jane Doe (CONTOSO\jdoe2). Pass the unique name.");
     }
@@ -131,7 +131,7 @@ public class PersonResolverTests
             ],
         };
 
-        var person = await new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+        var person = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
 
         person.Id.ShouldBe("id-2");
     }
@@ -144,9 +144,9 @@ public class PersonResolverTests
             Search = (_, _) => [Match("id-2", "John Roe", null)],
         };
 
-        var person = await new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+        var person = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
 
-        person.ShouldBe(new Person("id-2", "John Roe", null));
+        person.ShouldBe(new Identity("id-2", "John Roe", null, false));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class PersonResolverTests
         };
 
         var ex = await Should.ThrowAsync<RejectedException>(
-            () => new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken));
+            () => new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", "John Roe", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe(@"--assignee 'John Roe' matches 2 people: John Roe, John Roe (CONTOSO\jroe2). Pass the unique name.");
     }
@@ -175,7 +175,7 @@ public class PersonResolverTests
         var identity = new ScriptedIdentityClient();
 
         var ex = await Should.ThrowAsync<UsageException>(
-            () => new PersonResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", value, TestContext.Current.CancellationToken));
+            () => new IdentityResolver(identity, TestPersonCache.Create()).ResolveAsync("--assignee", value, TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--assignee must not be empty.");
         identity.Calls.ShouldBeEmpty();
@@ -189,7 +189,7 @@ public class PersonResolverTests
     {
         var identity = new ScriptedIdentityClient();
 
-        var filter = await new PersonResolver(identity, TestPersonCache.Create()).ResolveForQueryAsync("--assignee", value, TestContext.Current.CancellationToken);
+        var filter = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveForQueryAsync("--assignee", value, TestContext.Current.CancellationToken);
 
         filter.ShouldBeSameAs(PersonFilter.Me);
         filter.Person.ShouldBeNull();
@@ -204,9 +204,9 @@ public class PersonResolverTests
             Search = (_, _) => [Match("id-2", "John Roe", @"CONTOSO\jroe")],
         };
 
-        var filter = await new PersonResolver(identity, TestPersonCache.Create()).ResolveForQueryAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
+        var filter = await new IdentityResolver(identity, TestPersonCache.Create()).ResolveForQueryAsync("--assignee", "John Roe", TestContext.Current.CancellationToken);
 
-        filter.Person.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
+        filter.Person.ShouldBe(new Identity("id-2", "John Roe", @"CONTOSO\jroe", false));
         identity.Calls.ShouldBe(["Search(General,John Roe)"]);
     }
 
@@ -216,7 +216,7 @@ public class PersonResolverTests
         var identity = new ScriptedIdentityClient();
 
         var ex = await Should.ThrowAsync<UsageException>(() =>
-            new PersonResolver(identity, TestPersonCache.Create()).ResolveForQueryAsync("--assignee", " ", TestContext.Current.CancellationToken));
+            new IdentityResolver(identity, TestPersonCache.Create()).ResolveForQueryAsync("--assignee", " ", TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--assignee must not be empty.");
         identity.Calls.ShouldBeEmpty();
@@ -232,7 +232,7 @@ public class PersonResolverTests
 
         var person = await second.ResolveAsync("--assignee", "john roe", TestContext.Current.CancellationToken);
 
-        person.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
+        person.ShouldBe(new Identity("id-2", "John Roe", @"CONTOSO\jroe", false));
         secondIdentity.Calls.ShouldBeEmpty();
     }
 
@@ -246,7 +246,7 @@ public class PersonResolverTests
 
         var filter = await second.ResolveForQueryAsync("--assignee", "john roe", TestContext.Current.CancellationToken);
 
-        filter.ShouldBe(PersonFilter.Of(new Person("id-2", "John Roe", @"CONTOSO\jroe")));
+        filter.ShouldBe(PersonFilter.Of(new Identity("id-2", "John Roe", @"CONTOSO\jroe", false)));
         secondIdentity.Calls.ShouldBeEmpty();
     }
 
@@ -274,7 +274,7 @@ public class PersonResolverTests
 
         var person = await second.ResolveAsync("--assignee", "@me", TestContext.Current.CancellationToken);
 
-        person.ShouldBe(new Person("user-1", "Jane Doe", null));
+        person.ShouldBe(new Identity("user-1", "Jane Doe", null, false));
         secondIdentity.Calls.ShouldBeEmpty();
     }
 
@@ -358,22 +358,10 @@ public class PersonResolverTests
         secondIdentity.Calls.ShouldBe(["Search(General,John Roe)"]);
     }
 
-    [Fact]
-    public void AssignedTo_WithUniqueName_IsTheCombinedForm()
-    {
-        new Person("id", "Jane Doe", @"CONTOSO\jdoe").AssignedTo.ShouldBe(@"Jane Doe <CONTOSO\jdoe>");
-    }
-
-    [Fact]
-    public void AssignedTo_WithoutUniqueName_IsTheDisplayName()
-    {
-        new Person("id", "Jane Doe", null).AssignedTo.ShouldBe("Jane Doe");
-    }
-
     private static IReadOnlyList<IdentityMatch> JohnRoe(IdentitySearchFilter filter, string value)
         => [Match("id-2", "John Roe", @"CONTOSO\jroe")];
 
-    private static (PersonResolver Resolver, ScriptedIdentityClient Identity) Run(
+    private static (IdentityResolver Resolver, ScriptedIdentityClient Identity) Run(
         InMemoryPersonStore store,
         Func<IdentitySearchFilter, string, IReadOnlyList<IdentityMatch>>? search = null,
         string pat = "test-pat",
@@ -387,7 +375,7 @@ public class PersonResolverTests
         }
 
         var cache = TestPersonCache.Create(store, clock, collection: collection, pat: pat);
-        return (new PersonResolver(identity, cache), identity);
+        return (new IdentityResolver(identity, cache), identity);
     }
 
     private static IdentityMatch Match(string id, string name, string? unique, bool isContainer = false)

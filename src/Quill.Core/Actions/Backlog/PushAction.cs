@@ -8,7 +8,7 @@ public static class PushAction
 {
     public static async Task<PushResult> RunAsync(
         IAzureDevOpsClient client,
-        PersonResolver people,
+        IdentityResolver people,
         QuillConfig config,
         RichText richText,
         string fileContent)

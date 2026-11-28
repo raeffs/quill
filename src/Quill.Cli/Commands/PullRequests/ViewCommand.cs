@@ -35,7 +35,7 @@ internal static class ViewCommand
                 ct => ViewAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
                     serviceProvider.GetRequiredService<IWorkItemBatchFetcher>(),
-                    serviceProvider.GetRequiredService<PersonResolver>(),
+                    serviceProvider.GetRequiredService<IdentityResolver>(),
                     serviceProvider.GetRequiredService<RichText>(),
                     id,
                     withThreads,

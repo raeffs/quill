@@ -15,7 +15,7 @@ public class ListActionTests
         client.Add(WorkItem(2));
         client.Add(WorkItem(3));
 
-        var rows = await ListAction.RunAsync(client, client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new WiListRequest("importer", null, [], [], 20), TestContext.Current.CancellationToken);
+        var rows = await ListAction.RunAsync(client, client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new WiListRequest("importer", null, [], [], 20), TestContext.Current.CancellationToken);
 
         rows.Select(r => r.Id).ShouldBe([3, 1, 2]);
         client.Calls.ShouldBe(["QueryByWiql", "Fetch(3,1,2)"]);
@@ -28,7 +28,7 @@ public class ListActionTests
         client.Add(WorkItem(1));
         client.Add(WorkItem(3));
 
-        var rows = await ListAction.RunAsync(client, client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new WiListRequest("importer", null, [], [], 20), TestContext.Current.CancellationToken);
+        var rows = await ListAction.RunAsync(client, client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new WiListRequest("importer", null, [], [], 20), TestContext.Current.CancellationToken);
 
         rows.Select(r => r.Id).ShouldBe([3, 1]);
     }
@@ -50,7 +50,7 @@ public class ListActionTests
             Search = (_, _) => [new IdentityMatch("id-1", "Jane Doe", @"CONTOSO\jdoe", false)],
         };
 
-        await ListAction.RunAsync(client, client, new PersonResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "Jane Doe", [], [], 20), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(client, client, new IdentityResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "Jane Doe", [], [], 20), TestContext.Current.CancellationToken);
 
         wiql.ShouldNotBeNull().ShouldContain(@"[System.AssignedTo] = 'Jane Doe <CONTOSO\jdoe>'");
     }
@@ -69,7 +69,7 @@ public class ListActionTests
         };
         var identity = new ScriptedIdentityClient();
 
-        await ListAction.RunAsync(client, client, new PersonResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "@me", [], [], 20), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(client, client, new IdentityResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "@me", [], [], 20), TestContext.Current.CancellationToken);
 
         wiql.ShouldNotBeNull().ShouldContain("[System.AssignedTo] = @Me");
         identity.Calls.ShouldBeEmpty();
@@ -82,7 +82,7 @@ public class ListActionTests
         var identity = new ScriptedIdentityClient();
 
         var ex = await Should.ThrowAsync<UsageException>(() =>
-            ListAction.RunAsync(client, client, new PersonResolver(identity, TestPersonCache.Create()), new WiListRequest("importer", " ", [], [], 20), TestContext.Current.CancellationToken));
+            ListAction.RunAsync(client, client, new IdentityResolver(identity, TestPersonCache.Create()), new WiListRequest("importer", " ", [], [], 20), TestContext.Current.CancellationToken));
 
         ex.Message.ShouldBe("--assignee must not be empty.");
         client.Calls.ShouldBeEmpty();
@@ -106,7 +106,7 @@ public class ListActionTests
             Search = (_, _) => [new IdentityMatch("id", "Pat O'Brien", @"CONTOSO\pobrien", false)],
         };
 
-        await ListAction.RunAsync(client, client, new PersonResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "Pat O'Brien", [], [], 20), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(client, client, new IdentityResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "Pat O'Brien", [], [], 20), TestContext.Current.CancellationToken);
 
         wiql.ShouldNotBeNull().ShouldContain(@"'Pat O''Brien <CONTOSO\pobrien>'");
     }
@@ -117,7 +117,7 @@ public class ListActionTests
         var client = new FakeAzureDevOpsClient();
 
         var exception = await Should.ThrowAsync<RejectedException>(() =>
-            ListAction.RunAsync(client, client, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new WiListRequest(null, "Jane", [], [], 20), TestContext.Current.CancellationToken));
+            ListAction.RunAsync(client, client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new WiListRequest(null, "Jane", [], [], 20), TestContext.Current.CancellationToken));
 
         exception.Message.ShouldBe("--assignee 'Jane' matches nobody.");
         client.Calls.ShouldBeEmpty();

@@ -57,7 +57,7 @@ internal static class ServiceCollectionExtensions
                 sp.GetRequiredService<IPersonStore>(),
                 PersonCacheScope.For(config.ServerUrl, config.Collection, pat),
                 TimeProvider.System);
-            return new PersonResolver(identity, cache);
+            return new IdentityResolver(identity, cache);
         });
 
         return services;

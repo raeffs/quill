@@ -8,7 +8,7 @@ public static class ViewAction
     public static async Task<PullRequestViewResult> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
         IWorkItemBatchFetcher fetcher,
-        PersonResolver people,
+        IdentityResolver people,
         RichText richText,
         int id,
         bool withThreads,

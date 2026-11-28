@@ -40,7 +40,7 @@ internal static class CreateCommand
 
                 var outcome = await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
-                    serviceProvider.GetRequiredService<PersonResolver>(),
+                    serviceProvider.GetRequiredService<IdentityResolver>(),
                     serviceProvider.GetRequiredService<RichText>(),
                     content,
                     assignee);

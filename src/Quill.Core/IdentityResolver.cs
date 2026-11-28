@@ -2,7 +2,7 @@ using Quill.Core.Models;
 
 namespace Quill.Core;
 
-public sealed class PersonResolver(IIdentityClient identity, PersonCache cache)
+public sealed class IdentityResolver(IIdentityClient identity, PersonCache cache)
 {
     private Task<CurrentUser>? _connectionData;
 
@@ -15,7 +15,7 @@ public sealed class PersonResolver(IIdentityClient identity, PersonCache cache)
             : PersonFilter.Of(await ResolveAsync(flag, value, cancellationToken));
     }
 
-    public async Task<Person> ResolveAsync(string flag, string value, CancellationToken cancellationToken)
+    public async Task<Identity> ResolveAsync(string flag, string value, CancellationToken cancellationToken)
     {
         var trimmed = value.Trim();
         if (trimmed.Length == 0)
@@ -26,7 +26,7 @@ public sealed class PersonResolver(IIdentityClient identity, PersonCache cache)
         if (IsMe(trimmed))
         {
             var me = await MeAsync();
-            return new Person(me.Id, me.DisplayName, null);
+            return new Identity(me.Id, me.DisplayName, null, false);
         }
 
         var known = cache.Find(trimmed);
@@ -53,7 +53,7 @@ public sealed class PersonResolver(IIdentityClient identity, PersonCache cache)
         }
 
         var match = people[0];
-        var person = new Person(match.Id, match.DisplayName, match.UniqueName);
+        var person = new Identity(match.Id, match.DisplayName, match.UniqueName, false);
         cache.Remember(trimmed, person);
         return person;
     }

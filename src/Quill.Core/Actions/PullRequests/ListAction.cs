@@ -6,7 +6,7 @@ public static class ListAction
 {
     public static async Task<IReadOnlyList<PullRequestResult>> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
-        PersonResolver people,
+        IdentityResolver people,
         PrListRequest request,
         CancellationToken cancellationToken)
     {

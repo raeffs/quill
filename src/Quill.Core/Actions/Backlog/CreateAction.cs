@@ -8,7 +8,7 @@ public static class CreateAction
 {
     public static async Task<BacklogCreateOutcome> RunAsync(
         IAzureDevOpsClient client,
-        PersonResolver people,
+        IdentityResolver people,
         RichText richText,
         string fileContent,
         string? assignee)

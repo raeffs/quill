@@ -22,7 +22,7 @@ public class ListActionTests
         };
         var identity = new ScriptedIdentityClient();
 
-        await ListAction.RunAsync(prs, new PersonResolver(identity, TestPersonCache.Create()), new PrListRequest(null, "@me", "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create()), new PrListRequest(null, "@me", "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
 
         seen!.CreatorId.ShouldBe("user-1");
         seen.ReviewerId.ShouldBeNull();
@@ -42,7 +42,7 @@ public class ListActionTests
             },
         };
 
-        await ListAction.RunAsync(prs, new PersonResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new PrListRequest("@me", null, "all", "repo", "feature", "main", 5, 10), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(prs, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new PrListRequest("@me", null, "all", "repo", "feature", "main", 5, 10), TestContext.Current.CancellationToken);
 
         seen!.ReviewerId.ShouldBe("user-1");
         seen.CreatorId.ShouldBeNull();
@@ -60,7 +60,7 @@ public class ListActionTests
         var prs = new ScriptedPullRequestClient { List = _ => [PullRequest(1), PullRequest(2)] };
         var identity = new ScriptedIdentityClient();
 
-        var rows = await ListAction.RunAsync(prs, new PersonResolver(identity, TestPersonCache.Create()), new PrListRequest(null, null, "active", null, null, null, 50, null), TestContext.Current.CancellationToken);
+        var rows = await ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create()), new PrListRequest(null, null, "active", null, null, null, 50, null), TestContext.Current.CancellationToken);
 
         rows.Select(r => r.Id).ShouldBe([1, 2]);
         identity.Calls.ShouldBe(["GetCurrentUser"]);
@@ -84,7 +84,7 @@ public class ListActionTests
             Search = (_, _) => [new IdentityMatch("id-2", "John Roe", @"CONTOSO\jroe", false)],
         };
 
-        await ListAction.RunAsync(prs, new PersonResolver(identity, TestPersonCache.Create()), new PrListRequest("John Roe", null, "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create()), new PrListRequest("John Roe", null, "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
 
         seen!.ReviewerId.ShouldBe("id-2");
         identity.Calls.ShouldBe(["Search(General,John Roe)", "GetCurrentUser"]);
@@ -104,7 +104,7 @@ public class ListActionTests
         };
         var identity = new ScriptedIdentityClient();
 
-        await ListAction.RunAsync(prs, new PersonResolver(identity, TestPersonCache.Create()), new PrListRequest("@me", "@me", "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
+        await ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create()), new PrListRequest("@me", "@me", "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
 
         identity.Calls.ShouldBe(["GetCurrentUser"]);
         seen!.ReviewerId.ShouldBe("user-1");
@@ -125,7 +125,7 @@ public class ListActionTests
         };
 
         await Should.ThrowAsync<RejectedException>(() =>
-            ListAction.RunAsync(prs, new PersonResolver(identity, TestPersonCache.Create()), new PrListRequest(null, "Jane Doe", "active", null, null, null, 20, null), TestContext.Current.CancellationToken));
+            ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create()), new PrListRequest(null, "Jane Doe", "active", null, null, null, 20, null), TestContext.Current.CancellationToken));
 
         prs.Calls.ShouldBeEmpty();
     }
