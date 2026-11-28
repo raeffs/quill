@@ -30,10 +30,8 @@ public static class CreateAction
             throw new UsageException("Frontmatter must contain a 'type' field.");
         }
 
-        if (!WorkItemHierarchy.ChildTypes.Contains(parsed.Type, StringComparer.OrdinalIgnoreCase))
-        {
-            throw new UsageException($"Type must be one of: {string.Join(", ", WorkItemHierarchy.ChildTypes)}.");
-        }
+        var type = WorkItemHierarchy.CanonicalChildType(parsed.Type)
+            ?? throw new UsageException($"Type must be one of: {string.Join(", ", WorkItemHierarchy.ChildTypes)}.");
 
         if (parsed.ParentId is null or < 1)
         {
@@ -43,7 +41,7 @@ public static class CreateAction
         var parentWorkItem = await client.GetWorkItemAsync(parsed.ParentId.Value);
         var currentUser = await people.MeAsync();
 
-        var validation = ParentValidator.Validate(parsed.Type, parentWorkItem, currentUser.Id);
+        var validation = ParentValidator.Validate(type, parentWorkItem, currentUser.Id);
         if (!validation.IsValid)
         {
             throw new RejectedException(string.Join("; ", validation.Errors));
@@ -54,7 +52,7 @@ public static class CreateAction
         var (descriptionHtml, linkIds) = await richText.ToHtmlAsync(parsed.Body);
 
         var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch(
-            parsed.Type,
+            type,
             parsed.Title,
             parsed.ParentId.Value,
             Assignee: person,
@@ -74,7 +72,7 @@ public static class CreateAction
 
         var updatedContent = FrontmatterParser.Write(
             id: newId,
-            type: parsed.Type,
+            type: type,
             title: parsed.Title,
             state: "New",
             body: parsed.Body.TrimEnd(),

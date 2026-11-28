@@ -22,6 +22,7 @@
 
 ### Fixed
 
+- `backlog create`: A `type` in another case, such as `bug`, now creates the item under the canonical type, and the rewritten file carries it. The description of a Bug written as `bug` used to land in a field that the bug form does not show.
 - `backlog pull` and the commands that print a description or comment now convert a work item link on any host to the `(#id)` form. A link written before a server move used to stay a full URL.
 - `wi create`, `backlog create`: After the work item exists, a failure with exit code 4 for an answer with an unknown status now starts with `Created work item N, but`, like the failures with the other exit codes.
 - `pipeline trigger`: After the run is queued, a failure with exit code 4 for an answer with an unknown status now starts with `Queued run N, but reading it failed`, like the failures with the other exit codes.

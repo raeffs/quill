@@ -26,6 +26,8 @@ public class CreateActionTests
     [InlineData("id: 0\ntitle: ' '\ntype: Task\nparentId: 42", "Frontmatter must contain a non-empty 'title' field.")]
     [InlineData("id: 0\ntitle: T\nparentId: 42", "Frontmatter must contain a 'type' field.")]
     [InlineData("id: 0\ntitle: T\ntype: Epic\nparentId: 42", "Type must be one of: Feature, Product Backlog Item, Bug, Task.")]
+    [InlineData("id: 0\ntitle: T\ntype: epic\nparentId: 42", "Type must be one of: Feature, Product Backlog Item, Bug, Task.")]
+    [InlineData("id: 0\ntitle: T\ntype: ' bug '\nparentId: 42", "Type must be one of: Feature, Product Backlog Item, Bug, Task.")]
     [InlineData("id: 0\ntitle: T\ntype: Task", "Frontmatter must contain a positive 'parentId' field.")]
     [InlineData("id: 0\ntitle: T\ntype: Task\nparentId: 0", "Frontmatter must contain a positive 'parentId' field.")]
     [InlineData("id: 0\ntitle: T\ntype: Task\nparentId: -1", "Frontmatter must contain a positive 'parentId' field.")]
@@ -121,10 +123,39 @@ public class CreateActionTests
         client.CreateCall.ShouldBeNull();
     }
 
-    private static WorkItem Parent(string assignedToId = "user-1") => new()
+    [Theory]
+    [InlineData("bug", "Bug", "Feature")]
+    [InlineData("BUG", "Bug", "Feature")]
+    [InlineData("task", "Task", "Product Backlog Item")]
+    public async Task RunAsync_TypeInAnotherCase_SendsAndWritesTheCanonicalType(string written, string canonical, string parentType)
+    {
+        var client = new FakeAzureDevOpsClient();
+        client.Add(Parent(type: parentType));
+        var file = $"---\nid: 0\ntitle: T\ntype: {written}\nparentId: 42\n---\n\nbody\n";
+
+        var outcome = await CreateAction.RunAsync(client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new RichText(Config, client, NullLogger<RichText>.Instance), file, null);
+
+        client.CreateCall!.Type.ShouldBe(canonical);
+        outcome.FileContent.ShouldContain($"type: {canonical}", Case.Sensitive);
+    }
+
+    [Fact]
+    public async Task RunAsync_TypeInAnotherCaseUnderTheWrongParent_NamesTheCanonicalType()
+    {
+        var client = new FakeAzureDevOpsClient();
+        client.Add(Parent());
+        var file = "---\nid: 0\ntitle: T\ntype: bug\nparentId: 42\n---\n\nbody\n";
+
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new RichText(Config, client, NullLogger<RichText>.Instance), file, null));
+
+        ex.Message.ShouldBe("A Bug needs a parent of type Feature, but the parent is a 'Product Backlog Item'.");
+        client.CreateCall.ShouldBeNull();
+    }
+
+    private static WorkItem Parent(string assignedToId = "user-1", string type = "Product Backlog Item") => new()
     {
         Id = 42,
-        Type = "Product Backlog Item",
+        Type = type,
         Title = "The parent",
         State = "New",
         AssignedToId = assignedToId,

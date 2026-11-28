@@ -15,6 +15,7 @@ public class ParentValidatorTests
     [InlineData("task", "product backlog item")]
     [InlineData("Feature", "Epic")]
     [InlineData("feature", "epic")]
+    [InlineData("bug", "feature")]
     public void Validate_AllowedParentType_ReturnsSuccess(string childType, string parentType)
     {
         var result = ParentValidator.Validate(childType, Parent(parentType), TestConstants.TestUserId);
