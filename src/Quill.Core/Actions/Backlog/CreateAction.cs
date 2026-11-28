@@ -8,7 +8,7 @@ public static class CreateAction
 {
     public static async Task<BacklogCreateOutcome> RunAsync(
         IAzureDevOpsClient client,
-        IIdentityClient identity,
+        PersonResolver people,
         RichText richText,
         string fileContent,
         string? assignee)
@@ -41,8 +41,7 @@ public static class CreateAction
         }
 
         var parentWorkItem = await client.GetWorkItemAsync(parsed.ParentId.Value);
-        var resolver = new PersonResolver(identity);
-        var currentUser = await resolver.MeAsync();
+        var currentUser = await people.MeAsync();
 
         var validation = ParentValidator.Validate(parsed.Type, parentWorkItem, currentUser.Id);
         if (!validation.IsValid)
@@ -50,7 +49,7 @@ public static class CreateAction
             throw new RejectedException(string.Join("; ", validation.Errors));
         }
 
-        var person = await resolver.ResolveAsync("--assignee", assignee ?? "@me", CancellationToken.None);
+        var person = await people.ResolveAsync("--assignee", assignee ?? "@me", CancellationToken.None);
 
         var (descriptionHtml, linkIds) = await richText.ToHtmlAsync(parsed.Body);
 

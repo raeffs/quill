@@ -47,6 +47,7 @@ internal static class ServiceCollectionExtensions
         services.AddTransient<IAzureDevOpsBuildClient>(sp => sp.GetRequiredService<AzureDevOpsBuildClient>());
 
         services.AddSingleton<RichText>();
+        services.AddSingleton<PersonResolver>();
 
         return services;
     }

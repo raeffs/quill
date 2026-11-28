@@ -26,6 +26,16 @@ public class ServiceWiringTests
     }
 
     [Fact]
+    public void AddQuillServices_ResolvesOnePersonResolverForTheRun()
+    {
+        using var provider = BuildProvider(handler: null);
+
+        var first = provider.GetRequiredService<PersonResolver>();
+
+        provider.GetRequiredService<PersonResolver>().ShouldBeSameAs(first);
+    }
+
+    [Fact]
     public void AddQuillServices_ResolvesEveryClientInterface()
     {
         using var provider = BuildProvider(handler: null);

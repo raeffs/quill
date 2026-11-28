@@ -113,7 +113,7 @@ internal static class CreateCommand
 
                 return await CreateAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsClient>(),
-                    serviceProvider.GetRequiredService<IIdentityClient>(),
+                    serviceProvider.GetRequiredService<PersonResolver>(),
                     serviceProvider.GetRequiredService<RichText>(),
                     new WorkItemCreateRequest(type, title, parentId, description, assignee, normalizedTags, validatedPredecessors));
             },

@@ -92,7 +92,7 @@ internal static class ListCommand
             return CommandHelpers.RunAsync(
                 ct => ListAction.RunAsync(
                     serviceProvider.GetRequiredService<IAzureDevOpsPullRequestClient>(),
-                    serviceProvider.GetRequiredService<IIdentityClient>(),
+                    serviceProvider.GetRequiredService<PersonResolver>(),
                     request,
                     ct),
                 CommandHelpers.Context.ListPullRequestResult,

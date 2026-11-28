@@ -33,7 +33,7 @@ public class CreateActionTests
     {
         var client = new FakeAzureDevOpsClient();
 
-        var ex = await Should.ThrowAsync<UsageException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), $"---\n{frontmatter}\n---\n\nbody\n", null));
+        var ex = await Should.ThrowAsync<UsageException>(() => CreateAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient()), new RichText(Config, client, NullLogger<RichText>.Instance), $"---\n{frontmatter}\n---\n\nbody\n", null));
 
         ex.Message.ShouldBe(message);
         client.Calls.ShouldBeEmpty();
@@ -45,7 +45,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent(assignedToId: "other-user-id"));
 
-        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null));
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient()), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null));
 
         ex.Message.ShouldBe("Parent work item assignee does not match the current user.");
         client.CreateCall.ShouldBeNull();
@@ -58,7 +58,7 @@ public class CreateActionTests
         client.Add(Parent());
         var identity = new ScriptedIdentityClient();
 
-        var outcome = await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null);
+        var outcome = await CreateAction.RunAsync(client, new PersonResolver(identity), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, null);
 
         outcome.Row.Id.ShouldBe(1000);
         outcome.Row.Title.ShouldBe("T");
@@ -78,7 +78,7 @@ public class CreateActionTests
             Search = (_, _) => [new IdentityMatch("id-2", "John Roe", @"CONTOSO\jroe", false)],
         };
 
-        await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "John Roe");
+        await CreateAction.RunAsync(client, new PersonResolver(identity), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "John Roe");
 
         client.CreateCall!.Assignee.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
     }
@@ -89,7 +89,7 @@ public class CreateActionTests
         var client = new FakeAzureDevOpsClient();
         client.Add(Parent());
 
-        await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "Nobody"));
+        await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient()), new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "Nobody"));
 
         client.CreateCall.ShouldBeNull();
     }
@@ -102,7 +102,7 @@ public class CreateActionTests
         var rejected = new RejectedException("Work item 123 cannot be linked.");
         client.AddRelation = (_, _) => throw rejected;
 
-        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), LinkingFile, null));
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new PersonResolver(new ScriptedIdentityClient()), new RichText(Config, client, NullLogger<RichText>.Instance), LinkingFile, null));
 
         ex.Message.ShouldBe("Created work item 1000, but linking it failed: Work item 123 cannot be linked.");
         ex.InnerException.ShouldBeSameAs(rejected);

@@ -43,6 +43,7 @@ public sealed class BacklogTagsTests : IDisposable
             .AddSingleton<IWorkItemBatchFetcher>(sp => new AzureDevOpsClient(TestHttp.Server(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ")))
             .AddSingleton<RichText>()
             .AddSingleton<IIdentityClient>(sp => new AzureDevOpsIdentityClient(TestHttp.Server(sp.GetRequiredService<HttpClient>(), "https://devops.example.com", "COL", "PROJ")))
+            .AddSingleton<PersonResolver>()
             .BuildServiceProvider();
         Console.SetOut(_output);
 

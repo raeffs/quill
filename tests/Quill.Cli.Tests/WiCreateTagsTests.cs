@@ -80,6 +80,7 @@ public sealed class WiCreateTagsTests : IDisposable
             .AddSingleton<RichText>()
             .AddSingleton(new AzureDevOpsIdentityClient(TestHttp.Server(httpClient, ServerUrl, Collection, Project)))
             .AddSingleton<IIdentityClient>(sp => sp.GetRequiredService<AzureDevOpsIdentityClient>())
+            .AddSingleton<PersonResolver>()
             .BuildServiceProvider();
         Console.SetOut(_output);
 

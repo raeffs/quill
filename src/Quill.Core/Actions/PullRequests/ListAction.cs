@@ -6,18 +6,17 @@ public static class ListAction
 {
     public static async Task<IReadOnlyList<PullRequestResult>> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
-        IIdentityClient identity,
+        PersonResolver people,
         PrListRequest request,
         CancellationToken cancellationToken)
     {
-        var resolver = new PersonResolver(identity);
         var reviewer = request.Reviewer is null
             ? null
-            : await resolver.ResolveAsync("--reviewer", request.Reviewer, cancellationToken);
+            : await people.ResolveAsync("--reviewer", request.Reviewer, cancellationToken);
         var author = request.Author is null
             ? null
-            : await resolver.ResolveAsync("--author", request.Author, cancellationToken);
-        var currentUser = await resolver.MeAsync();
+            : await people.ResolveAsync("--author", request.Author, cancellationToken);
+        var currentUser = await people.MeAsync();
 
         var query = new PullRequestListQuery
         {

@@ -7,13 +7,13 @@ public static class ListAction
     public static async Task<IReadOnlyList<SearchResult>> RunAsync(
         IAzureDevOpsClient client,
         IWorkItemBatchFetcher fetcher,
-        IIdentityClient identity,
+        PersonResolver people,
         WiListRequest request,
         CancellationToken cancellationToken)
     {
         var assignee = request.Assignee is null
             ? null
-            : await new PersonResolver(identity).ResolveForQueryAsync("--assignee", request.Assignee, cancellationToken);
+            : await people.ResolveForQueryAsync("--assignee", request.Assignee, cancellationToken);
 
         var (wiql, top) = WiqlBuilder.Build(request.Title, assignee, request.States, request.Types, request.Limit);
 

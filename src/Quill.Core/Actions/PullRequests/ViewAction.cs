@@ -8,13 +8,13 @@ public static class ViewAction
     public static async Task<PullRequestViewResult> RunAsync(
         IAzureDevOpsPullRequestClient pullRequests,
         IWorkItemBatchFetcher fetcher,
-        IIdentityClient identity,
+        PersonResolver people,
         RichText richText,
         int id,
         bool withThreads,
         CancellationToken cancellationToken)
     {
-        var currentUser = await identity.GetCurrentUserAsync();
+        var currentUser = await people.MeAsync();
         var pullRequest = await pullRequests.GetByIdAsync(id, cancellationToken);
 
         var description = await richText.ToMarkdownAsync(pullRequest.Description, cancellationToken);

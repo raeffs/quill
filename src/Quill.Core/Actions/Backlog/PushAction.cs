@@ -8,7 +8,7 @@ public static class PushAction
 {
     public static async Task<PushResult> RunAsync(
         IAzureDevOpsClient client,
-        IIdentityClient identity,
+        PersonResolver people,
         QuillConfig config,
         RichText richText,
         string fileContent)
@@ -21,7 +21,7 @@ public static class PushAction
         }
 
         var workItem = await client.GetWorkItemAsync(parsed.Id);
-        var currentUser = await identity.GetCurrentUserAsync();
+        var currentUser = await people.MeAsync();
 
         var validation = PushValidator.Validate(workItem, config, currentUser.Id);
         if (!validation.IsValid)
