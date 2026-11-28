@@ -5,7 +5,7 @@ namespace Quill.Core;
 
 public sealed class FilePersonStore(string? path) : IPersonStore
 {
-    public const int Version = 1;
+    public const int Version = 2;
 
     public IReadOnlyDictionary<string, PersonEntry> Load()
     {

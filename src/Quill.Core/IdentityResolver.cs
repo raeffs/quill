@@ -29,7 +29,7 @@ public sealed class IdentityResolver(IIdentityClient identity, PersonCache cache
             return new Identity(me.Id, me.DisplayName, null, false);
         }
 
-        var known = cache.Find(trimmed);
+        var known = cache.Find(trimmed, false);
         if (known is not null)
         {
             return known;
@@ -54,7 +54,7 @@ public sealed class IdentityResolver(IIdentityClient identity, PersonCache cache
 
         var match = people[0];
         var person = new Identity(match.Id, match.DisplayName, match.UniqueName, false);
-        cache.Remember(trimmed, person);
+        cache.Remember(trimmed, false, person);
         return person;
     }
 

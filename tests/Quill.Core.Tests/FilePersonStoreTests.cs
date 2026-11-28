@@ -29,8 +29,8 @@ public sealed class FilePersonStoreTests : IDisposable
     public void SaveThenLoad_RoundTripsEveryField()
     {
         var entries = Entries(
-            ("a", new("id-1", "Jane Doe", @"CONTOSO\jdoe", Saved.AddTicks(1234567))),
-            ("b", new("id-2", "John Roe", null, Saved)));
+            ("a", new("id-1", "Jane Doe", @"CONTOSO\jdoe", false, Saved.AddTicks(1234567))),
+            ("b", new("id-3", @"[Fabrikam]\Contoso Platform", null, true, Saved)));
         var store = new FilePersonStore(FilePath);
 
         store.Save(entries);
@@ -43,7 +43,7 @@ public sealed class FilePersonStoreTests : IDisposable
     {
         new FilePersonStore(FilePath).Save(Entries());
 
-        File.ReadAllText(FilePath).ShouldContain("\"version\":1");
+        File.ReadAllText(FilePath).ShouldContain("\"version\":2");
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class FilePersonStoreTests : IDisposable
     [Fact]
     public void Save_LeavesNoTemporaryFile()
     {
-        new FilePersonStore(FilePath).Save(Entries(("a", new("id-1", "Jane Doe", null, Saved))));
+        new FilePersonStore(FilePath).Save(Entries(("a", new("id-1", "Jane Doe", null, false, Saved))));
 
         Directory.GetFiles(CacheDirectory).ShouldBe([FilePath]);
     }
@@ -66,8 +66,8 @@ public sealed class FilePersonStoreTests : IDisposable
     public void Save_ReplacesTheFile()
     {
         var store = new FilePersonStore(FilePath);
-        var second = Entries(("b", new("id-2", "John Roe", null, Saved)));
-        store.Save(Entries(("a", new("id-1", "Jane Doe", null, Saved))));
+        var second = Entries(("b", new("id-2", "John Roe", null, false, Saved)));
+        store.Save(Entries(("a", new("id-1", "Jane Doe", null, false, Saved))));
 
         store.Save(second);
 
@@ -92,7 +92,7 @@ public sealed class FilePersonStoreTests : IDisposable
     [InlineData("[]")]
     [InlineData("{\"version\":1}")]
     [InlineData("{\"version\":1,\"entries\":null}")]
-    [InlineData("{\"version\":2,\"entries\":{}}")]
+    [InlineData("{\"version\":3,\"entries\":{}}")]
     [InlineData("{\"version\":\"1\",\"entries\":{}}")]
     public void Load_BrokenFile_IsEmpty(string text)
     {
@@ -109,7 +109,7 @@ public sealed class FilePersonStoreTests : IDisposable
         File.WriteAllText(
             FilePath,
             """
-            {"version":1,"entries":{
+            {"version":2,"entries":{
               "a":{"id":null,"displayName":"x"},
               "b":null,
               "c":{"id":"id-1","displayName":"Jane Doe","uniqueName":null,"savedAt":"2026-11-28T10:30:00+00:00"}}}
@@ -118,6 +118,15 @@ public sealed class FilePersonStoreTests : IDisposable
         var loaded = new FilePersonStore(FilePath).Load();
 
         loaded.Keys.ShouldBe(["c"]);
+    }
+
+    [Fact]
+    public void Load_FileOfVersion1_IsEmpty()
+    {
+        Directory.CreateDirectory(CacheDirectory);
+        File.WriteAllText(FilePath, """{"version":1,"entries":{"HTTPS://DEVOPS.EXAMPLE.COM|COL|person|PLATFORM":{"id":"id-2","displayName":"John Roe","uniqueName":"CONTOSO\\jroe","savedAt":"2026-11-28T10:00:00+00:00"}}}""");
+
+        new FilePersonStore(FilePath).Load().ShouldBeEmpty();
     }
 
     [Fact]
@@ -135,7 +144,7 @@ public sealed class FilePersonStoreTests : IDisposable
         File.WriteAllText(CacheDirectory, "x");
         var store = new FilePersonStore(FilePath);
 
-        Should.NotThrow(() => store.Save(Entries(("a", new("id-1", "Jane Doe", null, Saved)))));
+        Should.NotThrow(() => store.Save(Entries(("a", new("id-1", "Jane Doe", null, false, Saved)))));
     }
 
     [Fact]
@@ -143,7 +152,7 @@ public sealed class FilePersonStoreTests : IDisposable
     {
         var store = new FilePersonStore(null);
 
-        store.Save(Entries(("a", new("id-1", "Jane Doe", null, Saved))));
+        store.Save(Entries(("a", new("id-1", "Jane Doe", null, false, Saved))));
 
         store.Load().ShouldBeEmpty();
     }

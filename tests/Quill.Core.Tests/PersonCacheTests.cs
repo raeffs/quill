@@ -10,18 +10,20 @@ public class PersonCacheTests
 
     private static readonly Identity Jane = new("id-1", "Jane Doe", null, false);
 
+    private static readonly Identity Platform = new("id-3", @"[Fabrikam]\Contoso Platform", null, true);
+
     [Fact]
     public void Find_NothingSaved_ReturnsNull() =>
-        TestPersonCache.Create().Find("John Roe").ShouldBeNull();
+        TestPersonCache.Create().Find("John Roe", false).ShouldBeNull();
 
     [Fact]
     public void Find_AfterRemember_ReturnsThePerson()
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBe(John);
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBe(John);
     }
 
     [Theory]
@@ -32,9 +34,9 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
-        TestPersonCache.Create(store, clock).Find(name).ShouldBe(John);
+        TestPersonCache.Create(store, clock).Find(name, false).ShouldBe(John);
     }
 
     [Fact]
@@ -42,13 +44,13 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
         clock.Now += PersonCache.MaxAge - TimeSpan.FromTicks(1);
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBe(John);
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBe(John);
 
         clock.Now += TimeSpan.FromTicks(1);
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBeNull();
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBeNull();
     }
 
     [Fact]
@@ -56,12 +58,12 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
         clock.Now += TimeSpan.FromHours(23);
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBe(John);
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBe(John);
         clock.Now += TimeSpan.FromHours(1);
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBeNull();
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBeNull();
 
         store.Saves.ShouldBe(1);
     }
@@ -71,11 +73,11 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
         clock.Now -= TimeSpan.FromMinutes(1);
 
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBeNull();
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBeNull();
     }
 
     [Fact]
@@ -83,9 +85,9 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
-        TestPersonCache.Create(store, clock, serverUrl: "https://other.example.com").Find("John Roe").ShouldBeNull();
+        TestPersonCache.Create(store, clock, serverUrl: "https://other.example.com").Find("John Roe", false).ShouldBeNull();
     }
 
     [Fact]
@@ -93,9 +95,9 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
-        TestPersonCache.Create(store, clock, collection: "OTHER").Find("John Roe").ShouldBeNull();
+        TestPersonCache.Create(store, clock, collection: "OTHER").Find("John Roe", false).ShouldBeNull();
     }
 
     [Fact]
@@ -104,8 +106,8 @@ public class PersonCacheTests
         var store = new InMemoryPersonStore();
         var cache = TestPersonCache.Create(store);
 
-        cache.Find("John Roe");
-        cache.Find("Jane Doe");
+        cache.Find("John Roe", false);
+        cache.Find("Jane Doe", false);
 
         store.Loads.ShouldBe(1);
     }
@@ -136,9 +138,47 @@ public class PersonCacheTests
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
         var scope = PersonCacheScope.For("https://devops.example.com", "COL", "test-pat");
-        new PersonCache(store, scope, clock).Remember(scope.PatHash, John);
+        new PersonCache(store, scope, clock).Remember(scope.PatHash, false, John);
+        new PersonCache(store, scope, clock).Remember(scope.PatHash, true, Platform);
 
         new PersonCache(store, scope, clock).FindMe().ShouldBeNull();
+    }
+
+    [Fact]
+    public void Find_SavedForPeopleOnly_IsNotFoundForPeopleAndGroups()
+    {
+        var cache = TestPersonCache.Create();
+        cache.Remember("Platform", false, John);
+
+        cache.Find("Platform", true).ShouldBeNull();
+    }
+
+    [Fact]
+    public void Find_SavedForPeopleAndGroups_IsNotFoundForPeopleOnly()
+    {
+        var cache = TestPersonCache.Create();
+        cache.Remember("Platform", true, Platform);
+
+        cache.Find("Platform", false).ShouldBeNull();
+    }
+
+    [Fact]
+    public void Find_Group_ReturnsItAsAGroup()
+    {
+        var store = new InMemoryPersonStore();
+        TestPersonCache.Create(store).Remember("Contoso Platform", true, Platform);
+
+        TestPersonCache.Create(store).Find(" contoso platform ", true).ShouldBe(Platform);
+    }
+
+    [Fact]
+    public void Remember_PeopleAndGroups_WritesTheIdentityKey()
+    {
+        var store = new InMemoryPersonStore();
+
+        TestPersonCache.Create(store).Remember(" contoso|platform ", true, Platform);
+
+        store.Entries.Keys.ShouldBe(["HTTPS://DEVOPS.EXAMPLE.COM|COL|identity|CONTOSO|PLATFORM"]);
     }
 
     [Fact]
@@ -148,14 +188,14 @@ public class PersonCacheTests
         var clock = new FixedClock();
         var first = TestPersonCache.Create(store, clock);
         var second = TestPersonCache.Create(store, clock);
-        first.Find("John Roe");
+        first.Find("John Roe", false);
 
-        second.Remember("Jane Doe", Jane);
-        first.Remember("John Roe", John);
+        second.Remember("Jane Doe", false, Jane);
+        first.Remember("John Roe", false, John);
 
         store.Entries.Count.ShouldBe(2);
-        TestPersonCache.Create(store, clock).Find("Jane Doe").ShouldBe(Jane);
-        TestPersonCache.Create(store, clock).Find("John Roe").ShouldBe(John);
+        TestPersonCache.Create(store, clock).Find("Jane Doe", false).ShouldBe(Jane);
+        TestPersonCache.Create(store, clock).Find("John Roe", false).ShouldBe(John);
     }
 
     [Fact]
@@ -163,10 +203,10 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
         var clock = new FixedClock();
-        TestPersonCache.Create(store, clock).Remember("John Roe", John);
+        TestPersonCache.Create(store, clock).Remember("John Roe", false, John);
 
         clock.Now += TimeSpan.FromHours(25);
-        TestPersonCache.Create(store, clock).Remember("Jane Doe", Jane);
+        TestPersonCache.Create(store, clock).Remember("Jane Doe", false, Jane);
 
         store.Entries.Count.ShouldBe(1);
     }
@@ -176,7 +216,7 @@ public class PersonCacheTests
     {
         var store = new InMemoryPersonStore();
 
-        TestPersonCache.Create(store).Remember(" john roe ", John);
+        TestPersonCache.Create(store).Remember(" john roe ", false, John);
 
         store.Entries.Keys.ShouldBe(["HTTPS://DEVOPS.EXAMPLE.COM|COL|person|JOHN ROE"]);
     }

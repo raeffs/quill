@@ -8,14 +8,16 @@ public sealed class PersonCache(IPersonStore store, PersonCacheScope scope, Time
 
     private IReadOnlyDictionary<string, PersonEntry>? _entries;
 
-    public Identity? Find(string name)
+    public Identity? Find(string name, bool acceptGroups)
     {
-        var entry = Get(PersonKey(name));
-        return entry is null ? null : new Identity(entry.Id, entry.DisplayName, entry.UniqueName, false);
+        var entry = Get(NameKey(name, acceptGroups));
+        return entry is null ? null : new Identity(entry.Id, entry.DisplayName, entry.UniqueName, entry.IsGroup);
     }
 
-    public void Remember(string name, Identity person) =>
-        Add(PersonKey(name), new PersonEntry(person.Id, person.DisplayName, person.UniqueName, clock.GetUtcNow()));
+    public void Remember(string name, bool acceptGroups, Identity identity) =>
+        Add(
+            NameKey(name, acceptGroups),
+            new PersonEntry(identity.Id, identity.DisplayName, identity.UniqueName, identity.IsGroup, clock.GetUtcNow()));
 
     public CurrentUser? FindMe()
     {
@@ -24,9 +26,10 @@ public sealed class PersonCache(IPersonStore store, PersonCacheScope scope, Time
     }
 
     public void RememberMe(CurrentUser me) =>
-        Add(MeKey(), new PersonEntry(me.Id, me.DisplayName, null, clock.GetUtcNow()));
+        Add(MeKey(), new PersonEntry(me.Id, me.DisplayName, null, false, clock.GetUtcNow()));
 
-    private string PersonKey(string name) => $"{scope.ServerUrl}|{scope.Collection}|person|{name.Trim().ToUpperInvariant()}";
+    private string NameKey(string name, bool acceptGroups) =>
+        $"{scope.ServerUrl}|{scope.Collection}|{(acceptGroups ? "identity" : "person")}|{name.Trim().ToUpperInvariant()}";
 
     private string MeKey() => $"{scope.ServerUrl}|{scope.Collection}|me|{scope.PatHash}";
 
