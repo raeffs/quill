@@ -49,8 +49,11 @@ public static class CreateAction
         });
 
         // Read the item back so the row is what `wi view` would print: server state, rewritten link text.
-        var created = await LaterStep.RunAsync($"Created work item {newId}", "reading it", () => client.GetWorkItemAsync(newId));
-        var body = await richText.ToMarkdownAsync(created.Description);
+        var (created, body) = await LaterStep.RunAsync($"Created work item {newId}", "reading it", async () =>
+        {
+            var workItem = await client.GetWorkItemAsync(newId);
+            return (workItem, await richText.ToMarkdownAsync(workItem.Description));
+        });
 
         return ViewResultBuilder.Build(created, body, children: null);
     }

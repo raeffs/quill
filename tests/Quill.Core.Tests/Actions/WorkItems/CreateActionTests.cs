@@ -14,6 +14,9 @@ public class CreateActionTests
     private const string ParentIterationPath = @"Proj\Sprint 7";
     private const string ParentAreaPath = @"Proj\Team A";
 
+    private const string UrlLinkDescription =
+        $"See [the bug]({TestConstants.ServerUrl}/{TestConstants.Collection}/{TestConstants.Project}/_workitems/edit/456).";
+
     private static readonly QuillConfig Config = new()
     {
         ServerUrl = TestConstants.ServerUrl,
@@ -330,6 +333,34 @@ public class CreateActionTests
 
         ex.Message.ShouldBe("Created work item 1000, but reading it failed: Failed to deserialize work item response.");
         ex.InnerException.ShouldBeSameAs(defect);
+    }
+
+    [Fact]
+    public async Task RunAsync_LinkLookUpDefectAfterReadBack_NamesTheCreatedItem()
+    {
+        var client = Seed();
+        var defect = new DefectException("Failed to deserialize work items batch response.");
+        client.FetchException = defect;
+
+        var ex = await Should.ThrowAsync<DefectException>(() => CreateAction.RunAsync(
+            client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: UrlLinkDescription)));
+
+        ex.Message.ShouldBe("Created work item 1000, but reading it failed: Failed to deserialize work items batch response.");
+        ex.InnerException.ShouldBeSameAs(defect);
+        client.Calls.ShouldBe(["GetWorkItem(10)", "CreateWorkItem", "GetWorkItem(1000)", "Fetch(456)"]);
+    }
+
+    [Fact]
+    public async Task RunAsync_LinkLookUpUnavailableAfterReadBack_ReturnsTheRowWithTheFallbackLinkText()
+    {
+        var client = Seed();
+        client.FetchException = new UnavailableException("The server is busy.");
+
+        var row = await CreateAction.RunAsync(
+            client, new IdentityResolver(new ScriptedIdentityClient(), TestPersonCache.Create()), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", description: UrlLinkDescription));
+
+        row.Id.ShouldBe(1000);
+        row.Description.ShouldBe("See [#456](#456).");
     }
 
     [Fact]
