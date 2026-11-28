@@ -12,10 +12,10 @@ public static class ListAction
     {
         var reviewer = request.Reviewer is null
             ? null
-            : await people.ResolveAsync("--reviewer", request.Reviewer, cancellationToken);
+            : await people.ResolveAsync("--reviewer", request.Reviewer, false, cancellationToken);
         var author = request.Author is null
             ? null
-            : await people.ResolveAsync("--author", request.Author, cancellationToken);
+            : await people.ResolveAsync("--author", request.Author, false, cancellationToken);
         var currentUser = await people.MeAsync();
 
         var query = new PullRequestListQuery

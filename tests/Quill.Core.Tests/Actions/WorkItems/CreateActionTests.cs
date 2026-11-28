@@ -332,6 +332,18 @@ public class CreateActionTests
         ex.InnerException.ShouldBeSameAs(defect);
     }
 
+    [Fact]
+    public async Task RunAsync_AssigneeIsAGroup_ThrowsAndCreatesNothing()
+    {
+        var client = Seed();
+        var identity = new ScriptedIdentityClient { Search = (_, _) => [new IdentityMatch("id-3", @"[Fabrikam]\Contoso Platform", null, true)] };
+
+        var ex = await Should.ThrowAsync<RejectedException>(() => CreateAction.RunAsync(client, new IdentityResolver(identity, TestPersonCache.Create()), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "Contoso Platform")));
+
+        ex.Message.ShouldBe("--assignee 'Contoso Platform' matches only groups. Groups are not accepted; name a person.");
+        client.CreateCall.ShouldBeNull();
+    }
+
     private static WorkItemCreateRequest Request(
         string type,
         string? description = null,

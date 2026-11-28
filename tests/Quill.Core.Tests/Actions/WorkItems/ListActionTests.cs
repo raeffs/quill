@@ -112,6 +112,19 @@ public class ListActionTests
     }
 
     [Fact]
+    public async Task RunAsync_AssigneeIsAGroup_ThrowsBeforeTheQuery()
+    {
+        var client = new FakeAzureDevOpsClient();
+        var identity = new ScriptedIdentityClient { Search = (_, _) => [new IdentityMatch("id-3", @"[Fabrikam]\Contoso Platform", null, true)] };
+
+        var exception = await Should.ThrowAsync<RejectedException>(() =>
+            ListAction.RunAsync(client, client, new IdentityResolver(identity, TestPersonCache.Create()), new WiListRequest(null, "Contoso Platform", [], [], 20), TestContext.Current.CancellationToken));
+
+        exception.Message.ShouldBe("--assignee 'Contoso Platform' matches only groups. Groups are not accepted; name a person.");
+        client.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task RunAsync_UnknownAssignee_ThrowsBeforeTheQuery()
     {
         var client = new FakeAzureDevOpsClient();

@@ -49,7 +49,7 @@ public static class CreateAction
             throw new RejectedException(string.Join("; ", validation.Errors));
         }
 
-        var person = await people.ResolveAsync("--assignee", assignee ?? "@me", CancellationToken.None);
+        var person = await people.ResolveAsync("--assignee", assignee ?? "@me", false, CancellationToken.None);
 
         var (descriptionHtml, linkIds) = await richText.ToHtmlAsync(parsed.Body);
 

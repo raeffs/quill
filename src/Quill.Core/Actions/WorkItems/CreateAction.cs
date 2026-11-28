@@ -19,7 +19,7 @@ public static class CreateAction
 
         var assignee = request.Assignee is null
             ? null
-            : await people.ResolveAsync("--assignee", request.Assignee, CancellationToken.None);
+            : await people.ResolveAsync("--assignee", request.Assignee, false, CancellationToken.None);
 
         string? descriptionHtml = null;
         List<int> linkIds = [];
