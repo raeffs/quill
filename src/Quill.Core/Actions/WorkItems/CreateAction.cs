@@ -17,12 +17,9 @@ public static class CreateAction
             throw new RejectedException(string.Join("; ", validation.Errors));
         }
 
-        string? assignedTo = null;
-        if (request.Assignee is not null)
-        {
-            var person = await new PersonResolver(identity).ResolveAsync("--assignee", request.Assignee, CancellationToken.None);
-            assignedTo = person.AssignedTo;
-        }
+        var assignee = request.Assignee is null
+            ? null
+            : await new PersonResolver(identity).ResolveAsync("--assignee", request.Assignee, CancellationToken.None);
 
         string? descriptionHtml = null;
         List<int> linkIds = [];
@@ -36,7 +33,7 @@ public static class CreateAction
             request.Type,
             request.Title,
             request.ParentId,
-            AssignedToId: assignedTo,
+            Assignee: assignee,
             DescriptionHtml: descriptionHtml,
             IterationPath: parent.IterationPath,
             AreaPath: parent.AreaPath,

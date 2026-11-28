@@ -58,7 +58,7 @@ public static class CreateAction
             parsed.Type,
             parsed.Title,
             parsed.ParentId.Value,
-            AssignedToId: person.AssignedTo,
+            Assignee: person,
             DescriptionHtml: string.IsNullOrEmpty(descriptionHtml) ? null : descriptionHtml,
             IterationPath: parentWorkItem.IterationPath,
             AreaPath: parentWorkItem.AreaPath,

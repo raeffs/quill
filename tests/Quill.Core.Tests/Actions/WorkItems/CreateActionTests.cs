@@ -52,7 +52,7 @@ public class CreateActionTests
 
         var row = await CreateAction.RunAsync(client, new ScriptedIdentityClient(), new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
-        client.CreateCall.ShouldNotBeNull().AssignedToId.ShouldBeNull();
+        client.CreateCall.ShouldNotBeNull().Assignee.ShouldBeNull();
         row.AssignedTo.ShouldBeNull();
     }
 
@@ -67,7 +67,7 @@ public class CreateActionTests
 
         await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "John Roe"));
 
-        client.CreateCall.ShouldNotBeNull().AssignedToId.ShouldBe(@"John Roe <CONTOSO\jroe>");
+        client.CreateCall.ShouldNotBeNull().Assignee.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class CreateActionTests
 
         await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task", assignee: "@me"));
 
-        client.CreateCall.ShouldNotBeNull().AssignedToId.ShouldBe("Jane Doe");
+        client.CreateCall.ShouldNotBeNull().Assignee.ShouldBe(new Person("user-1", "Jane Doe", null));
         identity.Calls.ShouldBe(["GetCurrentUser"]);
     }
 
@@ -90,7 +90,7 @@ public class CreateActionTests
 
         await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), Request("Task"));
 
-        client.CreateCall.ShouldNotBeNull().AssignedToId.ShouldBeNull();
+        client.CreateCall.ShouldNotBeNull().Assignee.ShouldBeNull();
         identity.Calls.ShouldBeEmpty();
     }
 
@@ -196,7 +196,7 @@ public class CreateActionTests
 
         row.Type.ShouldBe("Feature");
         var call = client.CreateCall.ShouldNotBeNull();
-        call.AssignedToId.ShouldBeNull();
+        call.Assignee.ShouldBeNull();
         call.IterationPath.ShouldBe(ParentIterationPath);
     }
 

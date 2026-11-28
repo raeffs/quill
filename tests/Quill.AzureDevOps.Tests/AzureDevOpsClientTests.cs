@@ -318,7 +318,7 @@ public class AzureDevOpsClientTests
         using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
-        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Bug", "New bug", 100, "6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b"));
+        var newId = await client.CreateWorkItemAsync(new WorkItemCreatePatch("Bug", "New bug", 100, new Person("6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b", "Jane Doe", @"CONTOSO\jdoe")));
 
         newId.ShouldBe(999);
         handler.LastRequest.ShouldNotBeNull();
@@ -330,7 +330,7 @@ public class AzureDevOpsClientTests
         handler.LastRequestBody.ShouldContain("New bug");
         handler.LastRequestBody.ShouldNotContain("System.State");
         handler.LastRequestBody.ShouldContain("System.AssignedTo");
-        handler.LastRequestBody.ShouldContain("6f1c2b7e-3d4a-4e5f-9a8b-0c1d2e3f4a5b");
+        handler.LastRequestBody.ShouldContain(@"Jane Doe \u003CCONTOSO\\jdoe\u003E");
         handler.LastRequestBody.ShouldContain("System.LinkTypes.Hierarchy-Reverse");
         handler.LastRequestBody.ShouldContain("/workitems/100");
     }
@@ -403,7 +403,7 @@ public class AzureDevOpsClientTests
 
         // Act
         var newId = await client.CreateWorkItemAsync(
-            new WorkItemCreatePatch("Product Backlog Item", "New PBI", 100, AssignedToId: null, DescriptionHtml: "<p>Body text</p>"));
+            new WorkItemCreatePatch("Product Backlog Item", "New PBI", 100, Assignee: null, DescriptionHtml: "<p>Body text</p>"));
 
         // Assert
         newId.ShouldBe(999);
@@ -425,7 +425,7 @@ public class AzureDevOpsClientTests
 
         // Act
         var newId = await client.CreateWorkItemAsync(
-            new WorkItemCreatePatch("Bug", "New bug", 100, AssignedToId: null, DescriptionHtml: "<p>Body text</p>"));
+            new WorkItemCreatePatch("Bug", "New bug", 100, Assignee: null, DescriptionHtml: "<p>Body text</p>"));
 
         // Assert
         newId.ShouldBe(999);
@@ -519,7 +519,7 @@ public class AzureDevOpsClientTests
 
         // Act
         await client.CreateWorkItemAsync(
-            new WorkItemCreatePatch("Task", "Sprint task", 100, AssignedToId: null, DescriptionHtml: null, IterationPath: "MyProject\\Sprint 42"));
+            new WorkItemCreatePatch("Task", "Sprint task", 100, Assignee: null, DescriptionHtml: null, IterationPath: "MyProject\\Sprint 42"));
 
         // Assert
         handler.LastRequestBody.ShouldNotBeNull();
@@ -676,7 +676,7 @@ public class AzureDevOpsClientTests
         using var httpClient = TestHttp.Client(handler);
         var client = new AzureDevOpsClient(TestHttp.Server(httpClient));
 
-        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, "A", "Body", "P\\I", "P\\A"));
+        await client.CreateWorkItemAsync(new WorkItemCreatePatch("Task", "T", 100, new Person("id-1", "A", null), "Body", "P\\I", "P\\A"));
 
         handler.LastRequestBody.ShouldBe($$$"""[{"op":"add","path":"/fields/System.Title","value":"T"},{"op":"add","path":"/relations/-","value":{"rel":"System.LinkTypes.Hierarchy-Reverse","url":"{{{TestConstants.ServerUrl}}}/{{{TestConstants.Collection}}}/_apis/wit/workitems/100"}},{"op":"add","path":"/fields/System.AssignedTo","value":"A"},{"op":"add","path":"/fields/System.Description","value":"Body"},{"op":"add","path":"/fields/System.IterationPath","value":"P\\I"},{"op":"add","path":"/fields/System.AreaPath","value":"P\\A"}]""");
     }

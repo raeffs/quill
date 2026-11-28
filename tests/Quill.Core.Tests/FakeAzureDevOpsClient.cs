@@ -52,7 +52,7 @@ internal sealed class FakeAzureDevOpsClient : IAzureDevOpsClient, IWorkItemBatch
             Title = patch.Title,
             State = "New",
             AssignedToId = string.Empty,
-            AssignedToDisplayName = patch.AssignedToId ?? string.Empty,
+            AssignedToDisplayName = patch.Assignee?.AssignedTo ?? string.Empty,
             Description = patch.DescriptionHtml ?? string.Empty,
             IterationPath = patch.IterationPath ?? string.Empty,
             ParentId = patch.ParentId,

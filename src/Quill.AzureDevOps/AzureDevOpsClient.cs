@@ -122,9 +122,9 @@ public class AzureDevOpsClient(AzureDevOpsServer server) : IAzureDevOpsClient, I
             RelationOperation(AzureDevOpsConstants.HierarchyReverseLinkType, patch.ParentId),
         };
 
-        if (patch.AssignedToId is not null)
+        if (patch.Assignee is not null)
         {
-            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldAssignedTo}", Value = JsonValue.Create(patch.AssignedToId) });
+            operations.Add(new() { Op = "add", Path = $"/fields/{AzureDevOpsConstants.FieldAssignedTo}", Value = JsonValue.Create(patch.Assignee.AssignedTo) });
         }
 
         if (!string.IsNullOrEmpty(patch.DescriptionHtml))

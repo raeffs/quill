@@ -64,7 +64,7 @@ public class CreateActionTests
         outcome.Row.Title.ShouldBe("T");
         outcome.FileContent.ShouldStartWith("---");
         outcome.FileContent.ShouldContain("id: 1000");
-        client.CreateCall!.AssignedToId.ShouldBe("Jane Doe");
+        client.CreateCall!.Assignee.ShouldBe(new Person("user-1", "Jane Doe", null));
         identity.Calls.ShouldBe(["GetCurrentUser"]);
     }
 
@@ -80,7 +80,7 @@ public class CreateActionTests
 
         await CreateAction.RunAsync(client, identity, new RichText(Config, client, NullLogger<RichText>.Instance), ValidFile, "John Roe");
 
-        client.CreateCall!.AssignedToId.ShouldBe(@"John Roe <CONTOSO\jroe>");
+        client.CreateCall!.Assignee.ShouldBe(new Person("id-2", "John Roe", @"CONTOSO\jroe"));
     }
 
     [Fact]

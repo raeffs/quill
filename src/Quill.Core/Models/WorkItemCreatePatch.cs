@@ -4,7 +4,7 @@ public sealed record WorkItemCreatePatch(
     string Type,
     string Title,
     int ParentId,
-    string? AssignedToId = null,
+    Person? Assignee = null,
     string? DescriptionHtml = null,
     string? IterationPath = null,
     string? AreaPath = null,
