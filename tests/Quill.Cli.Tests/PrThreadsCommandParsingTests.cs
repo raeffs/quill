@@ -4,6 +4,8 @@ namespace Quill.Cli.Tests;
 
 public class PrThreadsCommandParsingTests
 {
+    private const string StatusMessage = "--status must be one of: active, fixed, wontFix, closed, byDesign, pending.";
+
     [Fact]
     public void Parse_OnlyId_NoStatusOrLimit()
     {
@@ -61,5 +63,44 @@ public class PrThreadsCommandParsingTests
 
         // Assert
         parseResult.Errors.Select(e => e.Message).ShouldContain("--limit must be a positive integer.", StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("active")]
+    [InlineData("fixed")]
+    [InlineData("wontFix")]
+    [InlineData("closed")]
+    [InlineData("byDesign")]
+    [InlineData("pending")]
+    public void Parse_KnownStatus_ProducesNoError(string status)
+    {
+        var parseResult = CliHost.Parse(["pr", "threads", "4711", "--status", status], TestServices.Empty);
+
+        parseResult.Errors.ShouldBeEmpty();
+        parseResult.GetValue<string[]>("--status").ShouldBe([status]);
+    }
+
+    [Theory]
+    [InlineData("--status", "wontfix")]
+    [InlineData("--status", "Fixed")]
+    [InlineData("--status", "unknown")]
+    [InlineData("--status", "")]
+    [InlineData("--status=wontfix")]
+    [InlineData("--status", "active", "--status", "wontfix")]
+    public void Parse_UnknownStatus_ProducesTheMessage(params string[] flags)
+    {
+        var parseResult = CliHost.Parse(["pr", "threads", "4711", .. flags], TestServices.Empty);
+
+        parseResult.Errors.Select(e => e.Message).ShouldContain(StatusMessage, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void StatusOption_Description_ListsTheSixValues()
+    {
+        var parseResult = CliHost.Parse(["pr", "threads", "4711"], TestServices.Empty);
+
+        var option = parseResult.CommandResult.Command.Options.Single(o => string.Equals(o.Name, "--status", StringComparison.Ordinal));
+
+        option.Description.ShouldNotBeNull().ShouldContain("active, fixed, wontFix, closed, byDesign, pending");
     }
 }

@@ -143,4 +143,14 @@ public class ExitCodeTests
 
         exitCode.ShouldBe(3);
     }
+
+    [Theory]
+    [InlineData("--status", "wontfix")]
+    [InlineData("--status", "active", "--status", "Fixed")]
+    public async Task InvokeAsync_PrThreadsUnknownStatus_Returns3(params string[] flags)
+    {
+        var exitCode = await CliHost.InvokeAsync(["pr", "threads", "42", .. flags], TestServices.Empty);
+
+        exitCode.ShouldBe(3);
+    }
 }

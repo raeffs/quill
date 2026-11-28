@@ -17,9 +17,11 @@ internal static class ThreadsCommand
 
         var statusOption = new Option<string[]>("--status")
         {
-            Description = "Filter by thread status (repeat to OR). Accepts active, fixed, wontFix, closed, pending, byDesign. Omit to return all.",
+            Description = $"Filter by thread status (repeat to OR). One of: {string.Join(", ", ThreadStatus.All)}. Omit to return all.",
             AllowMultipleArgumentsPerToken = false,
         };
+
+        Validators.KnownThreadStatus(statusOption, "--status");
 
         var limitOption = new Option<int?>("--limit")
         {

@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Globalization;
+using Quill.Core;
 
 namespace Quill.Cli;
 
@@ -24,6 +25,15 @@ internal static class Validators
             if (result.Tokens.Any(token => string.IsNullOrWhiteSpace(token.Value)))
             {
                 result.AddError($"{name} must not be empty.");
+            }
+        });
+
+    public static void KnownThreadStatus(Option option, string name) =>
+        option.Validators.Add(result =>
+        {
+            if (result.Tokens.Any(token => !ThreadStatus.IsKnown(token.Value)))
+            {
+                result.AddError($"{name} must be one of: {string.Join(", ", ThreadStatus.All)}.");
             }
         });
 
