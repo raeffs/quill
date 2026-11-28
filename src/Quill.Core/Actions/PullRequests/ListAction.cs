@@ -12,7 +12,7 @@ public static class ListAction
     {
         var reviewer = request.Reviewer is null
             ? null
-            : await people.ResolveAsync("--reviewer", request.Reviewer, false, cancellationToken);
+            : await people.ResolveAsync("--reviewer", request.Reviewer, true, cancellationToken);
         var author = request.Author is null
             ? null
             : await people.ResolveAsync("--author", request.Author, false, cancellationToken);

@@ -13,7 +13,7 @@ internal static class ListCommand
     {
         var reviewerOption = new Option<string?>("--reviewer")
         {
-            Description = "Reviewer filter. Accepts @me, a display name, a unique name or an email address.",
+            Description = @"Reviewer filter. Accepts @me, a display name, a unique name or an email address of a person, or a group by its bare name or its scoped name such as [Fabrikam]\Contoso Platform.",
         };
 
         var authorOption = new Option<string?>("--author")

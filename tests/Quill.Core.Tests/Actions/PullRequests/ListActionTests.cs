@@ -130,6 +130,122 @@ public class ListActionTests
         prs.Calls.ShouldBeEmpty();
     }
 
+    [Theory]
+    [InlineData("Contoso Platform")]
+    [InlineData(@"[Fabrikam]\Contoso Platform")]
+    public async Task RunAsync_GroupReviewer_FiltersByTheGroupId(string reviewer)
+    {
+        var prs = new ScriptedPullRequestClient();
+        var identity = new ScriptedIdentityClient { Search = OnlyTheGroup };
+
+        var seen = await Run(prs, identity, new InMemoryPersonStore(), reviewer: reviewer);
+
+        seen.ReviewerId.ShouldBe("id-3");
+        seen.CreatorId.ShouldBeNull();
+        identity.Calls.ShouldBe([$"Search(General,{reviewer})", "GetCurrentUser"]);
+    }
+
+    [Fact]
+    public async Task RunAsync_GroupReviewerWithNoPullRequests_ReturnsNoRows()
+    {
+        var prs = new ScriptedPullRequestClient { List = _ => [] };
+        var identity = new ScriptedIdentityClient { Search = OnlyTheGroup };
+
+        var rows = await ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create()), new PrListRequest("Contoso Platform", null, "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
+
+        rows.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_ReviewerMatchesAPersonAndAGroup_ThrowsBeforeListing()
+    {
+        var prs = new ScriptedPullRequestClient();
+        var identity = new ScriptedIdentityClient { Search = PersonAndGroup };
+
+        var ex = await Should.ThrowAsync<RejectedException>(() => Run(prs, identity, new InMemoryPersonStore(), reviewer: "Platform"));
+
+        ex.Message.ShouldBe(@"--reviewer 'Platform' matches 1 person and 1 group: Platform (CONTOSO\svc-platform), [Fabrikam]\Platform. Pass the unique name or the scoped name.");
+        prs.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_AuthorMatchesAPersonAndAGroup_FiltersByThePerson()
+    {
+        var identity = new ScriptedIdentityClient { Search = PersonAndGroup };
+
+        var seen = await Run(new ScriptedPullRequestClient(), identity, new InMemoryPersonStore(), author: "Platform");
+
+        seen.CreatorId.ShouldBe("id-4");
+    }
+
+    [Fact]
+    public async Task RunAsync_GroupAuthor_Throws()
+    {
+        var prs = new ScriptedPullRequestClient();
+        var identity = new ScriptedIdentityClient { Search = OnlyTheGroup };
+
+        var ex = await Should.ThrowAsync<RejectedException>(() => Run(prs, identity, new InMemoryPersonStore(), author: "Contoso Platform"));
+
+        ex.Message.ShouldBe("--author 'Contoso Platform' matches only groups. Groups are not accepted; name a person.");
+        prs.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_SecondRunWithTheSameGroupReviewer_SendsNoSearch()
+    {
+        var store = new InMemoryPersonStore();
+        await Run(new ScriptedPullRequestClient(), new ScriptedIdentityClient { Search = OnlyTheGroup }, store, reviewer: "Contoso Platform");
+        var identity = new ScriptedIdentityClient();
+
+        var seen = await Run(new ScriptedPullRequestClient(), identity, store, reviewer: "Contoso Platform");
+
+        seen.ReviewerId.ShouldBe("id-3");
+        identity.Calls.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_SameNameAsAuthorThenAsReviewer_SearchesTwice()
+    {
+        var store = new InMemoryPersonStore();
+        await Run(new ScriptedPullRequestClient(), new ScriptedIdentityClient { Search = PersonAndGroup }, store, author: "Platform");
+        var prs = new ScriptedPullRequestClient();
+        var identity = new ScriptedIdentityClient { Search = PersonAndGroup };
+
+        await Should.ThrowAsync<RejectedException>(() => Run(prs, identity, store, reviewer: "Platform"));
+
+        identity.Calls.ShouldBe(["Search(General,Platform)"]);
+        prs.Calls.ShouldBeEmpty();
+    }
+
+    private static IReadOnlyList<IdentityMatch> OnlyTheGroup(IdentitySearchFilter filter, string value)
+        => [new IdentityMatch("id-3", @"[Fabrikam]\Contoso Platform", null, true)];
+
+    private static IReadOnlyList<IdentityMatch> PersonAndGroup(IdentitySearchFilter filter, string value)
+        =>
+        [
+            new IdentityMatch("id-3", @"[Fabrikam]\Platform", null, true),
+            new IdentityMatch("id-4", "Platform", @"CONTOSO\svc-platform", false),
+        ];
+
+    private static async Task<PullRequestListQuery> Run(
+        ScriptedPullRequestClient prs,
+        ScriptedIdentityClient identity,
+        InMemoryPersonStore store,
+        string? reviewer = null,
+        string? author = null)
+    {
+        PullRequestListQuery? seen = null;
+        prs.List = query =>
+        {
+            seen = query;
+            return [];
+        };
+
+        await ListAction.RunAsync(prs, new IdentityResolver(identity, TestPersonCache.Create(store)), new PrListRequest(reviewer, author, "active", null, null, null, 20, null), TestContext.Current.CancellationToken);
+
+        return seen.ShouldNotBeNull();
+    }
+
     private static PullRequest PullRequest(int id) => new()
     {
         Id = id,
