@@ -23,3 +23,11 @@ dotnet tool update -g Raeffs.Quill
 ## Usage
 
 See [`skills/quill/SKILL.md`](https://github.com/raeffs/quill/blob/main/skills/quill/SKILL.md) for commands, configuration (`.quill.json`), and the markdown file format.
+
+## Cache
+
+Quill saves each person it resolves, and the current user, for 24 hours. The
+file is safe to delete.
+
+- Linux and macOS: `$XDG_CACHE_HOME/quill/people.json`, by default `~/.cache/quill/people.json`
+- Windows: `%LOCALAPPDATA%\quill\people.json`

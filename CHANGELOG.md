@@ -16,6 +16,7 @@
 - `pr list` (`--skip`, `--state`), `pr threads --limit`, `wi comments --limit`, `wi tree --depth`: Report a bad value as a usage error on stderr with exit code 3, like the `pipeline` commands, instead of a JSON error row on stdout.
 - Every command: The exit code now names the failure mode: 1 Rejected, 2 Unavailable, 3 Usage, 4 Defect, 5 Denied. Exit codes 4 and 5 are new, and many failures changed their exit code.
 - `wi create --description-file`, `pr create --description-file`, `backlog create`, `backlog push`: A path that exists but cannot be read, such as a directory, now fails with `Cannot read <path>:` and the reason. It used to fail with `File not found`. The exit code stays 3.
+- `pr list`, `pr view`, `backlog push`, `backlog create` and every flag that names a person: Quill saves each person it resolves, and the current user, in `people.json` in the user's cache directory and uses the file for 24 hours. A second run sends no identity request. The file is safe to delete.
 
 ### Fixed
 
